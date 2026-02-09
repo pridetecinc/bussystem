@@ -12,17 +12,14 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.0/font/bootstrap-icons.min.css">
     <style>
-        /* 背景色とフォントの微調整 */
         .navbar {
-            background-color: #212529; /* ダークグレー */
+            background-color: #212529;
         }
         
-        /* メニューを中央に寄せるための設定 */
         .navbar-collapse {
             justify-content: center;
         }
 
-        /* 各メニューの間隔を広げる */
         .nav-item {
             margin: 0 10px;
         }
@@ -32,18 +29,12 @@
             white-space: nowrap;
         }
 
-        /* マスター管理の2列メニュー（メガメニュー） */
         .mega-menu {
             min-width: 450px;
             padding: 1.5rem;
             left: 50% !important;
             transform: translateX(-50%) !important;
         }
-        
-        
-        
-        
-        
         
         .table-striped > tbody > tr:nth-of-type(odd) > * {
             --bs-table-bg-type: transparent;
@@ -73,14 +64,14 @@
                             <i class="bi bi-truck me-1"></i>運行管理
                         </a>
                         <ul class="dropdown-menu shadow">
-                            <li><a class="dropdown-item" href="{{ route('masters.itineraries.index') }}">運行台帳</a></li>
-                            <li><a class="dropdown-item" href="{{ route('masters.drivers.index') }}">運転手台帳</a></li>
-                            <li><a class="dropdown-item" href="{{ route('masters.vehicles.index') }}">運行一覧</a></li>
-                            <li><a class="dropdown-item" href="{{ route('masters.itineraries.index') }}">日次一覧</a></li>
-                            <li><a class="dropdown-item" href="{{ route('masters.drivers.index') }}">乗務指示一覧</a></li>
+                            <li><a class="dropdown-item" href="#">運行台帳</a></li>
+                            <li><a class="dropdown-item" href="#">運転手台帳</a></li>
+                            <li><a class="dropdown-item" href="#">運行一覧</a></li>
+                            <li><a class="dropdown-item" href="#">日次一覧</a></li>
+                            <li><a class="dropdown-item" href="#">乗務指示一覧</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{{ route('masters.basicinfo.index') }}">デジタコデータアップロード</a></li>
-                            <li><a class="dropdown-item" href="{{ route('masters.basicinfo.index') }}">デジタコデータアップロード履歴</a></li>
+                            <li><a class="dropdown-item" href="#">デジタコデータアップロード</a></li>
+                            <li><a class="dropdown-item" href="#">デジタコデータアップロード履歴</a></li>
                         </ul>
                     </li>
                     
@@ -89,9 +80,9 @@
                             <i class="bi bi-cash-stack me-1"></i>売上管理
                         </a>
                         <ul class="dropdown-menu shadow">
-                            <li><a class="dropdown-item" href="{{ route('masters.fees.index') }}">請求管理</a></li>
-                            <li><a class="dropdown-item" href="{{ route('masters.fees.index') }}">請求詳細</a></li>
-                            <li><a class="dropdown-item" href="{{ route('masters.fees.index') }}">入金管理</a></li>
+                            <li><a class="dropdown-item" href="#">請求管理</a></li>
+                            <li><a class="dropdown-item" href="#">請求詳細</a></li>
+                            <li><a class="dropdown-item" href="#">入金管理</a></li>
                         </ul>
                     </li>
                     
@@ -100,9 +91,9 @@
                             <i class="bi bi-graph-up-arrow me-1"></i>実績集計
                         </a>
                         <ul class="dropdown-menu shadow">
-                            <li><a class="dropdown-item" href="{{ route('masters.basicinfo.index') }}">輸送実績一覧</a></li>
-                            <li><a class="dropdown-item" href="{{ route('masters.drivers.index') }}">乗務実績一覧</a></li>
-                            <li><a class="dropdown-item" href="{{ route('masters.fees.index') }}">売上集計</a></li>
+                            <li><a class="dropdown-item" href="#">輸送実績一覧</a></li>
+                            <li><a class="dropdown-item" href="#">乗務実績一覧</a></li>
+                            <li><a class="dropdown-item" href="#">売上集計</a></li>
                         </ul>
                     </li>
 
@@ -121,7 +112,7 @@
                             <li><a class="dropdown-item py-1" href="{{ route('masters.guides.index') }}">ガイド</a></li>
                             <li><a class="dropdown-item py-1" href="{{ route('masters.agencies.index') }}">代理店</a></li>
                             <li><a class="dropdown-item py-1" href="{{ route('masters.partners.index') }}">取引先(傭車先)</a></li>
-                            <li><a class="dropdown-item py-1" href="#">顧客</a></li>
+                            <li><a class="dropdown-item py-1" href="{{ route('masters.customers.index') }}">顧客</a></li>
                             <li><a class="dropdown-item py-1" href="#">行程</a></li>
                             <li><a class="dropdown-item py-1" href="#">目的</a></li>
                             <li><a class="dropdown-item py-1" href="#">施設</a></li>

@@ -20,7 +20,6 @@ use App\Http\Controllers\masters\ReservationCategoryController;
 use App\Http\Controllers\masters\AttendanceCategoryController;
 use App\Http\Controllers\masters\RemarkController;
 use App\Http\Controllers\masters\FeeController;
-use App\Http\Controllers\masters\BankController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
