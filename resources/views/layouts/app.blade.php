@@ -113,7 +113,7 @@
                             <li><a class="dropdown-item py-1" href="{{ route('masters.agencies.index') }}">代理店</a></li>
                             <li><a class="dropdown-item py-1" href="{{ route('masters.partners.index') }}">取引先(傭車先)</a></li>
                             <li><a class="dropdown-item py-1" href="{{ route('masters.customers.index') }}">顧客</a></li>
-                            <li><a class="dropdown-item py-1" href="#">行程</a></li>
+                            <li><a class="dropdown-item py-1" href="{{ route('masters.itineraries.index') }}">行程</a></li>
                             <li><a class="dropdown-item py-1" href="#">目的</a></li>
                             <li><a class="dropdown-item py-1" href="#">施設</a></li>
                             <li><a class="dropdown-item py-1" href="#">地名</a></li>
