@@ -58,6 +58,7 @@
                         <th width="100">コード</th>
                         <th width="120">区分</th>
                         <th>行程名</th>
+                        <th>備考</th>
                         <th width="150" class="text-center">最終更新</th>
                         <th width="140" class="text-center">操作</th>
                     </tr>
@@ -77,12 +78,9 @@
                         </td>
                         <td>
                             <strong>{{ $itinerary->itinerary_name }}</strong>
-                            @if($itinerary->remarks)
-                                <br>
-                                <small class="text-muted text-truncate d-block" style="max-width: 400px;">
-                                    {{ \Illuminate\Support\Str::limit($itinerary->remarks, 50) }}
-                                </small>
-                            @endif
+                        </td>
+                        <td>
+                            {{ \Illuminate\Support\Str::limit($itinerary->remarks, 50) }}
                         </td>
                         <td class="text-center">
                             @if($itinerary->updated_at)
@@ -93,10 +91,10 @@
                         </td>
                         <td>
                             <div class="d-flex gap-1 justify-content-center">
-                                <a href="{{ route('masters.itineraries.show', $itinerary) }}" 
-                                   class="btn btn-sm btn-outline-info" title="詳細">
-                                    <i class="bi bi-eye"></i>
-                                </a>
+                                <!--<a href="{{ route('masters.itineraries.show', $itinerary) }}" -->
+                                <!--   class="btn btn-sm btn-outline-info" title="詳細">-->
+                                <!--    <i class="bi bi-eye"></i>-->
+                                <!--</a>-->
                                 <a href="{{ route('masters.itineraries.edit', $itinerary) }}" 
                                    class="btn btn-sm btn-outline-primary" title="編集">
                                     <i class="bi bi-pencil"></i>
@@ -121,7 +119,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="5" class="text-center py-4">
+                        <td colspan="6" class="text-center py-4">
                             @if(request('search'))
                                 <div class="text-muted">
                                     <i class="bi bi-search display-6 mb-2"></i>
