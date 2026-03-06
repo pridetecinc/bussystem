@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\masters;
 
 use App\Http\Controllers\Controller; // これが必要な場合があります
 

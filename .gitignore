@@ -22,3 +22,7 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+/public/index.html
+/public/.htaccess
+/public/nginx.htaccess
+composer.lock
