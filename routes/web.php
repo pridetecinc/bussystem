@@ -20,6 +20,7 @@ use App\Http\Controllers\masters\ReservationCategoryController;
 use App\Http\Controllers\masters\AttendanceCategoryController;
 use App\Http\Controllers\masters\RemarkController;
 use App\Http\Controllers\masters\FeeController;
+use App\Http\Controllers\masters\PdfTemplateController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
@@ -48,4 +49,6 @@ Route::prefix('masters')->name('masters.')->group(function () {
     Route::resource('remarks', RemarkController::class)->names('remarks');
     Route::resource('fees', FeeController::class)->names('fees');
     Route::get('login-histories', [LoginHistoryController::class, 'index'])->name('login-histories.index');
+
+    Route::resource('pdf_templates', PdfTemplateController::class)->names('pdf_templates');
 });

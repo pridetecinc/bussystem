@@ -123,6 +123,8 @@
                             <li><a class="dropdown-item py-1" href="#">備考</a></li>
                             <hr class="dropdown-divider">
                             <li><a class="dropdown-item py-1 small" href="#">ログイン履歴</a></li>
+                            <hr class="dropdown-divider">
+                            <li><a class="dropdown-item py-1" href="{{ route('masters.pdf_templates.index') }}">PDF模板</a></li>
                         </ul>
                     </li>
                 </ul>
