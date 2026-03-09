@@ -21,6 +21,7 @@ use App\Http\Controllers\masters\AttendanceCategoryController;
 use App\Http\Controllers\masters\RemarkController;
 use App\Http\Controllers\masters\FeeController;
 use App\Http\Controllers\masters\PdfTemplateController;
+use App\Http\Controllers\masters\CurrencyController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
@@ -51,4 +52,5 @@ Route::prefix('masters')->name('masters.')->group(function () {
     Route::get('login-histories', [LoginHistoryController::class, 'index'])->name('login-histories.index');
 
     Route::resource('pdf_templates', PdfTemplateController::class)->names('pdf_templates');
+    Route::resource('currencies', CurrencyController::class)->names('currencies');
 });
