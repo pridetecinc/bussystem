@@ -39,8 +39,8 @@ class InvoiceController extends Controller
             $query->where('invoice_number', 'like', "%{$search}%");
         }
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
+        if ($request->filled('billing_title')) {
+            $query->where('billing_title', 'like', "%{$request->billing_title}%");
         }
 
         $invoices = $query->orderBy('invoice_date', 'desc')->paginate(20);
@@ -525,13 +525,17 @@ public function store(Request $request)
         }
     }
 
-    //composer require spatie/browsershot
+    /*
+        composer require spatie/browsershot
+        npm install puppeteer
+    */
     public function generatePdf(Request $request, Invoice $invoice)
     {
 
         $items = $invoice->items;
         $summary_10 = InvoiceTaxSummary::where('invoice_id', $invoice->id)->where('tax_rate', 10)->first();
         $symmary_8 = InvoiceTaxSummary::where('invoice_id', $invoice->id)->where('tax_rate', 8)->first();
+        $currency = Currency::find($invoice->currency_id);
         // 1. 准备数据 (保持你原有的数据结构不变)
         $data = [
             'invoice' => (object)[
@@ -546,6 +550,7 @@ public function store(Request $request)
             ],
             'summary_10' => $summary_10,
             'summary_8' => $symmary_8,
+            'currency' => $currency,
 
             'items' => $items,
             'totals' => [
@@ -576,7 +581,7 @@ public function store(Request $request)
 
     try {
         // 1. 渲染 HTML
-        $html = View::make('masters.invoices.template', $data)->render();
+        $html = View::make('masters.invoices.template_en', $data)->render();
 
         // 2. 初始化 Browsershot
         // D:\Google\Chrome\Application

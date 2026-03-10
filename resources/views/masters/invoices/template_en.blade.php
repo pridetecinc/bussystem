@@ -1,15 +1,16 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>請求書</title>
+    <title>INVOICE</title>
     <style>
         @page {
             size: A4;
             margin: 15mm 15mm;
         }
         body {
-            font-family: "MS Mincho", "Yu Mincho", "Hiragino Mincho Pro", serif;
+            /* 英文优先使用无衬线字体，同时保留 Mincho 以防特殊字符 */
+            font-family: "Helvetica", "Arial", "MS Mincho", sans-serif;
             font-size: 10pt;
             color: #000;
             margin: 0;
@@ -21,7 +22,7 @@
             page-break-inside: avoid;
         }
 
-        /* 1. 头部 */
+        /* 1. Header */
         .header-section { 
             display: flex; 
             justify-content: space-between; 
@@ -33,7 +34,8 @@
             font-weight: bold; 
             color: #3b5998; 
             margin: 0; 
-            letter-spacing: 2px; 
+            letter-spacing: 1px; 
+            text-transform: uppercase; 
         }
         .meta-info { 
             text-align: right; 
@@ -41,7 +43,7 @@
             line-height: 1.4; 
         }
 
-        /* 2. 客户与公司 */
+        /* 2. Client & Company */
         .top-section { 
             display: flex; 
             justify-content: space-between; 
@@ -69,17 +71,20 @@
         .greeting { 
             margin: 8px 0; 
             font-size: 10pt; 
+            font-style: italic;
+            color: #555;
         }
         
         .total-hint { 
             font-size: 11pt; 
             margin-bottom: 8px; 
+            font-weight: bold;
         }
         .total-hint strong { 
             font-size: 13pt; 
         }
 
-        /* 3. 主表格 */
+        /* 3. Main Table */
         .main-table { 
             width: 100%; 
             border-collapse: collapse; 
@@ -100,12 +105,13 @@
             print-color-adjust: exact; 
             padding: 4px 2px; 
             font-size: 9pt;
+            text-transform: uppercase;
         }
         .text-left { text-align: left !important; }
         .text-right { text-align: right !important; }
         .font-bold { font-weight: bold; }
 
-        /* 4. 底部合计 */
+        /* 4. Summary Table */
         .summary-table {
             width: 100%;
             border-collapse: collapse;
@@ -120,14 +126,15 @@
             vertical-align: middle;
         }
         
-        .w-rate { width: 12%; }
-        .w-amount { width: 13%; }
-        .w-tax-label { width: 10%; }
-        .w-tax-val { width: 13%; }
-        .w-total-label { width: 22%; }
-        .w-total-val { width: 30%; }
+        /* Adjust widths for English labels to fit better */
+        .w-rate { width: 20%; } 
+        .w-amount { width: 18%; }
+        .w-tax-label { width: 17%; }
+        .w-tax-val { width: 15%; }
+        .w-total-label { width: 15%; }
+        .w-total-val { width: 15%; }
 
-        /* 5. 支付信息与备注 */
+        /* 5. Footer */
         .footer-section { 
             margin-top: 5px; 
             font-size: 9pt; 
@@ -136,84 +143,90 @@
         .payment-deadline { 
             margin-bottom: 8px; 
             font-size: 10pt;
+            font-weight: bold;
+            color: #3b5998;
+            text-transform: uppercase;
         }
-
-        /* 【修改】备注样式：黑色字体，正常行高 */
-        .note-section {
-            margin-bottom: 8px;
+        .payment-note {
             font-size: 9pt;
-            color: #000; /* 默认黑色 */
-            line-height: 1.4;
-            white-space: pre-wrap; /* 支持换行符 */
+            margin-bottom: 8px;
+            font-style: italic;
+            color: #555;
         }
 
         .bank-info {
             width: 100%;
             line-height: 1.4;
         }
-        .bank-title {
+        div.bank-title {
             font-weight: bold;
             margin-bottom: 4px;
             display: block;
             font-size: 10pt;
+            text-decoration: none !important;
+            border-bottom: none !important;
+            color: #3b5998;
+            text-transform: uppercase;
         }
         .bank-row {
             display: flex;
             margin-bottom: 2px;
         }
         .bank-label {
-            width: 80px;
+            width: 100px; /* Wider for English labels like "Account Name" */
             font-weight: bold;
         }
     </style>
 </head>
 <body>
 
-    <!-- 1. 标题 -->
+    <!-- 1. Header -->
     <div class="header-section no-break">
-        <h1 class="main-title">請 求 書</h1>
+        <h1 class="main-title">INVOICE</h1>
         <div class="meta-info">
-            <div>請求日：{{ $invoice->invoice_date }}</div>
-            <div>請求番号：{{ $invoice->invoice_number }}</div>
+            <div><strong>Date:</strong> {{ $invoice->invoice_date }}</div>
+            <div><strong>Invoice#:</strong> {{ $invoice->invoice_number }}</div>
         </div>
     </div>
 
-    <!-- 2. 客户与公司 -->
+    <!-- 2. Client & Company -->
     <div class="top-section no-break">
         <div class="client-name">
-            {{ $customer->name }}
+            <div style="font-size: 9pt; font-weight: normal; margin-bottom: 2px; color:#555;">BILL TO:</div>
+            <!-- Removed Japanese '様' -->
+            <div style="font-size: 11pt;">{{ $customer->name }}</div>
+            @if(isset($customer->attention))
+                <div style="font-size: 9pt;">Attn: {{ $customer->attention }}</div>
+            @endif
         </div>
 
         <div class="company-info">
             <div class="company-name">{{ $company->name }}</div>
-            <div>〒{{ $company->postal_code }}</div>
             <div>{{ $company->address }}</div>
-            <div>Tel: {{ $company->phone }} / Fax: {{ $company->fax }}</div>
-            <div>担当：{{ $company->contact }}</div>
+            @if($company->postal_code)
+                <div>{{ $company->postal_code }}</div>
+            @endif
+            <div>Tel: {{ $company->phone }} | Fax: {{ $company->fax }}</div>
+            @if($company->contact)
+                <div>Attn: {{ $company->contact }}</div>
+            @endif
         </div>
     </div>
 
-    <div class="greeting">下記のとおり、ご請求申し上げます。</div>
-
     <div class="total-hint">
-        合計請求金額 <strong>{{ number_format($invoice->total_amount) }}</strong> 
-        @if($invoice->tax_mode == 1)
-            (税込)
-        @else
-            (税別)
-        @endif
+        Total Amount ({{ $currency->currency_code }}): <strong>{{ number_format($invoice->total_amount) }}</strong> 
     </div>
 
-    <!-- 3. 主表格 (15行) -->
+    <!-- 3. Main Table -->
     <table class="main-table">
         <thead>
             <tr>
                 <th style="width: 5%">No.</th>
-                <th style="width: 35%" class="text-left">内容</th>
-                <th style="width: 8%">数量</th>
-                <th style="width: 12%">単価</th>
-                <th style="width: 12%">金額</th>
-                <th style="width: 8%">税率</th>
+                <th style="width: 35%" class="text-left">Description</th>
+                <th style="width: 8%">QTY</th>
+                <th style="width: 12%">Unit Price</th>
+                <th style="width: 12%">Amount</th>
+                <th style="width: 8%">Tax Rate</th>
             </tr>
         </thead>
         <tbody>
@@ -229,15 +242,15 @@
                 <td>{{ $item->quantity }}</td>
                 <td class="text-right">{{ number_format($item->unit_price) }}</td>
                 <td class="text-right">{{ number_format($item->amount) }}</td>
-                @if ($item->tax_rate == 0)
-                <td></td>
-                @else
-                <td>{{ $item->tax_rate }}%</td>
-                @endif
+                <td>
+                    @if ($item->tax_rate > 0)
+                        {{ $item->tax_rate }}%
+                    @endif
+                </td>
             </tr>
             @endforeach
             
-            {{-- 补全至 15 行 --}}
+            {{-- Fill empty rows --}}
             @php $remaining = 15 - count($items); @endphp
             @if($remaining > 0)
                 @for($i = 0; $i < $remaining; $i++)
@@ -254,69 +267,85 @@
         </tbody>
     </table>
 
-    <!-- 4. 底部合计 -->
+    <!-- 4. Summary Table (Retaining 10%/8% Breakdown) -->
     <table class="summary-table no-break">
+        <!-- Row 1: 10% -->
         <tr>
-            <td class="w-rate text-left">10% 対象</td>
+            <td class="w-rate text-left"><strong>10% Taxable Sales</strong></td>
             <td class="w-amount text-right">{{ number_format($summary_10->total_with_tax ?? 0) }}</td>
-            <td class="w-tax-label text-right">消費税</td>
+            <td class="w-tax-label text-right">Consumption Tax</td>
             <td class="w-tax-val text-right">{{ number_format($summary_10->tax_amount ?? 0) }}</td>
-            <td class="w-total-label text-center font-bold">小計</td>
+            <td class="w-total-label text-center font-bold">Subtotal (10%)</td>
             <td class="w-total-val text-right font-bold">
-                @if($invoice->tax_mode == 1)
-                    {{ $invoice->total_amount }}
+                 @if($invoice->tax_mode == 1)
+                    {{ number_format($summary_10->total_with_tax ?? 0) }}
                 @else
-                    {{ $invoice->subtotal_amount }}
+                    {{ number_format(($summary_10->total_with_tax ?? 0) - ($summary_10->tax_amount ?? 0)) }}
                 @endif
-            
             </td>
         </tr>
+        <!-- Row 2: 8% -->
         <tr>
-            <td class="w-rate text-left">8% 対象</td>
+            <td class="w-rate text-left"><strong>8% Taxable Sales</strong></td>
             <td class="w-amount text-right">{{ number_format($summary_8->total_with_tax ?? 0) }}</td>
-            <td class="w-tax-label text-right">消費税</td>
+            <td class="w-tax-label text-right">Consumption Tax</td>
             <td class="w-tax-val text-right">{{ number_format($summary_8->tax_amount ?? 0) }}</td>
-            <td class="w-total-label text-center font-bold">消費税額</td>
-            <td class="w-total-val text-right font-bold">{{ $invoice->tax_amount }}</td>
+            <td class="w-total-label text-center font-bold">Subtotal (8%)</td>
+            <td class="w-total-val text-right font-bold">
+                @if($invoice->tax_mode == 1)
+                    {{ number_format($summary_8->total_with_tax ?? 0) }}
+                @else
+                    {{ number_format(($summary_8->total_with_tax ?? 0) - ($summary_8->tax_amount ?? 0)) }}
+                @endif
+            </td>
         </tr>
+        <!-- Row 3: Non-Taxable & Grand Totals -->
         <tr>
-            <td class="w-rate text-left">非課税</td>
+            <td class="w-rate text-left"><strong>Non-Taxable / Exempt</strong></td>
             <td class="w-amount text-right">{{ number_format($totals['non_taxable'] ?? 0) }}</td>
             <td colspan="2"></td>
-            <td class="w-total-label text-center font-bold">請求合計</td>
-            <td class="w-total-val text-right font-bold">{{ $invoice->total_amount }}</td>
+            <td class="w-total-label text-center font-bold">Total Tax</td>
+            <td class="w-total-val text-right font-bold">{{ number_format($invoice->tax_amount) }}</td>
+        </tr>
+        <!-- Grand Total Row (Merged for emphasis) -->
+        <tr style="background-color: #f9f9f9;">
+            <td colspan="4"></td>
+            <td class="w-total-label text-center font-bold" style="font-size: 10pt; color: #3b5998;">GRAND TOTAL</td>
+            <td class="w-total-val text-right font-bold" style="font-size: 11pt; color: #3b5998;">{{ number_format($invoice->total_amount) }}</td>
         </tr>
     </table>
 
-    <!-- 5. 支付信息与备注 -->
+    <!-- 5. Payment Info -->
     <div class="footer-section no-break">
-        <div class="payment-deadline">お支払期限：<strong>{{ $invoice->due_date }}</strong></div>
-        
-        {{-- 【新增】条件显示备注 --}}
+        <div class="payment-deadline">
+            Payment Due By: {{ $invoice->due_date }}
+        </div>
+
         @if(!empty($invoice->notes))
-        <span class="bank-title">【備考】</span>
-        <div class="bank-info">{{ $invoice->notes }}</div>
+        <div class="bank-title">[Remarks]</div>
+        <div class="bank-info" style="margin-bottom: 8px;">{{ $invoice->notes }}</div>
         @endif
 
         <div class="bank-info">
-            <span class="bank-title">【振込先】</span>
+            <div class="bank-title">Bank Details</div>
             <div class="bank-row">
-                <span class="bank-label">銀行名</span>
+                <span class="bank-label">Bank Name:</span>
                 <span>{{ $bank->bank_name }} {{ $bank->branch_name }}</span>
             </div>
             <div class="bank-row">
-                <span class="bank-label">種別</span>
-                <span>普通預金</span>
+                <span class="bank-label">Account Type:</span>
+                <span>Ordinary</span>
             </div>
             <div class="bank-row">
-                <span class="bank-label">口座番号</span>
+                <span class="bank-label">Account No:</span>
                 <span>{{ $bank->account_number }}</span>
             </div>
             <div class="bank-row">
-                <span class="bank-label">口座名義</span>
+                <span class="bank-label">Account Name:</span>
                 <span>{{ $bank->account_holder }}</span>
             </div>
         </div>
+        
     </div>
 
 </body>

@@ -41,15 +41,11 @@
                                value="{{ request('search') }}">
                     </div>
 
-                    <div class="col-md-2">
-                        <label class="form-label small text-muted mb-1">ステータス</label>
-                        <select name="status" class="form-select">
-                            <option value="">すべて</option>
-                            <option value="DRAFT" {{ request('status') == 'DRAFT' ? 'selected' : '' }}>下書き</option>
-                            <option value="ISSUED" {{ request('status') == 'ISSUED' ? 'selected' : '' }}>発行済</option>
-                            <option value="PAID" {{ request('status') == 'PAID' ? 'selected' : '' }}>支払済</option>
-                            <option value="CANCELLED" {{ request('status') == 'CANCELLED' ? 'selected' : '' }}>キャンセル</option>
-                        </select>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted mb-1">账单标题</label>
+                        <input type="text" name="billing_title" class="form-control" 
+                               placeholder=""
+                               value="{{ request('billing_title') }}">
                     </div>
 
                     <div class="col-md-auto">
