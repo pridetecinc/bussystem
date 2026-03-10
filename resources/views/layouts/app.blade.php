@@ -9,6 +9,7 @@
             - @yield('title')
         @endif
     </title>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.0/font/bootstrap-icons.min.css">
     <style>
@@ -126,6 +127,7 @@
                             <hr class="dropdown-divider">
                             <li><a class="dropdown-item py-1" href="{{ route('masters.pdf_templates.index') }}">PDF模板</a></li>
                             <li><a class="dropdown-item py-1" href="{{ route('masters.currencies.index') }}">货币汇率</a></li>
+                            <li><a class="dropdown-item py-1" href="{{ route('masters.invoices.index', ['group_id' => 12]) }}">请求书<a></li>
                         </ul>
                     </li>
                 </ul>
@@ -140,7 +142,7 @@
     <div class="container-fluid mt-4 mb-4 px-4">
         @yield('content')
     </div>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+
 </body>
 </html>

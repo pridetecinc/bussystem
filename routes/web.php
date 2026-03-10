@@ -22,6 +22,7 @@ use App\Http\Controllers\masters\RemarkController;
 use App\Http\Controllers\masters\FeeController;
 use App\Http\Controllers\masters\PdfTemplateController;
 use App\Http\Controllers\masters\CurrencyController;
+use App\Http\Controllers\masters\InvoiceController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
@@ -53,4 +54,7 @@ Route::prefix('masters')->name('masters.')->group(function () {
 
     Route::resource('pdf_templates', PdfTemplateController::class)->names('pdf_templates');
     Route::resource('currencies', CurrencyController::class)->names('currencies');
+    Route::resource('invoices', InvoiceController::class)->names('invoices');
+    Route::get('invoices/{invoice}/pdf', [InvoiceController::class, 'generatePdf'])->name('invoices.pdf');
+   
 });
