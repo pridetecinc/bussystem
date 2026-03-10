@@ -214,7 +214,7 @@
     </div>
 
     <div class="total-hint">
-        Total Amount ({{ $currency->currency_code }}): <strong>{{ number_format($invoice->total_amount) }}</strong> 
+        Total Amount ({{ $invoice->currency_code }}): <strong>{{ number_format($invoice->total_amount) }}</strong> 
     </div>
 
     <!-- 3. Main Table -->

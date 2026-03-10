@@ -23,21 +23,18 @@
                     <p><strong>請求書番号:</strong> {{ $invoice->invoice_number }}</p>
                     <p><strong>請求日:</strong> {{ \Carbon\Carbon::parse($invoice->invoice_date)->format('Y/m/d') }}</p>
                     <p><strong>支払期日:</strong> {{ \Carbon\Carbon::parse($invoice->due_date)->format('Y/m/d') }}</p>
-                    <p><strong>ステータス:</strong>
-                        <span class="badge bg-{{ $invoice->status === 'DRAFT' ? 'secondary' : 'success' }}">
-                            {{ $invoice->status === 'DRAFT' ? '下書き' : '発行済' }}
-                        </span>
-                    </p>
-                </div>
-                <div class="col-md-6">
-                    <p><strong>請求先名:</strong> {{ $invoice->billing_title ?: '未設定' }}</p>
-                    <p><strong>通貨:</strong> {{ optional($invoice->currency)->code ?? '—' }}</p>
-                    <p><strong>税計算モード:</strong>
-                        {{ $invoice->tax_mode == 1 ? '税込価格' : '税別価格' }}
-                    </p>
+                    <p><strong>语言:</strong> {{ $invoice->language == 1 ? '日文' : '英文' }}</p>
                     @if($invoice->notes)
                         <p><strong>備考:</strong><br>{{ nl2br(e($invoice->notes)) }}</p>
                     @endif
+                </div>
+                <div class="col-md-6">
+                    <p><strong>請求先名:</strong> {{ $invoice->billing_title ?: '未設定' }}</p>
+                    <p><strong>通貨:</strong> {{ $invoice->currency_code ?? '—' }}</p>
+                    <p><strong>税計算モード:</strong>
+                        {{ $invoice->tax_mode == 1 ? '税込価格' : '税別価格' }}
+                    </p>
+                    <p><strong>汇率:</strong> {{ $invoice-> exchange_rate}}</p>
                 </div>
             </div>
             <div class="row">
@@ -87,7 +84,14 @@
                 <tfoot class="table-light fw-bold">
                     <tr>
                         <td colspan="6" class="text-end">小計（税抜）:</td>
-                        <td class="text-end">{{ number_format($invoice->subtotal_amount, 2) }}</td>
+                        <td class="text-end">
+                            @if ($invoice->tax_mode==1)
+                                {{ number_format($invoice->total_amount, 2) }}
+                            @else
+                                {{ number_format($invoice->subtotal_amount, 2) }}
+                            @endif
+                            
+                        </td>
                     </tr>
                     <tr>
                         <td colspan="6" class="text-end">消費税合計:</td>

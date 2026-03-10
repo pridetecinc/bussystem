@@ -200,7 +200,7 @@
     <div class="greeting">下記の通りご請求申し上げます。</div>
 
     <div class="total-hint">
-        ご請求金額({{$currency->currency_code}})：<strong>{{ number_format($invoice->total_amount) }}</strong> 
+        ご請求金額({{$invoice->currency_code}})：<strong>{{ number_format($invoice->total_amount) }}</strong> 
         @if($invoice->tax_mode == 1)
             (税込)
         @else
@@ -292,7 +292,7 @@
             <td class="w-amount text-right">{{ number_format($totals['non_taxable'] ?? 0) }}</td>
             <td colspan="2"></td>
             <!-- 修改：請求合計 -> 請求合計 -->
-            <td class="w-total-label text-center font-bold">請求合計({{$currency->currency_code}})</td>
+            <td class="w-total-label text-center font-bold">請求合計({{$invoice->currency_code}})</td>
             <td class="w-total-val text-right font-bold">{{ number_format($invoice->total_amount) }}</td>
         </tr>
     </table>

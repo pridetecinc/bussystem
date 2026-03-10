@@ -44,7 +44,7 @@ class InvoiceController extends Controller
         }
 
         $invoices = $query->orderBy('invoice_date', 'desc')->paginate(20);
-        $invoices->appends(array_filter($request->only(['search', 'status', 'group_id'])));
+        $invoices->appends(array_filter($request->only(['search', 'billing_title', 'group_id'])));
 
         return view('masters.invoices.index', compact('invoices', 'groupId'));
     }
@@ -56,7 +56,7 @@ class InvoiceController extends Controller
         // if (! $groupId || ! auth()->user()->canAccessGroup($groupId)) {
         //     abort(403);
         // }
-        $currencies = Currency::all(); 
+        $currencies = Currency::select('currency_code', 'id')->distinct()->orderBy('currency_code')->get(); 
         return view('masters.invoices.create', compact('groupId','currencies'));
     }
 
@@ -67,7 +67,7 @@ public function store(Request $request)
         'billing_title' => 'nullable|string|max:200',
         'tax_mode' => 'required|in:1,2', // 1=税込, 2=税別
         'language' => 'required|in:1,2', // 1=日语, 2=英语
-        'currency_id' => 'required|integer|exists:currencies,id',
+        'currency_code' => 'required|string|max:50',
         'invoice_date' => 'required|date',
         'due_date' => 'required|date|after_or_equal:invoice_date',
         'notes' => 'nullable|string|max:65535',
@@ -85,6 +85,18 @@ public function store(Request $request)
 
     // 重置索引，避免跳号
     $validated['items'] = array_values($validated['items']);
+
+    //查询$validated['invoice_date']在currencies表中rate_valid_from之后，在rate_valid_to之前的数据
+    $currency = Currency::where('currency_code', $validated['currency_code']) // 通常还需要匹配币种代码
+    ->where('rate_valid_from', '<=', $validated['invoice_date'])
+    ->where('rate_valid_to', '>=', $validated['invoice_date'])
+    ->orderBy('rate_valid_from', 'desc') // 如果有重叠，取最新生效的
+    ->first();
+    if (!$currency) {
+        return redirect()->back()
+            ->withInput()
+            ->withErrors(['error' => '指定の通貨に対する指定の日付の為替レートが見つかりません。']);
+    }
 
     DB::beginTransaction();
     try {
@@ -190,11 +202,11 @@ public function store(Request $request)
             'total_amount' => $totalAmount,
             'tax_mode' => $validated['tax_mode'],
             'language' => $validated['language'],
-            'currency_id' => $validated['currency_id'],
-            'exchange_rate' => null,
+            'currency_code' => $validated['currency_code'],
+            'exchange_rate' => $currency->rate_to_jpy,
             'pdf_template_id' => null,
             'pdf_file_path' => null,
-            'status' => 'DRAFT',
+            'is_locked' => 0,
             'notes' => $validated['notes'],
             'created_at' => now(),
             'updated_at' => now(),
@@ -281,8 +293,7 @@ public function store(Request $request)
         // }
         $items = InvoiceItem::where('invoice_id', $invoice->id)->get();
         $taxSummary = DB::table('invoice_tax_summary')->where('invoice_id', $invoice->id)->get();
-        $currency  = Currency::orderBy('currency_code')->get();
-        return view('masters.invoices.show', compact('invoice', 'groupId','items','currency'));
+        return view('masters.invoices.show', compact('invoice', 'groupId','items'));
     }
 
     public function edit(Request $request, Invoice $invoice)
@@ -292,21 +303,31 @@ public function store(Request $request)
         // if (! $groupId || $invoice->group_id != $groupId || ! auth()->user()->canAccessGroup($groupId)) {
         //     abort(403);
         // }
+        if($invoice->is_locked){
+            return redirect()->route('masters.invoices.index', ['group_id' => $groupId])
+                ->with('error', 'この請求書は編集できません。');
+        }
         $items = InvoiceItem::where('invoice_id', $invoice->id)->get();
-        $currencies = Currency::orderBy('currency_code')->get();
+        $currencies = Currency::select('currency_code', 'id')->distinct()->orderBy('currency_code')->get();
         return view('masters.invoices.edit', compact('invoice', 'groupId','items','currencies'));
     }
 
     public function update(Request $request, int $id)
     {
+        $invoice = DB::table('invoices')->where('id', $id)->first();
+        if($invoice->is_locked){
+            return redirect()->route('masters.invoices.index', ['group_id' => $invoice->group_id])
+                ->with('error', 'この請求書は編集できません。');
+        }
 
+        
         // === 1. 验证输入（与 store 一致）===
         $validated = $request->validate([
             'group_id' => 'nullable|integer',
             'billing_title' => 'nullable|string|max:200',
             'tax_mode' => 'required|in:1,2', // 1=税込, 2=税別
             'language' => 'required|in:1,2', // 1=日语, 2=英语
-            'currency_id' => 'required|integer|exists:currencies,id',
+            'currency_code' => 'required|string|max:50',
             'invoice_date' => 'required|date',
             'due_date' => 'required|date|after_or_equal:invoice_date',
             'notes' => 'nullable|string|max:65535',
@@ -324,10 +345,21 @@ public function store(Request $request)
 
         $validated['items'] = array_values($validated['items']); // 重置索引
 
+        //查询$validated['invoice_date']在currencies表中rate_valid_from之后，在rate_valid_to之前的数据
+        $currency = Currency::where('currency_code', $validated['currency_code']) // 通常还需要匹配币种代码
+        ->where('rate_valid_from', '<=', $validated['invoice_date'])
+        ->where('rate_valid_to', '>=', $validated['invoice_date'])
+        ->orderBy('rate_valid_from', 'desc') // 如果有重叠，取最新生效的
+        ->first();
+        if (!$currency) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['error' => '指定の通貨に対する指定の日付の為替レートが見つかりません。']);
+        }
+
         DB::beginTransaction();
         try {
             // === 2. 校验发票是否存在 ===
-            $invoice = DB::table('invoices')->where('id', $id)->first();
             if (!$invoice) {
                 throw new \Exception('請求書が見つかりません。');
             }
@@ -413,6 +445,8 @@ public function store(Request $request)
                 }
             }
 
+
+
             // === 6. 更新 invoices 主表 ===
             DB::table('invoices')->where('id', $id)->update([
                 'group_id' => $validated['group_id'],
@@ -425,10 +459,9 @@ public function store(Request $request)
                 'total_amount' => $totalAmount,
                 'tax_mode' => $validated['tax_mode'],
                 'language' => $validated['language'],
-                'currency_id' => $validated['currency_id'],
-                'exchange_rate' => null,
+                'currency_code' => $validated['currency_code'],
+                'exchange_rate' => $currency->rate_to_jpy,
                 'pdf_file_path' => null,
-                'status' => 'DRAFT',
                 'notes' => $validated['notes'],
                 'updated_at' => now(),
             ]);
@@ -535,7 +568,6 @@ public function store(Request $request)
         $items = $invoice->items;
         $summary_10 = InvoiceTaxSummary::where('invoice_id', $invoice->id)->where('tax_rate', 10)->first();
         $symmary_8 = InvoiceTaxSummary::where('invoice_id', $invoice->id)->where('tax_rate', 8)->first();
-        $currency = Currency::find($invoice->currency_id);
         // 1. 准备数据 (保持你原有的数据结构不变)
         $data = [
             'invoice' => (object)[
@@ -547,10 +579,10 @@ public function store(Request $request)
                 'tax_amount'=> $invoice->tax_amount,
                 'total_amount'=> $invoice->total_amount,
                 'tax_mode'=> $invoice->tax_mode,
+                'currency_code'=> $invoice->currency_code
             ],
             'summary_10' => $summary_10,
             'summary_8' => $symmary_8,
-            'currency' => $currency,
 
             'items' => $items,
             'totals' => [
@@ -581,7 +613,12 @@ public function store(Request $request)
 
     try {
         // 1. 渲染 HTML
-        $html = View::make('masters.invoices.template_en', $data)->render();
+        if($invoice->language == 1){
+            $html = View::make('masters.invoices.template_ja', $data)->render();
+        }else{
+            $html = View::make('masters.invoices.template_en', $data)->render();
+        }
+        
 
         // 2. 初始化 Browsershot
         // D:\Google\Chrome\Application
@@ -639,5 +676,18 @@ public function store(Request $request)
         }
         return response()->view('errors.500', [], 500);
     }
+    }
+
+    public function toggleLock(Invoice $invoice)
+    {
+        // 切换状态
+        $invoice->is_locked = !$invoice->is_locked;
+        $invoice->save();
+
+        return response()->json([
+            'success' => true,
+            'is_locked' => $invoice->is_locked,
+            'message' => $invoice->is_locked ? 'ロックしました' : 'ロックを解除しました'
+        ]);
     }
 }

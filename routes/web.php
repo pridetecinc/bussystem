@@ -56,5 +56,6 @@ Route::prefix('masters')->name('masters.')->group(function () {
     Route::resource('currencies', CurrencyController::class)->names('currencies');
     Route::resource('invoices', InvoiceController::class)->names('invoices');
     Route::get('invoices/{invoice}/pdf', [InvoiceController::class, 'generatePdf'])->name('invoices.pdf');
+    Route::post('invoices/{invoice}/toggle-lock', [InvoiceController::class, 'toggleLock'])->name('invoices.toggle-lock');
    
 });

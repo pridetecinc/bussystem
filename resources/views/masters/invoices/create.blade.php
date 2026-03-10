@@ -75,8 +75,8 @@
                                 <label for="tax_mode" class="form-label required mb-1">计税模式</label>
                                 <select class="form-select @error('tax_mode') is-invalid @enderror"
                                         id="tax_mode" name="tax_mode" required>
-                                    <option value="1">税入</option>
-                                    <option value="2">税别</option>
+                                    <option value="1" {{ old('tax_mode', '1') == '1' ? 'selected' : '' }}>税入</option>
+                                    <option value="2" {{ old('tax_mode', '1') == '2' ? 'selected' : '' }}>税别</option>
                                 </select>
                                 @error('tax_mode')
                                     <div class="invalid-feedback">{{ $message }}</div>
@@ -88,8 +88,8 @@
                                 <label for="language" class="form-label required mb-1">语言</label>
                                 <select class="form-select @error('language') is-invalid @enderror"
                                         id="language" name="language" required>
-                                    <option value="1">日语</option>
-                                    <option value="2">英语</option>
+                                    <option value="1" {{ old('language', '1') == '1' ? 'selected' : '' }}>日语</option>
+                                    <option value="2" {{ old('language', '1') == '2' ? 'selected' : '' }}>英语</option>
                                 </select>
                                 @error('language')
                                     <div class="invalid-feedback">{{ $message }}</div>
@@ -98,16 +98,23 @@
 
                             <!-- 通貨 -->
                             <div class="col-md-4">
-                                <label for="currency_id" class="form-label required mb-1">通貨</label>
-                                <select class="form-select @error('currency_id') is-invalid @enderror"
-                                        id="currency_id" name="currency_id" required>
+                                <label for="currency_code" class="form-label required mb-1">通貨</label>
+                                <select class="form-select @error('currency_code') is-invalid @enderror"
+                                        id="currency_code" name="currency_code" required>
                                     @foreach($currencies as $currency)
-                                        <option value="{{ $currency->id }}">
-                                            {{ $currency->currency_code }} ({{ $currency->symbol }})
+                                        {{-- 
+                                            逻辑说明：
+                                            1. old('currency_code', ...): 优先取验证失败后的输入值
+                                            2. $currentItem->currency_code ?? '': 如果是编辑页面，取数据库的值；如果是新增，则为空
+                                            3. 如果上述两者相等 且 等于当前循环的 $currency->currency_code，则选中
+                                        --}}
+                                        <option value="{{ $currency->currency_code }}" 
+                                                {{ old('currency_code', $currentItem->currency_code ?? '') == $currency->currency_code ? 'selected' : '' }}>
+                                            {{ $currency->currency_code }}
                                         </option>
                                     @endforeach
                                 </select>
-                                @error('currency_id')
+                                @error('currency_code')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>

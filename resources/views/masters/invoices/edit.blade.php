@@ -92,13 +92,13 @@
 
                             <!-- 通貨 -->
                             <div class="col-md-4">
-                                <label for="currency_id" class="form-label required mb-1">通貨</label>
-                                <select class="form-select @error('currency_id') is-invalid @enderror"
-                                        id="currency_id" name="currency_id" required>
+                                <label for="currency_code" class="form-label required mb-1">通貨</label>
+                                <select class="form-select @error('currency_code') is-invalid @enderror"
+                                        id="currency_code" name="currency_code" required>
                                     @foreach($currencies as $currency)
-                                        <option value="{{ $currency->id }}"
-                                            {{ (old('currency_id', $invoice->currency_id) == $currency->id) ? 'selected' : '' }}>
-                                            {{ $currency->currency_code }} ({{ $currency->symbol }})
+                                        <option value="{{ $currency->currency_code }}"
+                                            {{ (old('currency_code', $invoice->currency_code) ==  $currency->currency_code) ? 'selected' : '' }}>
+                                            {{ $currency->currency_code }}
                                         </option>
                                     @endforeach
                                 </select>
