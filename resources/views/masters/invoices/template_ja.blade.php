@@ -263,7 +263,7 @@
     <table class="summary-table no-break">
         <tr>
             <!-- 修改：10% 対象 -> 10%項目小計 -->
-            <td class="w-rate text-left">10%項目小計</td>
+            <td class="w-rate text-left">10%对象</td>
             <td class="w-amount text-right">{{ number_format($summary_10->total_with_tax ?? 0) }}</td>
             <!-- 修改：消費税 -> 内税 (匹配PDF) -->
             <td class="w-tax-label text-right">内税</td>
@@ -279,7 +279,7 @@
         </tr>
         <tr>
             <!-- 修改：8% 対象 -> 8%項目小計 -->
-            <td class="w-rate text-left">8%項目小計</td>
+            <td class="w-rate text-left">8%对象</td>
             <td class="w-amount text-right">{{ number_format($summary_8->total_with_tax ?? 0) }}</td>
             <!-- 修改：消費税 -> 内税 -->
             <td class="w-tax-label text-right">内税</td>

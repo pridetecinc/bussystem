@@ -91,7 +91,7 @@
     <!-- 表格区域 -->
     <div class="card shadow-sm">
         <div class="table-responsive">
-            <table class="table table-bordered mb-0 table-striped align-middle">
+            <table class="table table-bordered mb-0 table-striped align-middle table-compact">
                 <thead class="table-secondary">
                     <tr>
                         <th class="text-center" style="width: 80px;">ID</th>
@@ -105,7 +105,6 @@
                         
                         <!-- 【修改点 1】表头改为“ロック” (锁定) -->
                         <th class="text-center" style="width: 100px;" title="データロック状態">ロック</th>
-                        
                         <th class="text-center" style="width: 160px;">操作</th>
                     </tr>
                 </thead>
@@ -364,4 +363,19 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 </script>
+<style>
+/* 紧凑表格：减小内容与边框的距离 */
+.table-compact td,
+.table-compact th {
+    padding-top: 0.05rem;    /* 上边距 */
+    padding-bottom: 0.05rem; /* 下边距 */
+    /* 这里的 0.1rem 可以根据需要调整，数值越小距离越近 */
+}
+
+/* 优化操作按钮的显示，防止按钮被压扁 */
+.table-compact .btn {
+    padding: 0 0.25rem;
+    font-size: 0.875em;
+}
+</style>
 @endsection

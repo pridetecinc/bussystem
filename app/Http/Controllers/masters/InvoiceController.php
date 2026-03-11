@@ -43,7 +43,7 @@ class InvoiceController extends Controller
             $query->where('billing_title', 'like', "%{$request->billing_title}%");
         }
 
-        $invoices = $query->orderBy('invoice_date', 'desc')->paginate(20);
+        $invoices = $query->orderBy('invoice_date', 'desc')->paginate(10);
         $invoices->appends(array_filter($request->only(['search', 'billing_title', 'group_id'])));
 
         return view('masters.invoices.index', compact('invoices', 'groupId'));
@@ -623,18 +623,21 @@ public function store(Request $request)
         // 2. 初始化 Browsershot
         // D:\Google\Chrome\Application
         $browsershot = Browsershot::html($html)
-            ->setChromePath('D:\Google\Chrome\Application\chrome.exe')
             ->paperSize(210, 297, 'mm')
-            ->setOption('margin.top', 15)
-            ->setOption('margin.right', 15)
-            ->setOption('margin.bottom', 15)
-            ->setOption('margin.left', 15)
+            ->margins(15, 15, 15, 15) // 使用推荐的 margins 方法
             ->setOption('printBackground', true)
             ->waitUntilNetworkIdle()
             ->timeout(30000);
 
-        // [Linux/生产环境] 取消下面这行的注释
-        // $browsershot->addChromiumArguments(['--no-sandbox', '--disable-setuid-sandbox']);
+        // 2. 根据操作系统设置 Chrome 路径（仅在 Windows 下需要指定）
+        if (PHP_OS_FAMILY === 'Windows') {
+            // Windows 环境：指定 chrome.exe 路径
+            $browsershot->setChromePath('D:\Google\Chrome\Application\chrome.exe');
+        } else {
+            // [Linux/生产环境] 取消下面这行的注释
+            $browsershot->addChromiumArguments(['--no-sandbox', '--disable-setuid-sandbox']);
+        }
+
 
         // 3. 【关键修改】获取 PDF 内容
         // 方法 A (推荐): 直接获取二进制字符串 (适用于大多数新版本)
