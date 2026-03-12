@@ -302,7 +302,7 @@
         <!-- Row 3: Non-Taxable & Grand Totals -->
         <tr>
             <td class="w-rate text-left"><strong>Non-Taxable / Exempt</strong></td>
-            <td class="w-amount text-right">{{ number_format($totals['non_taxable'] ?? 0) }}</td>
+            <td class="w-amount text-right">{{ number_format($invoice->non_taxable) }}</td>
             <td colspan="2"></td>
             <td class="w-total-label text-center font-bold">Total Tax</td>
             <td class="w-total-val text-right font-bold">{{ number_format($invoice->tax_amount) }}</td>

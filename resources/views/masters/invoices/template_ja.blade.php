@@ -289,10 +289,10 @@
         </tr>
         <tr>
             <td class="w-rate text-left">非課税</td>
-            <td class="w-amount text-right">{{ number_format($totals['non_taxable'] ?? 0) }}</td>
+            <td class="w-amount text-right">{{ number_format($invoice->non_taxable) }}</td>
             <td colspan="2"></td>
             <!-- 修改：請求合計 -> 請求合計 -->
-            <td class="w-total-label text-center font-bold">請求合計({{$invoice->currency_code}})</td>
+            <td class="w-total-label text-center font-bold">請求合計</td>
             <td class="w-total-val text-right font-bold">{{ number_format($invoice->total_amount) }}</td>
         </tr>
     </table>

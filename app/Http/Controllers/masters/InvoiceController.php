@@ -43,7 +43,7 @@ class InvoiceController extends Controller
             $query->where('billing_title', 'like', "%{$request->billing_title}%");
         }
 
-        $invoices = $query->orderBy('invoice_date', 'desc')->paginate(10);
+        $invoices = $query->orderBy('created_at', 'desc')->paginate(10);
         $invoices->appends(array_filter($request->only(['search', 'billing_title', 'group_id'])));
 
         return view('masters.invoices.index', compact('invoices', 'groupId'));
@@ -568,6 +568,7 @@ public function store(Request $request)
         $items = $invoice->items;
         $summary_10 = InvoiceTaxSummary::where('invoice_id', $invoice->id)->where('tax_rate', 10)->first();
         $symmary_8 = InvoiceTaxSummary::where('invoice_id', $invoice->id)->where('tax_rate', 8)->first();
+        $non_taxable = InvoiceItem::where('invoice_id', $invoice->id)->where('tax_rate', 0)->sum('amount');
         // 1. 准备数据 (保持你原有的数据结构不变)
         $data = [
             'invoice' => (object)[
@@ -579,18 +580,13 @@ public function store(Request $request)
                 'tax_amount'=> $invoice->tax_amount,
                 'total_amount'=> $invoice->total_amount,
                 'tax_mode'=> $invoice->tax_mode,
-                'currency_code'=> $invoice->currency_code
+                'currency_code'=> $invoice->currency_code,
+                'non_taxable'=> $non_taxable,
             ],
             'summary_10' => $summary_10,
             'summary_8' => $symmary_8,
-
             'items' => $items,
-            'totals' => [
-                'non_taxable' => 100000,
-                'subtotal' => 4950000,
-                'total_tax' => 470000,
-                'grand_total' => 5520000,
-            ],
+
             'bank' => (object)[
                 'bank_name' => '●●●●銀行',
                 'branch_name' => '●●●●●●支店',
