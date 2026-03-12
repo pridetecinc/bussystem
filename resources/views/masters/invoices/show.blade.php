@@ -60,7 +60,6 @@
                         <th width="5%">#</th>
                         <th>内容</th>
                         <th width="10%">数量</th>
-                        <th width="10%">単位</th>
                         <th width="12%">単価</th>
                         <th width="10%">税率 (%)</th>
                         <th width="15%">金額（税抜）</th>
@@ -72,7 +71,6 @@
                             <td>{{ $loop->iteration }}</td>
                             <td>{{ $item->description }}</td>
                             <td class="text-end">{{ number_format($item->quantity, 2) }}</td>
-                            <td>{{ $item->unit ?? '—' }}</td>
                             <td class="text-end">
                             {{$item->unit_price }}
                             </td>
