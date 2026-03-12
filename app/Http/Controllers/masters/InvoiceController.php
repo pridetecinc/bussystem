@@ -692,4 +692,42 @@ public function store(Request $request)
             'message' => $invoice->is_locked ? 'ロックしました' : 'ロックを解除しました'
         ]);
     }
+
+    public function bulkToggleLock(Request $request)
+    {
+        // 1. 验证输入
+        $validated = $request->validate([
+            'invoice_ids' => 'required|array|min:1',
+            'invoice_ids.*' => 'required|integer|exists:invoices,id',
+            'locked' => 'required|boolean', // 1 = 锁定，0 = 解锁
+        ]);
+
+        $ids = $validated['invoice_ids'];
+        $lockState = (bool) $validated['locked'];
+        $groupId = $request->query('group_id'); // 虽然前端没传，但为了安全最好校验
+
+        try {
+            // 2. 执行批量更新
+            // 注意：这里直接操作 DB 表以确保效率，也可以使用 Model::whereIn(...)->update(...)
+            $affectedCount = DB::table('invoices')
+                ->whereIn('id', $ids)
+                ->update([
+                    'is_locked' => $lockState ? 1 : 0,
+                    'updated_at' => now(),
+                ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => $lockState ? '選択した請求書をロックしました。' : '選択した請求書のロックを解除しました。',
+                'count' => $affectedCount,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Bulk Toggle Lock Error: ' . $e->getMessage(), ['ids' => $ids]);
+            return response()->json([
+                'success' => false,
+                'message' => '処理中にエラーが発生しました。'
+            ], 500);
+        }
+    }
 }

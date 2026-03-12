@@ -57,5 +57,7 @@ Route::prefix('masters')->name('masters.')->group(function () {
     Route::resource('invoices', InvoiceController::class)->names('invoices');
     Route::get('invoices/{invoice}/pdf', [InvoiceController::class, 'generatePdf'])->name('invoices.pdf');
     Route::post('invoices/{invoice}/toggle-lock', [InvoiceController::class, 'toggleLock'])->name('invoices.toggle-lock');
+    Route::post('invoices/bulk-toggle-lock', [InvoiceController::class, 'bulkToggleLock'])->name('invoices.bulk-toggle-lock');
+    Route::post('/masters/invoices/bulk-pdf', [InvoiceController::class, 'bulkPdf'])->name('invoices.bulk-pdf');
    
 });

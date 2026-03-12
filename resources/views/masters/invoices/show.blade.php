@@ -74,14 +74,14 @@
                             <td class="text-end">
                             {{$item->unit_price }}
                             </td>
-                            <td class="text-end">{{ number_format($item->tax_rate, 2) }}%</td>
+                            <td class="text-end">{{ number_format($item->tax_rate) }}%</td>
                             <td class="text-end">{{ number_format($item->amount, 2) }}</td>
                         </tr>
                     @endforeach
                 </tbody>
                 <tfoot class="table-light fw-bold">
                     <tr>
-                        <td colspan="6" class="text-end">小計（税抜）:</td>
+                        <td colspan="5" class="text-end">小計（税抜）:</td>
                         <td class="text-end">
                             @if ($invoice->tax_mode==1)
                                 {{ number_format($invoice->total_amount, 2) }}
@@ -92,11 +92,11 @@
                         </td>
                     </tr>
                     <tr>
-                        <td colspan="6" class="text-end">消費税合計:</td>
+                        <td colspan="5" class="text-end">消費税合計:</td>
                         <td class="text-end">{{ number_format($invoice->tax_amount, 2) }}</td>
                     </tr>
                     <tr>
-                        <td colspan="6" class="text-end">合計（税込）:</td>
+                        <td colspan="5" class="text-end">合計（税込）:</td>
                         <td class="text-end">{{ number_format($invoice->total_amount, 2) }}</td>
                     </tr>
                 </tfoot>
