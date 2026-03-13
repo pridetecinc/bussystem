@@ -45,12 +45,6 @@
             padding: 5px 2px;
         }
 
-        /* 【重要修改】移除所有 .c1-.c9 的 width 定义！宽度现在由 <colgroup> 控制 */
-        /* 这些类只用于控制对齐和背景色 */
-        .c1, .c2, .c3, .c4, .c5, .c6, .c7, .c8, .c9 { 
-            /* width 属性已删除，防止干扰 colgroup */
-        }
-
         .text-left { text-align: left !important; }
         .text-right { text-align: right !important; }
         .font-bold { font-weight: bold; }
