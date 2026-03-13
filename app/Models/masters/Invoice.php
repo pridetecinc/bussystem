@@ -27,6 +27,7 @@ class Invoice extends Model
         'pdf_file_path',
         'status',
         'notes',
+        'pdf_generated_at'
         // created_at / updated_at 由 DB 自动处理，不列入 fillable
     ];
 

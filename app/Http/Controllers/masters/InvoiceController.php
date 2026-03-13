@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\View;
 use Illuminate\Validation\Rules\In;
 use Spatie\Browsershot\Browsershot;
+use App\Jobs\GenerateRequestPdfJob;
+use Illuminate\Support\Facades\Storage;
 
 class InvoiceController extends Controller
 {
@@ -250,7 +252,7 @@ public function store(Request $request)
         }
 
         DB::commit();
-
+        GenerateRequestPdfJob::dispatch($invoiceId);
         return redirect()->route('masters.invoices.index', ['group_id' => $validated['group_id']])
             ->with('success', '請求書を登録しました。');
 
@@ -512,7 +514,7 @@ public function store(Request $request)
             }
 
             DB::commit();
-
+            GenerateRequestPdfJob::dispatch($id);
             return redirect()->route('masters.invoices.index', ['group_id' => $validated['group_id']])
                 ->with('success', '請求書を更新しました。');
 
@@ -558,11 +560,27 @@ public function store(Request $request)
         }
     }
 
+    public function generatePdf(Request $request, Invoice $invoice)
+    {
+        $path = $invoice->pdf_file_path;
+
+        // 1. 检查文件是否存在 (防御性编程)
+        if (!$path || !Storage::disk('public')->exists($path)) {
+            abort(404, 'PDF 文件未找到或路径为空');
+        }
+
+        // 2. 直接下载
+        // 第二个参数可以自定义下载时的文件名，如果不传则使用原文件名
+        $fileName = basename($path); 
+        
+        return Storage::disk('public')->download($path, $fileName);
+    }
+
     /*
         composer require spatie/browsershot
         npm install puppeteer
     */
-    public function generatePdf(Request $request, Invoice $invoice)
+    public function generatePdf_tmp(Request $request, Invoice $invoice)
     {
 
         $items = $invoice->items;
@@ -610,74 +628,74 @@ public function store(Request $request)
 
         ];
 
-    try {
-        // 1. 渲染 HTML
-        if($invoice->language == 1){
-            $html = View::make('masters.invoices.template_ja', $data)->render();
-        }else{
-            $html = View::make('masters.invoices.template_en', $data)->render();
-        }
-        
-
-        // 2. 初始化 Browsershot
-        // D:\Google\Chrome\Application
-        $browsershot = Browsershot::html($html)
-            ->paperSize(210, 297, 'mm')
-            ->margins(15, 15, 15, 15) // 使用推荐的 margins 方法
-            ->setOption('printBackground', true)
-            ->waitUntilNetworkIdle()
-            ->timeout(30000);
-
-        // 2. 根据操作系统设置 Chrome 路径（仅在 Windows 下需要指定）
-        if (PHP_OS_FAMILY === 'Windows') {
-            // Windows 环境：指定 chrome.exe 路径
-            $browsershot->setChromePath('D:\Google\Chrome\Application\chrome.exe');
-        } else {
-            // [Linux/生产环境] 取消下面这行的注释
-            $browsershot->addChromiumArguments(['--no-sandbox', '--disable-setuid-sandbox']);
-        }
-
-
-        // 3. 【关键修改】获取 PDF 内容
-        // 方法 A (推荐): 直接获取二进制字符串 (适用于大多数新版本)
-        $pdfContent = $browsershot->getPdf();
-
-        // 防御性检查：如果 getPdf() 返回的不是字符串（比如返回了对象或路径）
-        if (!is_string($pdfContent)) {
-            // 如果返回的是对象，尝试保存为临时文件再读取
-            $tempFile = tempnam(sys_get_temp_dir(), 'invoice_') . '.pdf';
-            $browsershot->savePdf($tempFile);
-            $pdfContent = file_get_contents($tempFile);
-            unlink($tempFile); // 立即删除临时文件
-            
-            // 如果还是不对，抛出异常以便调试
-            if (!is_string($pdfContent)) {
-                throw new \Exception('Failed to get PDF content as string. Got: ' . gettype($pdfContent));
+        try {
+            // 1. 渲染 HTML
+            if($invoice->language == 1){
+                $html = View::make('masters.invoices.template_ja', $data)->render();
+            }else{
+                $html = View::make('masters.invoices.template_en', $data)->render();
             }
+            
+
+            // 2. 初始化 Browsershot
+            // D:\Google\Chrome\Application
+            $browsershot = Browsershot::html($html)
+                ->paperSize(210, 297, 'mm')
+                ->margins(15, 15, 15, 15) // 使用推荐的 margins 方法
+                ->setOption('printBackground', true)
+                ->waitUntilNetworkIdle()
+                ->timeout(30000);
+
+            // 2. 根据操作系统设置 Chrome 路径（仅在 Windows 下需要指定）
+            if (PHP_OS_FAMILY === 'Windows') {
+                // Windows 环境：指定 chrome.exe 路径
+                $browsershot->setChromePath('D:\Google\Chrome\Application\chrome.exe');
+            } else {
+                // [Linux/生产环境] 取消下面这行的注释
+                $browsershot->addChromiumArguments(['--no-sandbox', '--disable-setuid-sandbox']);
+            }
+
+
+            // 3. 【关键修改】获取 PDF 内容
+            // 方法 A (推荐): 直接获取二进制字符串 (适用于大多数新版本)
+            $pdfContent = $browsershot->getPdf();
+
+            // 防御性检查：如果 getPdf() 返回的不是字符串（比如返回了对象或路径）
+            if (!is_string($pdfContent)) {
+                // 如果返回的是对象，尝试保存为临时文件再读取
+                $tempFile = tempnam(sys_get_temp_dir(), 'invoice_') . '.pdf';
+                $browsershot->savePdf($tempFile);
+                $pdfContent = file_get_contents($tempFile);
+                unlink($tempFile); // 立即删除临时文件
+                
+                // 如果还是不对，抛出异常以便调试
+                if (!is_string($pdfContent)) {
+                    throw new \Exception('Failed to get PDF content as string. Got: ' . gettype($pdfContent));
+                }
+            }
+
+            // 4. 生成文件名
+            $filename = 'invoice_' . $data['invoice']->invoice_number . '.pdf';
+
+            // 5. 返回响应 (现在 strlen 接收的肯定是字符串了)
+            return response($pdfContent, 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                'Content-Length' => strlen($pdfContent), 
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('PDF Generation Failed: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            
+            if (app()->environment('local')) {
+                return response()->json([
+                    'message' => 'PDF 生成失败',
+                    'error' => $e->getMessage(),
+                    'type' => gettype($e), // 显示错误类型
+                ], 500);
+            }
+            return response()->view('errors.500', [], 500);
         }
-
-        // 4. 生成文件名
-        $filename = 'invoice_' . $data['invoice']->invoice_number . '.pdf';
-
-        // 5. 返回响应 (现在 strlen 接收的肯定是字符串了)
-        return response($pdfContent, 200, [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
-            'Content-Length' => strlen($pdfContent), 
-        ]);
-
-    } catch (\Exception $e) {
-        Log::error('PDF Generation Failed: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
-        
-        if (app()->environment('local')) {
-            return response()->json([
-                'message' => 'PDF 生成失败',
-                'error' => $e->getMessage(),
-                'type' => gettype($e), // 显示错误类型
-            ], 500);
-        }
-        return response()->view('errors.500', [], 500);
-    }
     }
 
     public function toggleLock(Invoice $invoice)
