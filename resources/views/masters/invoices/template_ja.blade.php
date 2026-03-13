@@ -2,66 +2,29 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>請求書 (8列网格对齐版)</title>
+    <title>請求書 (Colgroup 强制列宽版)</title>
     <style>
         @page { size: A4; margin: 15mm 15mm; }
         body { font-family: "MS Mincho", "Yu Mincho", "Hiragino Mincho Pro", serif; font-size: 10pt; margin: 0; line-height: 1.3; color: #000; }
         .no-break { page-break-inside: avoid; }
         
-        /* 头部与公司 */
-        .header-section { display: flex; justify-content: space-between; margin-bottom: 10px; align-items: flex-start; }
+        /* 头部与公司样式 (保持不变) */
+        .header-section { display: flex; justify-content: space-between; margin-bottom: 0px; align-items: flex-start; }
         .main-title { font-size: 24pt; font-weight: bold; color: #3b5998; margin: 0; letter-spacing: 0; }
         .meta-info { text-align: right; font-size: 9pt; line-height: 1.4; }
         .top-section { display: flex; justify-content: space-between; margin-bottom: 10px; }
-        .client-name { 
-            width: 45%; 
-            font-size: 11pt; 
-            font-weight: bold; 
-            color: #333; 
-            line-height: 1.4; 
-            
-            /* 【新增】关键修改开始 */
-            min-height: 80px;       /* 设定最小高度，防止内容太少时太矮 (原可能没有或很小) */
-            padding: 10px 0;        /* 上下增加 10px 留白，防止文字贴顶贴底 */
-            box-sizing: border-box; /* 确保 padding 不会撑大总宽度 */
-            
-            /* 如果你需要显示红框调试，可以取消下面这行的注释 */
-            /* border: 1px solid red; */ 
-            /* 【新增】关键修改结束 */
-        }
-        .company-info { width: 50%; text-align: right; font-size: 8.5pt; line-height: 1.4; }
+        .client-name { width: 45%; font-size: 11pt; font-weight: bold; color: #333; line-height: 1.4; min-height: 80px; padding: 10px 0; box-sizing: border-box; }
+        .company-info { width: 50%; text-align: right; font-size: 8.5pt; line-height: 1.4; margin-top: 15px; }
         .company-name { font-size: 10.5pt; font-weight: bold; margin-bottom: 2px; }
         .greeting { margin: 8px 0; font-size: 10pt; }
-        .total-hint {
-            text-align: right;
-            margin-top: 15px;
-            
-            /* 1. 字体变大 */
-            font-size: 14pt; 
-            
-            /* 2. 【关键】行高设为 1，消除文字上下的默认空白，让线紧贴字底 */
-            line-height: 1; 
-            
-            /* 3. 下划线设置 */
-            border-bottom: 2px solid #333;
-            
-            /* 4. 【关键】padding-bottom 必须为 0，否则线会下沉 */
-            padding-bottom: 0; 
-            
-            /* 5. 【关键】用 margin-bottom 控制线与下方表格的距离，避免重合 */
-            /* 如果还重合，把这个值改大，比如 15px 或 20px */
-            margin-bottom: 10px; 
-            
-            display: inline-block; /* 让线只包裹文字宽度 */
-            vertical-align: bottom; /* 确保底部对齐基准一致 */
-        }
+        .total-hint { text-align: right; margin-top: 15px; font-size: 14pt; line-height: 1; border-bottom: 2px solid #333; padding-bottom: 0; margin-bottom: 10px; display: inline-block; vertical-align: bottom; }
         .total-hint strong { font-size: 15pt; }
 
-        /* ================= 核心表格样式 (8列系统) ================= */
+        /* ================= 核心表格样式 ================= */
         .main-table { 
             width: 100%; 
             border-collapse: collapse; 
-            table-layout: fixed; /* 关键：固定布局 */
+            table-layout: fixed; 
             font-size: 9pt; 
             margin-bottom: 0; 
         }
@@ -82,35 +45,19 @@
             padding: 5px 2px;
         }
 
-        /* 【关键】定义8个基础列的宽度 (总和100%) */
-        /* 1. No (5%) */
-        .c1 { width: 5%; }
-        /* 2,3,4. 摘要区域 (共40%, 每格约13.3%) */
-        .c2 { width: 13.33%; }
-        .c3 { width: 13.33%; }
-        .c4 { width: 13.34%; }
-        /* 5,6. 数量+单价区域 (共17%, 每格8.5%) */
-        .c5 { width: 8.5%; }
-        .c6 { width: 8.5%; }
-        /* 7,8. 金额+税率区域 (共25%, 每格12.5%) */
-        .c7 { width: 12.5%; }
-        .c8 { width: 12.5%; }
+        /* 【重要修改】移除所有 .c1-.c9 的 width 定义！宽度现在由 <colgroup> 控制 */
+        /* 这些类只用于控制对齐和背景色 */
+        .c1, .c2, .c3, .c4, .c5, .c6, .c7, .c8, .c9 { 
+            /* width 属性已删除，防止干扰 colgroup */
+        }
 
         .text-left { text-align: left !important; }
         .text-right { text-align: right !important; }
         .font-bold { font-weight: bold; }
         
-        /* 统计行背景 */
-        .summary-row td {
-            background-color: #f9f9f9;
-            font-weight: bold;
-        }
-        .total-final-row td {
-            background-color: #eef2f7;
-            font-size: 10pt;
-        }
+        .summary-row td { background-color: #f9f9f9; font-weight: bold; }
+        .total-final-row td { background-color: #eef2f7; font-size: 10pt; }
 
-        /* 底部信息 */
         .footer-section { margin-top: 10px; font-size: 9pt; line-height: 1.4; }
         .payment-deadline { margin-bottom: 8px; font-size: 10pt; font-weight: bold; }
         .bank-info { width: 100%; line-height: 1.4; }
@@ -132,10 +79,7 @@
 
     <!-- 2. 客户与公司 -->
     <div class="top-section no-break">
-        <div class="client-name">
-            <div style="font-size: 9pt; font-weight: normal; margin-bottom: 2px;">Bill To:</div>
-            {{ $customer->name }} 様
-        </div>
+        <div class="client-name">{{ $customer->name }}</div>
         <div class="company-info">
             <div class="company-name">{{ $company->name }}</div>
             <div>〒{{ $company->postal_code }}</div>
@@ -151,61 +95,54 @@
         @if($invoice->tax_mode == 1)(税込)@else(税別)@endif
     </div>
 
-    <!-- ================= 合并后的主表格 (8列系统) ================= -->
+    <!-- ================= 主表格 (使用 colgroup 强制列宽) ================= -->
     <table class="main-table">
+        <!-- 【关键修复】在此处定义列宽，优先级最高，无视任何 CSS 冲突 -->
+        <!-- 总和必须严格等于 100%: 5+11+17+15+17+5+12+10+8 = 100 -->
+        <colgroup>
+            <col style="width: 5%;">   <!-- c1: No -->
+            <col style="width: 11%;">  <!-- c2: 摘要 part 1 -->
+            <col style="width: 17%;">  <!-- c3: 摘要 part 2 -->
+            <col style="width: 15%;">  <!-- c4: 摘要 part 3 -->
+            <col style="width: 17%;">  <!-- c5: 摘要 part 4 -->
+            <col style="width: 5%;">   <!-- c6: 数量 -->
+            <col style="width: 12%;">  <!-- c7: 单价 -->
+            <col style="width: 10%;">  <!-- c8: 金额 -->
+            <col style="width: 8%;">   <!-- c9: 税率 -->
+        </colgroup>
+
         <thead>
             <tr>
-                <!-- 1. No. (占基础列 1) -->
-                <th class="c1" style="width: 10%;">No.</th>
-                
-                <!-- 2. 摘要 (占基础列 2+3+4 -> colspan=3) -->
-                <th class="c2 text-left" colspan="3" style="padding-left: 5px;width: 50%;">摘要</th>
-                
-                <!-- 3. 数量 (占基础列 5) -->
-                <th class="c5">数量</th>
-                
-                <!-- 4. 单价 (占基础列 6) -->
-                <th class="c6">単価</th>
-                
-                <!-- 5. 金额 (占基础列 7) -->
-                <th class="c7">金額</th>
-                
-                <!-- 6. 税率 (占基础列 8) -->
-                <th class="c8">税率</th>
+                <th class="c1">No.</th>
+                <!-- 摘要：跨 4 列，不再需要 style="width"，colgroup 会自动处理 -->
+                <th class="text-left" colspan="4" style="padding-left: 5px;">摘要</th>
+                <th class="c6">数量</th>
+                <th class="c7">単価</th>
+                <th class="c8">金額</th>
+                <th class="c9">税率</th>
             </tr>
         </thead>
         <tbody>
             {{-- A. 商品明细 --}}
             @foreach($items as $index => $item)
             <tr>
-                <!-- 1. No. -->
                 <td class="c1">{{ $index + 1 }}</td>
-                
-                <!-- 2. 摘要 (跨3列) -->
-                <td class="c2 text-left" colspan="3" style="padding-left: 5px;">
+                <td class="text-left" colspan="4" style="padding-left: 5px;">
                     {{ $item->description }}
                     @if(isset($item->period) && $item->period)
                         <br><span style="font-size:8pt;color:#666;">{{ $item->period }}</span>
                     @endif
                 </td>
-                
-                <!-- 3. 数量 -->
-                <td class="c5">{{ $item->quantity }}</td>
-                
-                <!-- 4. 单价 -->
-                <td class="c6 text-right">{{ number_format($item->unit_price) }}</td>
-                
-                <!-- 5. 金额 -->
-                <td class="c7 text-right">{{ number_format($item->amount) }}</td>
-                
-                <!-- 6. 税率 -->
-                <td class="c8">
+                <td class="c6">{{ $item->quantity }}</td>
+                <td class="c7 text-right">{{ number_format($item->unit_price) }}</td>
+                <td class="c8 text-right">{{ number_format($item->amount) }}</td>
+                <td class="c9">
                     @if ($item->tax_rate == 0)&nbsp;@else{{ number_format($item->tax_rate) }}%@endif
                 </td>
             </tr>
             @endforeach
             
-            {{-- B. 补全空行 (保持总行数 15) --}}
+            {{-- B. 补全空行 --}}
             @php 
                 $detailCount = count($items);
                 $summaryRows = 3; 
@@ -216,81 +153,44 @@
             @for($i = 0; $i < $remaining; $i++)
             <tr>
                 <td class="c1">&nbsp;</td>
-                <td class="c2" colspan="3"></td>
-                <td class="c5"></td>
+                <td colspan="4"></td>
                 <td class="c6"></td>
                 <td class="c7"></td>
                 <td class="c8"></td>
+                <td class="c9"></td>
             </tr>
             @endfor
 
-            {{-- C. 底部统计行 (严格按照你的列对应关系) --}}
-            {{-- 对应关系: --}}
-            {{-- 下表1 (1列) <- 上表1 --}}
-            {{-- 下表2,3,4 (3列) <- 上表2 (摘要) --}}
-            {{-- 下表5 (2列) <- 上表3+4 (数量+单价) --}}
-            {{-- 下表6 (2列) <- 上表5+6 (金额+税率) --}}
-
+            {{-- C. 底部统计行 --}}
             {{-- 行 1: 10% 统计 --}}
             <tr class="summary-row">
-                <!-- 1. 标签 (占1列: c1) -->
-                <td class="c1 text-left" style="padding-left: 5px;">10％対象</td>
-                
-                <!-- 2. 金额数值 (占1列: c2) -->
-                <td class="c2 text-right">{{ number_format($summary_10->total_with_tax ?? 0) }}</td>
-                
-                <!-- 3. 内税文字 (占1列: c3) -->
-                <td class="c3 text-right" style="font-weight: normal; font-size: 8.5pt;">消費税</td>
-                
-                <!-- 4. 税额数值 (占1列: c4) -->
-                <td class="c4 text-right">{{ number_format($summary_10->tax_amount ?? 0) }}</td>
-                
-                <!-- 5. 小计标签 (占2列: c5+c6) -->
-                <td class="c5 text-center" colspan="2">小計</td>
-                
-                <!-- 6. 总计数值 (占2列: c7+c8) -->
-                <td class="c7 text-right font-bold" colspan="2">
+                <td class="c1 text-left" colspan="2" style="padding-left: 5px; font-weight: normal;">10％対象</td>
+                <td class="c3 text-right">{{ number_format($summary_10->total_with_tax ?? 0) }}</td>
+                <td class="c4 text-right" style="font-weight: normal; font-size: 8.5pt;">消費税</td>
+                <td class="c5 text-right">{{ number_format($summary_10->tax_amount ?? 0) }}</td>
+                <td class="c6 text-right" colspan="2" style="text-align: right;">小計</td>
+                <td class="c8 text-right font-bold" colspan="2">
                     @if($invoice->tax_mode == 1){{ number_format($invoice->total_amount) }}@else{{ number_format($invoice->subtotal_amount) }}@endif
                 </td>
             </tr>
 
             {{-- 行 2: 8% 统计 --}}
             <tr class="summary-row">
-                <!-- 1. 标签 -->
-                <td class="c1 text-left" style="padding-left: 5px;">8％対象</td>
-                
-                <!-- 2. 金额数值 -->
-                <td class="c2 text-right">{{ number_format($summary_8->total_with_tax ?? 0) }}</td>
-                
-                <!-- 3. 内税文字 -->
-                <td class="c3 text-right" style="font-weight: normal; font-size: 8.5pt;">消費税</td>
-                
-                <!-- 4. 税额数值 -->
-                <td class="c4 text-right">{{ number_format($summary_8->tax_amount ?? 0) }}</td>
-                
-                <!-- 5. 消费税标签 (占2列) -->
-                <td class="c5 text-center" colspan="2">消費税額</td>
-                
-                <!-- 6. 总税额 (占2列) -->
-                <td class="c7 text-right font-bold" colspan="2">{{ number_format($invoice->tax_amount) }}</td>
+                <td class="c1 text-left" colspan="2" style="padding-left: 5px; font-weight: normal;">8％対象</td>
+                <td class="c3 text-right">{{ number_format($summary_8->total_with_tax ?? 0) }}</td>
+                <td class="c4 text-right" style="font-weight: normal; font-size: 8.5pt;">消費税</td>
+                <td class="c5 text-right">{{ number_format($summary_8->tax_amount ?? 0) }}</td>
+                <td class="c6 text-right" colspan="2" style="text-align: right;">消費税額</td>
+                <td class="c8 text-right font-bold" colspan="2">{{ number_format($invoice->tax_amount) }}</td>
             </tr>
 
             {{-- 行 3: 合计 --}}
             <tr class="summary-row total-final-row">
-                <!-- 1. 标签 -->
-                <td class="c1 text-left" style="padding-left: 5px;">非課税/免税</td>
-                
-                <!-- 2. 非课税金额 -->
-                <td class="c2 text-right">{{ number_format($invoice->non_taxable) }}</td>
-                
-                <!-- 3,4. 空白 (占2列) -->
-                <td class="c3" colspan="2"></td>
-                
-                <!-- 5. 请求合计标签 (占2列) -->
-                <td class="c5 text-center" colspan="2">請求合計</td>
-                
-                <!-- 6. 总金额 (占2列) -->
-                <td class="c7 text-right font-bold" colspan="2">{{ number_format($invoice->total_amount) }}</td>
+                <td class="c1 text-left" colspan="2" style="padding-left: 5px; font-weight: normal;">非課税/免税</td>
+                <td class="c3 text-right">{{ number_format($invoice->non_taxable) }}</td>
+                <td class="c4" colspan="2"></td>
+                <td class="c6 text-right" colspan="2" style="text-align: right;">請求合計</td>
+                <td class="c8 text-right font-bold" colspan="2">{{ number_format($invoice->total_amount) }}</td>
             </tr>
 
         </tbody>
