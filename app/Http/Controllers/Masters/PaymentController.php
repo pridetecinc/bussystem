@@ -240,8 +240,9 @@ public function store(Request $request)
     /**
      * 查看入金详情 (可选)
      */
-    public function show(Request $request, PaymentHeader $payment)
+    public function show(Request $request, $id)
     {
+        $payment = PaymentHeader::findOrFail($id);
         // 2. 加载关联数据 (Customer, Details, Invoice)
         // 使用 with  eager loading 优化查询
         $payment->load([
@@ -264,8 +265,9 @@ public function store(Request $request)
     }
 
 
-    public function edit(Request $request, PaymentHeader $payment)
+    public function edit(Request $request, $id)
     {
+        $payment = PaymentHeader::findOrFail($id);
         // 2. 加载关联数据 (Customer, Details, Invoice)
         // 使用 with  eager loading 优化查询
         $payment->load([
@@ -291,8 +293,9 @@ public function store(Request $request)
     /**
      * 更新逻辑 (仅更新备注)
      */
-    public function update(Request $request, PaymentHeader $payment)
+    public function update(Request $request, $id)
     {
+        $payment = PaymentHeader::findOrFail($id);
         // 验证
         $validated = $request->validate([
             'payment_date' => 'required|date',
@@ -315,8 +318,9 @@ public function store(Request $request)
      * 撤销/删除入金 (软删除)
      * 需要同时恢复 Invoice 的状态
      */
-    public function destroy(Request $request, PaymentHeader $payment)
+    public function destroy(Request $request, $id)
     {
+        $payment = PaymentHeader::findOrFail($id);
         $groupId = $request->query('group_id');
 
         if ($payment->group_id != $groupId) {
