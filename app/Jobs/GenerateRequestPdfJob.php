@@ -331,8 +331,8 @@ class GenerateRequestPdfJob implements ShouldQueue
         return [
             'host' => '127.0.0.1',
             'database' => 'bus_user_' . $tenantId,
-            'username' => 'root',
-            'password' => 'root',
+            'username' => env('DB_USERNAME', 'root'),
+            'password' => env('DB_PASSWORD', ''),
         ];
     }
 }
