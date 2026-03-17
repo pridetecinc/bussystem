@@ -4,10 +4,10 @@ namespace App\Http\Controllers\Masters;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\InvoiceRequest;
-use App\Models\masters\Invoice;
-use App\Models\masters\InvoiceItem;
-use App\Models\masters\Currency;
-use App\Models\masters\InvoiceTaxSummary;
+use App\Models\Masters\Invoice;
+use App\Models\Masters\InvoiceItem;
+use App\Models\Masters\Currency;
+use App\Models\Masters\InvoiceTaxSummary;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;

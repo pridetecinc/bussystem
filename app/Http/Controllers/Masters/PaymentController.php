@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Masters;
 
 use App\Http\Controllers\Controller;
-use App\Models\masters\Invoice;
-use App\Models\masters\PaymentHeader;
-use App\Models\masters\PaymentDetail;
+use App\Models\Masters\Invoice;
+use App\Models\Masters\PaymentHeader;
+use App\Models\Masters\PaymentDetail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;

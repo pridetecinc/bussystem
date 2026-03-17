@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Masters;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
-use App\Models\masters\Currency; 
+use App\Models\Masters\Currency; 
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -111,18 +111,21 @@ class CurrencyController extends Controller
         }
     }
 
-    public function show(Currency $currency)
+    public function show($id)
     {
+        $currency = Currency::findOrFail($id);
         return view('masters.currencies.show', compact('currency'));
     }
 
-    public function edit(Currency $currency)
+    public function edit($id)
     {
+        $currency = Currency::findOrFail($id);
         return view('masters.currencies.edit', compact('currency'));
     }
 
-    public function update(Request $request, Currency $currency)
+    public function update(Request $request, $id)
     {
+        $currency = Currency::findOrFail($id);
         $rules = [
             'currency_code'   => 'required|string|max:10|unique:currencies,currency_code,' . $currency->id,
             'currency_name'   => 'required|string|max:50',
@@ -193,8 +196,9 @@ class CurrencyController extends Controller
         }
     }
 
-    public function destroy(Currency $currency)
+    public function destroy($id)
     {
+        $currency = Currency::findOrFail($id);
         try {
             // 可选：在此处添加检查，例如是否有关联的交易记录
             // if ($currency->transactions()->count() > 0) { ... }
