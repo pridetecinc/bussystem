@@ -161,9 +161,9 @@
                         </a>
                         <ul class="dropdown-menu shadow">
                     @if($isAdmin || $isOperationsManager || $isManager)
-                            <li><a class="dropdown-item" href="{{ route('masters.fees.index') }}">請求管理</a></li>
-                            <li><a class="dropdown-item" href="{{ route('masters.fees.index') }}">請求詳細</a></li>
-                            <li><a class="dropdown-item" href="{{ route('masters.fees.index') }}">入金管理</a></li>
+                            <li><a class="dropdown-item" href="{{ route('masters.currencies.index') }}">货币汇率</a></li>
+                            <li><a class="dropdown-item" href="{{ route('masters.invoices.index', ['group_id' => 12]) }}">請求管理</a></li>
+                            <li><a class="dropdown-item" href="{{ route('masters.payments.index') }}">入金管理</a></li>
                             @endif
                         </ul>
                     </li>

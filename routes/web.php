@@ -33,6 +33,10 @@ use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\UserController;
 
+use App\Http\Controllers\Masters\CurrencyController;
+use App\Http\Controllers\Masters\InvoiceController;
+use App\Http\Controllers\Masters\PaymentController;
+
 Route::get('/', function() {
     return redirect('/masters');
 })->name('home');
@@ -115,25 +119,35 @@ Route::prefix('masters')->name('masters.')->group(function () {
         // Route::post('bus-assignments/{id}/finalize', [BusAssignmentController::class, 'finalize'])
         //     ->name('bus-assignments.finalize');
             
-    Route::prefix('bus-assignments')->name('bus-assignments.')->group(function () {
-        Route::get('/', [BusAssignmentController::class, 'index'])->name('index');
-        Route::get('/create', [BusAssignmentController::class, 'create'])->name('create');
-        Route::post('/', [BusAssignmentController::class, 'store'])->name('store');
-        Route::get('/{id}', [BusAssignmentController::class, 'show'])->name('show');
-        Route::get('/{id}/edit', [BusAssignmentController::class, 'edit'])->name('edit');
-        Route::put('/{id}', [BusAssignmentController::class, 'update'])->name('update');
-        Route::delete('/{id}', [BusAssignmentController::class, 'destroy'])->name('destroy');
-        Route::get('/{id}/daily-itineraries', [BusAssignmentController::class, 'getDailyItineraries'])
-            ->name('daily-itineraries');
-        Route::get('/group/{groupId}', [BusAssignmentController::class, 'getByGroup'])
-            ->name('by-group');
-        Route::post('/{id}/lock', [BusAssignmentController::class, 'toggleLock'])
-            ->name('toggle-lock');
-        Route::post('/{id}/send', [BusAssignmentController::class, 'markAsSent'])
-            ->name('mark-sent');
-        Route::post('/{id}/finalize', [BusAssignmentController::class, 'finalize'])
-            ->name('finalize');
-    });
+        Route::prefix('bus-assignments')->name('bus-assignments.')->group(function () {
+            Route::get('/', [BusAssignmentController::class, 'index'])->name('index');
+            Route::get('/create', [BusAssignmentController::class, 'create'])->name('create');
+            Route::post('/', [BusAssignmentController::class, 'store'])->name('store');
+            Route::get('/{id}', [BusAssignmentController::class, 'show'])->name('show');
+            Route::get('/{id}/edit', [BusAssignmentController::class, 'edit'])->name('edit');
+            Route::put('/{id}', [BusAssignmentController::class, 'update'])->name('update');
+            Route::delete('/{id}', [BusAssignmentController::class, 'destroy'])->name('destroy');
+            Route::get('/{id}/daily-itineraries', [BusAssignmentController::class, 'getDailyItineraries'])
+                ->name('daily-itineraries');
+            Route::get('/group/{groupId}', [BusAssignmentController::class, 'getByGroup'])
+                ->name('by-group');
+            Route::post('/{id}/lock', [BusAssignmentController::class, 'toggleLock'])
+                ->name('toggle-lock');
+            Route::post('/{id}/send', [BusAssignmentController::class, 'markAsSent'])
+                ->name('mark-sent');
+            Route::post('/{id}/finalize', [BusAssignmentController::class, 'finalize'])
+                ->name('finalize');
+        });
+
+
+        Route::resource('currencies', CurrencyController::class)->names('currencies');
+        Route::resource('invoices', InvoiceController::class)->names('invoices');
+        Route::get('invoices/{invoice}/pdf', [InvoiceController::class, 'generatePdf'])->name('invoices.pdf');
+        Route::post('invoices/{invoice}/toggle-lock', [InvoiceController::class, 'toggleLock'])->name('invoices.toggle-lock');
+        Route::post('invoices/bulk-toggle-lock', [InvoiceController::class, 'bulkToggleLock'])->name('invoices.bulk-toggle-lock');
+        Route::post('invoices/bulk-pdf', [InvoiceController::class, 'bulkPdf'])->name('invoices.bulk-pdf');
+        Route::post('reconcile/batch', [PaymentController::class, 'storeBatch'])->name('invoices.reconcile.batch.store');
+        Route::resource('payments', PaymentController::class)->names('payments');
     });
 });
 
