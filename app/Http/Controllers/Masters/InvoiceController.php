@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Masters;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\InvoiceRequest;
 use App\Models\Masters\Invoice;
 use App\Models\Masters\InvoiceItem;
 use App\Models\Masters\Currency;
@@ -300,25 +299,20 @@ public function store(Request $request)
         return "INV-{$dateStr}-{$newNum}";
     }
 
-    public function show(Request $request, Invoice $invoice)
+    public function show(Request $request, $id)
     {
+        $invoice = Invoice::findOrFail($id);
         $groupId = $request->query('group_id');
-
-        // if (! $groupId || $invoice->group_id != $groupId || ! auth()->user()->canAccessGroup($groupId)) {
-        //     abort(403);
-        // }
         $items = InvoiceItem::where('invoice_id', $invoice->id)->get();
         $taxSummary = DB::table('invoice_tax_summary')->where('invoice_id', $invoice->id)->get();
         return view('masters.invoices.show', compact('invoice', 'groupId','items'));
     }
 
-    public function edit(Request $request, Invoice $invoice)
+    public function edit(Request $request, $id)
     {
         $groupId = $request->query('group_id');
 
-        // if (! $groupId || $invoice->group_id != $groupId || ! auth()->user()->canAccessGroup($groupId)) {
-        //     abort(403);
-        // }
+        $invoice = Invoice::findOrFail($id);
         if($invoice->is_locked){
             return redirect()->route('masters.invoices.index', ['group_id' => $groupId])
                 ->with('error', 'この請求書は編集できません。');
@@ -330,7 +324,7 @@ public function store(Request $request)
 
     public function update(Request $request, int $id)
     {
-        $invoice = DB::table('invoices')->where('id', $id)->first();
+        $invoice = Invoice::findOrFail($id);
         if($invoice->is_locked){
             return redirect()->route('masters.invoices.index', ['group_id' => $invoice->group_id])
                 ->with('error', 'この請求書は編集できません。');
@@ -541,13 +535,16 @@ public function store(Request $request)
         }
     }
 
-    public function destroy(Request $request, Invoice $invoice)
+    public function destroy(Request $request, $id)
     {
+        $invoice = Invoice::findOrFail($id);
         $groupId = $request->query('group_id');
 
         if (! $groupId || $invoice->group_id != $groupId) {
             abort(403);
         }
+
+        
 
         try {
             $invoice->delete();
@@ -574,8 +571,9 @@ public function store(Request $request)
         }
     }
 
-    public function generatePdf(Request $request, Invoice $invoice)
+    public function generatePdf(Request $request, $id)
     {
+        $invoice = Invoice::findOrFail($id);
         $path = $invoice->pdf_file_path;
 
         // 1. 检查文件是否存在 (防御性编程)
@@ -597,9 +595,9 @@ public function store(Request $request)
         composer require spatie/browsershot
         npm install puppeteer
     */
-    public function generatePdf_tmp(Request $request, Invoice $invoice)
+    public function generatePdf_tmp(Request $request, $id)
     {
-
+        $invoice = Invoice::findOrFail($id);
         $items = $invoice->items;
         $summary_10 = InvoiceTaxSummary::where('invoice_id', $invoice->id)->where('tax_rate', 10)->first();
         $symmary_8 = InvoiceTaxSummary::where('invoice_id', $invoice->id)->where('tax_rate', 8)->first();
