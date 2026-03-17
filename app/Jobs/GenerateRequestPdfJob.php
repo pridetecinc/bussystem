@@ -10,6 +10,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\Config;
 use Spatie\Browsershot\Browsershot;
 use App\Models\masters\Invoice;
 use App\Models\masters\InvoiceItem;
@@ -23,6 +24,7 @@ class GenerateRequestPdfJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $invoiceId;
+    public $tenantId;
 
     // ================= 队列重试配置 =================
     public $tries = 3;
@@ -33,9 +35,10 @@ class GenerateRequestPdfJob implements ShouldQueue
     /**
      * Create a new job instance.
      */
-    public function __construct($invoiceId)
+    public function __construct($invoiceId, $tenantId)
     {
         $this->invoiceId = $invoiceId;
+        $this->tenantId = $tenantId;
     }
 
     /**
@@ -44,7 +47,23 @@ class GenerateRequestPdfJob implements ShouldQueue
     public function handle()
     {
         Log::info("【PDF 任务开始】Invoice ID: {$this->invoiceId}, 尝试次数: {$this->attempts()}, 系统: " . PHP_OS_FAMILY);
+        $connectionName = 'bus_user_' . $this->tenantId;
 
+        $dbConfig = $this->getTenantDbConfig($this->tenantId); 
+        
+        if (!$dbConfig) {
+            Log::error("找不到租户配置", ['tenantId' => $this->tenantId]);
+            return;
+        }
+
+        Config::set("database.connections.{$connectionName}", [
+            'driver' => 'mysql',
+            'host' => $dbConfig['host'],
+            'database' => $dbConfig['database'],
+            'username' => $dbConfig['username'],
+            'password' => $dbConfig['password'],
+            // ... 其他配置
+        ]);
         // ==========================================
         // 1. 【核心修复】跨平台自动检测 Chrome 路径
         // ==========================================
@@ -106,7 +125,7 @@ class GenerateRequestPdfJob implements ShouldQueue
         Log::info("✅ 已检测到 Chrome 并设置环境变量：{$foundChromePath}");
 
         // 2. 获取数据
-        $invoice = Invoice::find($this->invoiceId);
+        $invoice = Invoice::on($connectionName)->find($this->invoiceId);
         
         if (!$invoice) {
             Log::error("【PDF 任务失败】找不到发票记录，ID: {$this->invoiceId}");
@@ -115,9 +134,9 @@ class GenerateRequestPdfJob implements ShouldQueue
 
         // 重新查询关联数据
         $items = $invoice->items;
-        $summary_10 = InvoiceTaxSummary::where('invoice_id', $invoice->id)->where('tax_rate', 10)->first();
-        $symmary_8 = InvoiceTaxSummary::where('invoice_id', $invoice->id)->where('tax_rate', 8)->first();
-        $non_taxable = InvoiceItem::where('invoice_id', $invoice->id)->where('tax_rate', 0)->sum('amount');
+        $summary_10 = InvoiceTaxSummary::on($connectionName)->where('invoice_id', $invoice->id)->where('tax_rate', 10)->first();
+        $symmary_8 = InvoiceTaxSummary::on($connectionName)->where('invoice_id', $invoice->id)->where('tax_rate', 8)->first();
+        $non_taxable = InvoiceItem::on($connectionName)->where('invoice_id', $invoice->id)->where('tax_rate', 0)->sum('amount');
 
         // 3. 准备数据
         $data = [
@@ -302,5 +321,18 @@ class GenerateRequestPdfJob implements ShouldQueue
             'error' => $exception->getMessage(),
             'trace' => $exception->getTraceAsString()
         ]);
+    }
+
+        private function getTenantDbConfig($tenantId)
+    {
+        // 这里写你的逻辑，返回一个包含 host, database, username, password 的数组
+        // 例如：
+        // return DB::connection('mysql')->table('tenants')->find($tenantId);
+        return [
+            'host' => '127.0.0.1',
+            'database' => 'bus_user_' . $tenantId,
+            'username' => 'root',
+            'password' => 'root',
+        ];
     }
 }

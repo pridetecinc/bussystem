@@ -265,7 +265,8 @@ public function store(Request $request)
         }
 
         DB::commit();
-        GenerateRequestPdfJob::dispatch($invoiceId);
+        DB::setDefaultConnection('mysql'); 
+        GenerateRequestPdfJob::dispatch($invoiceId,auth()->user()->id);
         return redirect()->route('masters.invoices.index', ['group_id' => $validated['group_id']])
             ->with('success', '請求書を登録しました。');
 
@@ -522,7 +523,8 @@ public function store(Request $request)
             }
 
             DB::commit();
-            GenerateRequestPdfJob::dispatch($id);
+            DB::setDefaultConnection('mysql'); 
+            GenerateRequestPdfJob::dispatch($id,auth()->user()->id);
             return redirect()->route('masters.invoices.index', ['group_id' => $validated['group_id']])
                 ->with('success', '請求書を更新しました。');
 
