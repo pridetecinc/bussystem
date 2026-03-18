@@ -9,9 +9,9 @@
 <!-- ========================================== -->
 <!-- 1. 触发按钮 -->
 <!-- ========================================== -->
-<button type="button" class="btn btn-primary" id="btn-bulk-reconcile">
+<!-- <button type="button" class="btn btn-primary" id="btn-bulk-reconcile">
     <i class="bi bi-cash-coin"></i> 批量销账 / 入金
-</button>
+</button> -->
 
 <!-- ========================================== -->
 <!-- 2. 初始选择模态框 (Step 1) -->

@@ -286,7 +286,7 @@
     <!-- 分页区域 (保持不变，但需注意如果使用了批量操作，翻页后选中状态会丢失，这是无状态HTTP的正常行为) -->
     @if($invoices->hasPages() || $invoices->total() > 0)
         <div class="mt-4">
-            <!-- 使用 flex 容器实现整体居中 -->
+            <!-- 使用 flex 容器实现整体居中，并确保内部元素垂直居中对齐 -->
             <div class="d-flex flex-wrap justify-content-center align-items-center gap-3">
                 
                 <!-- 1. 左侧：行数选择器 -->
@@ -294,6 +294,7 @@
                     <label for="per_page_select" class="form-label small text-muted mb-0 me-2">
                         表示件数:
                     </label>
+                    <!-- 关键：添加 form-select-sm -->
                     <select id="per_page_select" class="form-select form-select-sm" style="width: auto;">
                         <option value="20" {{ request('per_page', 20) == 20 ? 'selected' : '' }}>20 行</option>
                         <option value="30" {{ request('per_page') == 30 ? 'selected' : '' }}>30 行</option>
@@ -301,9 +302,10 @@
                     </select>
                 </div>
 
-                <!-- 2. 中间：分页链接 (移除 col 限制，直接居中) -->
+                <!-- 2. 中间：分页链接 -->
                 <nav aria-label="Page navigation">
-                    <ul class="pagination mb-0">
+                    <!-- 关键：添加 pagination-sm -->
+                    <ul class="pagination pagination-sm mb-0">
                         <!-- 上一页 -->
                         <li class="page-item {{ $invoices->onFirstPage() ? 'disabled' : '' }}">
                             <a class="page-link" href="{{ $invoices->previousPageUrl() }}" aria-label="Previous">
@@ -356,7 +358,7 @@
                 </nav>
             </div>
 
-            <!-- 3. 底部：统计信息 (保持独立一行居中) -->
+            <!-- 3. 底部：统计信息 -->
             <div class="text-center text-muted small mt-2">
                 表示中：{{ $invoices->firstItem() ?? 0 }} - {{ $invoices->lastItem() ?? 0 }} / 全 {{ $invoices->total() }} 件
             </div>

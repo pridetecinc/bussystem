@@ -21,14 +21,18 @@ class CurrencyController extends Controller
                 $q->where('currency_name', 'like', "%{$search}%");
             });
         }
+
+        $perPage = 20; // 默认值
+        $allowedPerPages = [20, 30, 50]; // 允许的选项
+        
+        if ($request->filled('per_page') && in_array((int)$request->per_page, $allowedPerPages)) {
+            $perPage = (int)$request->per_page;
+        }
         
         // 排序：先按 sort 降序（越大越前），再按代码升序
-        $currencies = $query->orderBy('sort', 'desc')->paginate(20);
+        $currencies = $query->orderBy('sort', 'desc')->paginate($perPage);
         
-        // 保持搜索参数分页
-        if ($request->has('search')) {
-            $currencies->appends(['search' => $request->search]);
-        }
+        $currencies->only(['search', 'per_page']);
         
         return view('masters.currencies.index', compact('currencies'));
     }

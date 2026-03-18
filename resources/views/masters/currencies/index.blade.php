@@ -31,14 +31,17 @@
     <div class="mb-3">
         <div class="card shadow-sm">
             <div class="card-body">
-                <form method="GET" action="{{ route('masters.currencies.index') }}" class="row g-2 align-items-center">
+                <!-- 修改点 1: form 类改为 align-items-end，确保所有列底部对齐 -->
+                <form method="GET" action="{{ route('masters.currencies.index') }}" class="row g-3 align-items-end">
                     <div class="col-md-4">
                         <label class="form-label small text-muted mb-1">検索キーワード</label>
                         <input type="text" name="search" class="form-control" 
-                               placeholder="通貨名称"
+                               placeholder="通貨名称、コード、記号"
                                value="{{ request('search') }}">
                     </div>
-                    <div class="col-md-auto mt-4">
+                    
+                    <!-- 修改点 2: 移除 mt-4，使用 d-flex align-items-end 确保按钮组与输入框底部平齐 -->
+                    <div class="col-md-auto d-flex align-items-end gap-2">
                         <button type="submit" class="btn btn-outline-primary">
                             <i class="bi bi-search"></i> 検索
                         </button>
@@ -153,62 +156,103 @@
     </div>
     
     <!-- 分页区域 (完全复用原有逻辑) -->
-    @if($currencies->hasPages())
-        <div class="mt-3">
-            <nav>
-                <ul class="pagination justify-content-center mb-0">
-                    <li class="page-item {{ $currencies->onFirstPage() ? 'disabled' : '' }}">
-                        <a class="page-link" href="{{ $currencies->previousPageUrl() }}">
-                            <span aria-hidden="true">&laquo;</span>
-                        </a>
-                    </li>
+    @if($currencies->hasPages() || $currencies->total() > 0)
+        <div class="mt-4">
+            <!-- 使用 flex 布局实现左右排列，align-items-center 确保高度一致 -->
+            <div class="d-flex flex-wrap justify-content-center align-items-center gap-3">
+                
+                <!-- 1. 左侧：行数选择器 -->
+                <div class="d-flex align-items-center">
+                    <label for="per_page_select" class="form-label small text-muted mb-0 me-2">
+                        表示件数:
+                    </label>
+                    <!-- 添加 form-select-sm 以匹配分页按钮的小号尺寸 -->
+                    <select id="per_page_select" class="form-select form-select-sm" style="width: auto;">
+                        <option value="20" {{ request('per_page', 20) == 20 ? 'selected' : '' }}>20 行</option>
+                        <option value="30" {{ request('per_page') == 30 ? 'selected' : '' }}>30 行</option>
+                        <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50 行</option>
+                    </select>
+                </div>
 
-                    @php
-                        $current = $currencies->currentPage();
-                        $last = $currencies->lastPage();
-                        $start = max(1, $current - 2);
-                        $end = min($last, $current + 2);
-                    @endphp
-
-                    @if($start > 1)
-                        <li class="page-item">
-                            <a class="page-link" href="{{ $currencies->url(1) }}">1</a>
+                <!-- 2. 中间：分页链接 -->
+                <nav aria-label="Page navigation">
+                    <!-- 添加 pagination-sm 以匹配下拉框的小号尺寸 -->
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item {{ $currencies->onFirstPage() ? 'disabled' : '' }}">
+                            <a class="page-link" href="{{ $currencies->previousPageUrl() }}">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
                         </li>
-                        @if($start > 2)
-                            <li class="page-item disabled">
-                                <span class="page-link">...</span>
+
+                        @php
+                            $current = $currencies->currentPage();
+                            $last = $currencies->lastPage();
+                            $start = max(1, $current - 2);
+                            $end = min($last, $current + 2);
+                        @endphp
+
+                        @if($start > 1)
+                            <li class="page-item">
+                                <a class="page-link" href="{{ $currencies->url(1) }}">1</a>
+                            </li>
+                            @if($start > 2)
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                            @endif
+                        @endif
+
+                        @for($i = $start; $i <= $end; $i++)
+                            <li class="page-item {{ $i == $current ? 'active' : '' }}">
+                                <a class="page-link" href="{{ $currencies->url($i) }}">{{ $i }}</a>
+                            </li>
+                        @endfor
+
+                        @if($end < $last)
+                            @if($end < $last - 1)
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                            @endif
+                            <li class="page-item">
+                                <a class="page-link" href="{{ $currencies->url($last) }}">{{ $last }}</a>
                             </li>
                         @endif
-                    @endif
 
-                    @for($i = $start; $i <= $end; $i++)
-                        <li class="page-item {{ $i == $current ? 'active' : '' }}">
-                            <a class="page-link" href="{{ $currencies->url($i) }}">{{ $i }}</a>
+                        <li class="page-item {{ !$currencies->hasMorePages() ? 'disabled' : '' }}">
+                            <a class="page-link" href="{{ $currencies->nextPageUrl() }}">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
                         </li>
-                    @endfor
+                    </ul>
+                </nav>
+            </div>
 
-                    @if($end < $last)
-                        @if($end < $last - 1)
-                            <li class="page-item disabled">
-                                <span class="page-link">...</span>
-                            </li>
-                        @endif
-                        <li class="page-item">
-                            <a class="page-link" href="{{ $currencies->url($last) }}">{{ $last }}</a>
-                        </li>
-                    @endif
-
-                    <li class="page-item {{ !$currencies->hasMorePages() ? 'disabled' : '' }}">
-                        <a class="page-link" href="{{ $currencies->nextPageUrl() }}">
-                            <span aria-hidden="true">&raquo;</span>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
+            <!-- 3. 底部：统计信息 -->
             <div class="text-center text-muted small mt-2">
-                表示中: {{ $currencies->firstItem() ?? 0 }} - {{ $currencies->lastItem() ?? 0 }} / 全 {{ $currencies->total() }} 件
+                表示中：{{ $currencies->firstItem() ?? 0 }} - {{ $currencies->lastItem() ?? 0 }} / 全 {{ $currencies->total() }} 件
             </div>
         </div>
     @endif
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const perPageSelect = document.getElementById('per_page_select');
+    if (perPageSelect) {
+        perPageSelect.addEventListener('change', function() {
+            const newPerPage = this.value;
+            const url = new URL(window.location.href);
+            
+            // 设置新的 per_page 参数
+            url.searchParams.set('per_page', newPerPage);
+            
+            // 重置到第一页
+            url.searchParams.set('page', '1');
+            
+            // 跳转
+            window.location.href = url.toString();
+        });
+    }
+});
+</script>
 @endsection

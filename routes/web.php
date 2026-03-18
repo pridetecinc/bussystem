@@ -36,6 +36,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Masters\CurrencyController;
 use App\Http\Controllers\Masters\InvoiceController;
 use App\Http\Controllers\Masters\PaymentController;
+use App\Http\Controllers\Masters\ProductController;
 
 Route::get('/', function() {
     return redirect('/masters');
@@ -148,6 +149,7 @@ Route::prefix('masters')->name('masters.')->group(function () {
         Route::post('invoices/bulk-pdf', [InvoiceController::class, 'bulkPdf'])->name('invoices.bulk-pdf');
         Route::post('reconcile/batch', [PaymentController::class, 'storeBatch'])->name('invoices.reconcile.batch.store');
         Route::resource('payments', PaymentController::class)->names('payments');
+        Route::resource('products', ProductController::class)->names('products');
     });
 });
 
