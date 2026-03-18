@@ -7,6 +7,8 @@ use App\Models\Masters\Invoice;
 use App\Models\Masters\InvoiceItem;
 use App\Models\Masters\Currency;
 use App\Models\Masters\InvoiceTaxSummary;
+use App\Models\Masters\Product;
+use App\Models\Masters\Bank;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -71,32 +73,79 @@ class InvoiceController extends Controller
         // if (! $groupId || ! auth()->user()->canAccessGroup($groupId)) {
         //     abort(403);
         // }
+        $products = Product::get();
+        $banks = Bank::where("is_active",1)->get();
         $currencies = Currency::select('currency_code', 'id')->distinct()->orderBy('currency_code')->get(); 
-        return view('masters.invoices.create', compact('groupId','currencies'));
+        return view('masters.invoices.create', compact('groupId','currencies','products','banks'));
     }
 
 public function store(Request $request)
 {
     $validated = $request->validate([
         'group_id' => 'nullable|integer',
+        'bank_id' => 'required|integer',
         'billing_title' => 'nullable|string|max:200',
-        'tax_mode' => 'required|in:1,2', // 1=税込, 2=税別
-        'language' => 'required|in:1,2', // 1=日语, 2=英语
+        'tax_mode' => 'required|in:1,2',
+        'language' => 'required|in:1,2',
         'currency_code' => 'required|string|max:50',
         'invoice_date' => 'required|date',
         'due_date' => 'required|date|after_or_equal:invoice_date',
         'notes' => 'nullable|string|max:65535',
-        'items' => 'required|array|min:1',
-        'items.*.description' => 'required|string|max:300',
-        'items.*.quantity' => 'required|numeric|min:0.01',
-        'items.*.unit_price' => 'required|numeric|min:0',
-        'items.*.tax_rate' => 'required|numeric|in:0,8,10',
-        'items.*.display_order' => 'required|integer|min:1',
+        
+        // 基础结构验证：items 必须存在且是数组
+        'items' => 'required|array',
+        
+        // 注意：这里暂时移除 min:1，因为我们稍后要过滤空行
+        // 对每个子项进行类型验证，但暂时不强制 required (除了 description 用于判断是否存在)
+        'items.*.description' => 'nullable|string|max:300', 
+        'items.*.quantity' => 'nullable|numeric|min:0', // 允许空，稍后逻辑处理
+        'items.*.unit_price' => 'nullable|numeric|min:0',
+        'items.*.tax_rate' => 'nullable|numeric|in:0,8,10',
+        'items.*.display_order' => 'nullable|integer',
     ], [
-        'items.required' => '明細は最低1行必要です。',
         'due_date.after_or_equal' => '支払期日は請求日以降にしてください。',
         'items.*.tax_rate.in' => '税率は 0（非課税）、8、10 のいずれかにしてください。',
+        // 自定义错误：如果最终有效行为 0，我们会手动抛出这个异常
     ]);
+
+    if (isset($validated['items']) && is_array($validated['items'])) {
+        $validItems = [];
+        
+        foreach ($validated['items'] as $item) {
+            // 判断标准：如果 description 为空或只包含空格，则视为无效行，直接跳过
+            if (empty(trim($item['description'] ?? ''))) {
+                continue; 
+            }
+
+            // 如果 description 有值，则强制检查其他关键字段是否也有值
+            if (empty($item['quantity']) || empty($item['unit_price'])) {
+                // 如果品名有值，但数量或单价缺失，返回具体错误
+                // 注意：这里需要知道是第几行报错比较困难，通常直接抛出一个通用错误
+                return back()->withErrors(['items' => '品目名が入力されている場合、数量と単価も必須です。'])
+                            ->withInput();
+            }
+
+            // 将有效行加入新数组
+            $validItems[] = $item;
+        }
+
+        // 3. 检查是否至少有一行有效数据
+        if (count($validItems) === 0) {
+            return back()->withErrors(['items' => '明細は最低1行必要です。'])
+                        ->withInput();
+        }
+
+        // 4. 覆盖 validated 数组中的 items 为过滤后的干净数据
+        $validated['items'] = $validItems;
+        
+        // 可选：重新索引数组键名 (0, 1, 2...)，防止提交时带有稀疏数组键名导致问题
+        $validated['items'] = array_values($validated['items']);
+    } else {
+        // 如果 items 完全不存在或为空数组
+        return back()->withErrors(['items' => '明細は最低1行必要です。'])
+                    ->withInput();
+    }
+
 
     // 重置索引，避免跳号
     $validated['items'] = array_values($validated['items']);
@@ -207,6 +256,7 @@ public function store(Request $request)
         // === 第四步：插入 invoices 主表 ===
         $invoiceId = DB::table('invoices')->insertGetId([
             'group_id' => $validated['group_id'],
+            'bank_id' => $validated['bank_id'],
             'invoice_number' => $this->generateInvoiceNumber(), // 确保该方法存在
             'customer_id' => 1, // ⚠️ 请根据实际业务替换
             'invoice_date' => $validated['invoice_date'],
@@ -306,7 +356,8 @@ public function store(Request $request)
         $groupId = $request->query('group_id');
         $items = InvoiceItem::where('invoice_id', $invoice->id)->get();
         $taxSummary = DB::table('invoice_tax_summary')->where('invoice_id', $invoice->id)->get();
-        return view('masters.invoices.show', compact('invoice', 'groupId','items'));
+        $banks = Bank::where("is_active",1)->get();
+        return view('masters.invoices.show', compact('invoice', 'groupId','items','banks'));
     }
 
     public function edit(Request $request, $id)
@@ -320,7 +371,9 @@ public function store(Request $request)
         }
         $items = InvoiceItem::where('invoice_id', $invoice->id)->get();
         $currencies = Currency::select('currency_code', 'id')->distinct()->orderBy('currency_code')->get();
-        return view('masters.invoices.edit', compact('invoice', 'groupId','items','currencies'));
+        $products = Product::get();
+        $banks = Bank::where("is_active",1)->get();
+        return view('masters.invoices.edit', compact('invoice', 'groupId','items','currencies','products','banks'));
     }
 
     public function update(Request $request, int $id)
@@ -335,6 +388,7 @@ public function store(Request $request)
         // === 1. 验证输入（与 store 一致）===
         $validated = $request->validate([
             'group_id' => 'nullable|integer',
+            'bank_id' => 'required|integer',
             'billing_title' => 'nullable|string|max:200',
             'tax_mode' => 'required|in:1,2', // 1=税込, 2=税別
             'language' => 'required|in:1,2', // 1=日语, 2=英语
@@ -461,7 +515,8 @@ public function store(Request $request)
             // === 6. 更新 invoices 主表 ===
             DB::table('invoices')->where('id', $id)->update([
                 'group_id' => $validated['group_id'],
-                'customer_id' => 1, // ⚠️ 请根据实际业务替换
+                'bank_id' => $validated['bank_id'],
+                'customer_id' => 1, 
                 'invoice_date' => $validated['invoice_date'],
                 'due_date' => $validated['due_date'],
                 'billing_title' => $validated['billing_title'],
@@ -715,8 +770,9 @@ public function store(Request $request)
         }
     }
 
-    public function toggleLock(Invoice $invoice)
+    public function toggleLock($id)
     {
+        $invoice = Invoice::findOrFail($id);
         // 切换状态
         $invoice->is_locked = !$invoice->is_locked;
         $invoice->save();

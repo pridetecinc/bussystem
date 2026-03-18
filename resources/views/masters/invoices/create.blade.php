@@ -60,7 +60,7 @@
                         <div class="row g-2">
                             <!-- 账单标题 -->
                             <div class="col-md-4">
-                                <label for="billing_title" class="form-label required mb-1">账单标题</label>
+                                <label for="billing_title" class="form-label mb-1">账单标题</label>
                                 <input type="text" class="form-control @error('billing_title') is-invalid @enderror"
                                     id="billing_title" name="billing_title"
                                     value="{{ old('billing_title') }}"
@@ -102,12 +102,6 @@
                                 <select class="form-select @error('currency_code') is-invalid @enderror"
                                         id="currency_code" name="currency_code" required>
                                     @foreach($currencies as $currency)
-                                        {{-- 
-                                            逻辑说明：
-                                            1. old('currency_code', ...): 优先取验证失败后的输入值
-                                            2. $currentItem->currency_code ?? '': 如果是编辑页面，取数据库的值；如果是新增，则为空
-                                            3. 如果上述两者相等 且 等于当前循环的 $currency->currency_code，则选中
-                                        --}}
                                         <option value="{{ $currency->currency_code }}" 
                                                 {{ old('currency_code', $currentItem->currency_code ?? '') == $currency->currency_code ? 'selected' : '' }}>
                                             {{ $currency->currency_code }}
@@ -142,12 +136,29 @@
                             </div>
 
                             <!-- 特記事項 -->
-                            <div class="col-md-8">
+                            <div class="col-md-4">
                                 <label for="notes" class="form-label mb-1">特記事項</label>
                                 <input type="text" class="form-control @error('notes') is-invalid @enderror"
                                     id="notes" name="notes"
                                     value="{{ old('notes') }}" placeholder="特記事項">
                                 @error('notes')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <!-- 银行 -->
+                            <div class="col-md-4">
+                                <label for="bank_id" class="form-label required mb-1">入金银行</label>
+                                <select class="form-select @error('bank_id') is-invalid @enderror"
+                                        id="bank_id" name="bank_id" required>
+                                    @foreach($banks as $bank)
+                                        <option value="{{ $bank->id }}" 
+                                            {{ old('bank_id') == $bank->id ? 'selected' : '' }}>
+                                            {{ $bank->bank_name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('bank_id')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
@@ -194,82 +205,43 @@
                                 <tbody id="itemsBody">
                                     @php
                                         $oldItems = old('items', []);
+                                        // 如果没有旧数据（即非验证失败回显），则初始化一个包含 10 个空项的数组
+                                        $displayItems = count($oldItems) > 0 ? $oldItems : array_fill(0, 10, []);
                                     @endphp
 
-                                    @if(count($oldItems) > 0)
-                                        @foreach($oldItems as $index => $oldItem)
-                                            @php
-                                                $index = (int)$index;
-                                                $orderNumber = $index + 1;
-                                            @endphp
-                                            <tr data-index="{{ $index }}">
-                                                <td class="text-center align-middle display-order">{{ $orderNumber }}</td>
-                                                <td>
-                                                    <input type="text"
-                                                        class="form-control form-control-sm description"
-                                                        name="items[{{ $index }}][description]"
-                                                        value="{{ $oldItem['description'] ?? '' }}"
-                                                        maxlength="500"
-                                                        placeholder="">
-                                                </td>
-                                                <td>
-                                                    <input type="number" class="form-control form-control-sm unit-price"
-                                                           name="items[{{ $index }}][unit_price]"
-                                                           value="{{ $oldItem['unit_price'] ?? '' }}" min="0" step="0.01">
-                                                </td>
-                                                <td>
-                                                    <input type="number" class="form-control form-control-sm quantity"
-                                                           name="items[{{ $index }}][quantity]"
-                                                           value="{{ $oldItem['quantity'] ?? '' }}" min="1" step="1">
-                                                </td>
-                                                <td>
-                                                    <select class="form-control form-control-sm tax-rate" name="items[{{ $index }}][tax_rate]">
-                                                        <option value="10" {{ (isset($oldItem['tax_rate']) && $oldItem['tax_rate'] == 10) ? 'selected' : '' }}>10</option>
-                                                        <option value="8"  {{ (isset($oldItem['tax_rate']) && $oldItem['tax_rate'] == 8)  ? 'selected' : '' }}>8</option>
-                                                        <option value="0"  {{ (isset($oldItem['tax_rate']) && $oldItem['tax_rate'] == 0)  ? 'selected' : '' }}>0</option>
-                                                    </select>
-                                                </td>
-                                                <td class="text-center align-middle">
-                                                    <div class="d-flex justify-content-center gap-1">
-                                                        <button type="button" class="btn btn-outline-secondary btn-sm move-up-btn" title="上へ移動">
-                                                            <i class="bi bi-arrow-up"></i>
-                                                        </button>
-                                                        <button type="button" class="btn btn-outline-secondary btn-sm move-down-btn" title="下へ移動">
-                                                            <i class="bi bi-arrow-down"></i>
-                                                        </button>
-                                                        <button type="button" class="btn btn-outline-success btn-sm add-row-btn" title="行を追加">
-                                                            <i class="bi bi-plus-lg"></i>
-                                                        </button>
-                                                        <button type="button" class="btn btn-outline-danger btn-sm delete-row-btn" title="行を削除">
-                                                            <i class="bi bi-dash-lg"></i>
-                                                        </button>
-                                                    </div>
-                                                    <input type="hidden" name="items[{{ $index }}][display_order]" value="{{ $orderNumber }}">
-                                                </td>
-                                            </tr>
-                                        @endforeach
-                                    @else
-                                        <tr data-index="0">
-                                            <td class="text-center align-middle display-order">1</td>
+                                    @foreach($displayItems as $index => $item)
+                                        @php
+                                            $index = (int)$index;
+                                            $orderNumber = $index + 1;
+                                        @endphp
+                                        <tr data-index="{{ $index }}">
+                                            <td class="text-center align-middle display-order">{{ $orderNumber }}</td>
                                             <td>
-                                                <input type="text"
-                                                    class="form-control form-control-sm description"
-                                                    name="items[0][description]"
-                                                    value=""
-                                                    maxlength="500"
-                                                    placeholder="">
+                                                <select class="form-select form-select-sm description" name="items[{{ $index }}][description]">
+                                                    <option value="">-- 選択してください --</option>
+                                                    @foreach($products as $product)
+                                                        <option value="{{ $product->name }}" 
+                                                                {{ (isset($item['description']) && $item['description'] == $product->name) ? 'selected' : '' }}>
+                                                            {{ $product->name }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
                                             </td>
                                             <td>
-                                                <input type="number" class="form-control form-control-sm unit-price" name="items[0][unit_price]" value="" min="0" step="0.01">
+                                                <input type="number" class="form-control form-control-sm unit-price"
+                                                    name="items[{{ $index }}][unit_price]"
+                                                    value="{{ $item['unit_price'] ?? '' }}" min="0" step="0.01">
                                             </td>
                                             <td>
-                                                <input type="number" class="form-control form-control-sm quantity" name="items[0][quantity]" value="" min="1" step="1">
+                                                <input type="number" class="form-control form-control-sm quantity"
+                                                    name="items[{{ $index }}][quantity]"
+                                                    value="{{ $item['quantity'] ?? '' }}" min="1" step="1">
                                             </td>
                                             <td>
-                                                <select class="form-control form-control-sm tax-rate" name="items[0][tax_rate]">
-                                                    <option value="10" selected>10</option>
-                                                    <option value="8">8</option>
-                                                    <option value="0">0</option>
+                                                <select class="form-control form-control-sm tax-rate" name="items[{{ $index }}][tax_rate]">
+                                                    <option value="10" {{ (isset($item['tax_rate']) && $item['tax_rate'] == 10) ? 'selected' : '' }}>10</option>
+                                                    <option value="8"  {{ (isset($item['tax_rate']) && $item['tax_rate'] == 8)  ? 'selected' : '' }}>8</option>
+                                                    <option value="0"  {{ (isset($item['tax_rate']) && $item['tax_rate'] == 0)  ? 'selected' : '' }}>0</option>
                                                 </select>
                                             </td>
                                             <td class="text-center align-middle">
@@ -287,10 +259,10 @@
                                                         <i class="bi bi-dash-lg"></i>
                                                     </button>
                                                 </div>
-                                                <input type="hidden" name="items[0][display_order]" value="1">
+                                                <input type="hidden" name="items[{{ $index }}][display_order]" value="{{ $orderNumber }}">
                                             </td>
                                         </tr>
-                                    @endif
+                                    @endforeach
                                 </tbody>
                             </table>
                         </div>
@@ -302,12 +274,12 @@
                     <tr>
                         <td class="text-center align-middle display-order"></td>
                         <td>
-                            <input type="text"
-                                class="form-control form-control-sm description"
-                                name="items[__index__][description]"
-                                value=""
-                                maxlength="500"
-                                placeholder="">
+                            <select class="form-select form-select-sm description" name="items[__index__][description]">
+                                <option value="">-- 選択してください --</option>
+                                @foreach($products as $product)
+                                    <option value="{{ $product->name }}">{{ $product->name }}</option>
+                                @endforeach
+                            </select>
                         </td>
                         <td>
                             <input type="number" class="form-control form-control-sm unit-price"

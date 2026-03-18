@@ -139,6 +139,7 @@
                         <th class="text-center" style="width: 50px;">
                             <input type="checkbox" class="form-check-input" id="select-all" title="全選択">
                         </th>
+                        <th class="text-center" style="width: 60px;">No.</th>
                         <th class="text-center" style="width: 80px;">ID</th>
                         <th class="text-center" style="width: 150px;">账单标题</th>
                         <th class="text-center" style="width: 140px;">請求書番号</th>
@@ -161,6 +162,9 @@
                             <input type="checkbox" class="form-check-input invoice-checkbox" 
                                    value="{{ $invoice->id }}" 
                                    data-locked="{{ $invoice->is_locked ? 1 : 0 }}">
+                        </td>
+                        <td class="text-center fw-bold text-muted">
+                            {{ ($invoices->currentPage() - 1) * $invoices->perPage() + $loop->iteration }}
                         </td>
                         <td class="text-center text-muted small">{{ $invoice->id }}</td>
                         <td class="text-center fw-bold text-primary">{{ $invoice->billing_title }}</td>
@@ -261,7 +265,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="11" class="text-center py-5">
+                        <td colspan="12" class="text-center py-5">
                             @if(request()->hasAny(['search', 'status']))
                                 <div class="text-muted">
                                     <i class="bi bi-search display-6 mb-2 d-block"></i>

@@ -56,12 +56,6 @@
                                 <div class="fw-bold fs-6 text-dark">{{ $payment->customer->name ?? '不明' }}</div>
                                 <input type="hidden" name="customer_id" value="{{ $payment->customer_id }}">
                             </div>
-
-                            <div class="col-md-3 mb-3">
-                                <label class="form-label text-muted small">振込銀行</label>
-                                <div class="fs-6 text-dark">{{ $payment->bank_id ? $payment->bank_id : '-' }}</div>
-                                <input type="hidden" name="bank_id" value="{{ $payment->bank_id }}">
-                            </div>
                             
                             <!-- 【可编辑】入金日 -->
                             <div class="col-md-3 mb-3">

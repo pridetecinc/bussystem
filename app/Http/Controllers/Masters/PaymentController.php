@@ -51,7 +51,6 @@ public function store(Request $request)
         
         // Detail 模式特有字段
         'payment_date' => 'required_if:mode,detail|date',
-        'bank_id'      => 'required_if:mode,detail|nullable|integer',
         'remark'       => 'nullable|string|max:255',
         
         // 明细列表验证
@@ -74,8 +73,6 @@ public function store(Request $request)
         
         'payment_date.required_if'   => '入金日は必須です。',
         'payment_date.date'          => '入金日は有効な日付形式で入力してください。',
-        
-        'bank_id.exists'             => '指定された銀行が存在しません。',
         
         'remark.max'                 => '備考は255文字以内で入力してください。',
         
@@ -109,7 +106,6 @@ public function store(Request $request)
     }
 
     $paymentDate = $validated['payment_date'] ?? now()->toDateString();
-    $bankId      = $validated['bank_id'] ?? null;
     $remark      = $validated['remark'] ?? '';
     $notesValue  = "{$batchToken}|" . count($items) . "|{$totalAmount}";
     DB::beginTransaction();
@@ -174,7 +170,6 @@ public function store(Request $request)
             'batch_token'    => $batchToken,
             'customer_id'    => $firstInvoice->customer_id, // 动态获取第一个发票的客户
             'payment_date'   => $paymentDate,
-            'bank_id'        => $bankId,
             'total_amount'   => $totalAmount,
             'remark'         => $remark,
             'handled_by'     => 1,
@@ -217,7 +212,7 @@ public function store(Request $request)
 
         DB::commit();
 
-        return redirect()->route('masters.payments.index', ['group_id' => $groupId])
+        return redirect()->route('masters.invoices.index', ['group_id' => $groupId])
             ->with('success', '登録完了：' . $batchToken);
 
     } catch (\Exception $e) {

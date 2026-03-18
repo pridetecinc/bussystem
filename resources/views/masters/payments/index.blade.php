@@ -96,7 +96,6 @@
                         <th class="text-center" style="width: 80px;">ID</th>
                         <th class="text-center" style="width: 160px;">バッチ番号</th>
                         <th class="text-center" style="width: 150px;">取引先</th>
-                        <th class="text-center" style="width: 120px;">銀行</th>
                         <th class="text-center" style="width: 120px;">入金日</th>
                         <th class="text-center" style="width: 100px;">件数</th>
                         <th class="text-center" style="width: 140px;">合計金額</th>
@@ -113,10 +112,6 @@
                         </td>
                         <td class="text-center fw-bold">
                             {{ $payment->customer->name ?? '不明' }}
-                        </td>
-                        <td class="text-center small">
-                            {{-- 假设有一个 Bank Model 或静态映射，这里简单显示 ID 或名称 --}}
-                            {{ $payment->bank_id ?  $payment->bank_id : '-' }}
                         </td>
                         <td class="text-center">
                             {{ \Carbon\Carbon::parse($payment->payment_date)->format('Y/m/d') }}

@@ -54,7 +54,7 @@
                         <div class="row g-2">
                             <!-- 账单标题 -->
                             <div class="col-md-4">
-                                <label for="billing_title" class="form-label required mb-1">账单标题</label>
+                                <label for="billing_title" class="form-label  mb-1">账单标题</label>
                                 <input type="text" class="form-control @error('billing_title') is-invalid @enderror"
                                     id="billing_title" name="billing_title"
                                     value="{{ old('billing_title', $invoice->billing_title) }}"
@@ -130,12 +130,29 @@
                             </div>
 
                             <!-- 特記事項 -->
-                            <div class="col-md-8">
+                            <div class="col-md-4">
                                 <label for="notes" class="form-label mb-1">特記事項</label>
                                 <input type="text" class="form-control @error('notes') is-invalid @enderror"
                                     id="notes" name="notes"
                                     value="{{ old('notes', $invoice->notes) }}" placeholder="特記事項">
                                 @error('notes')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <!-- 入金银行 -->
+                            <div class="col-md-4">
+                                <label for="bank_id" class="form-label required mb-1">入金银行</label>
+                                <select class="form-select @error('bank_id') is-invalid @enderror"
+                                        id="bank_id" name="bank_id" required>
+                                    @foreach($banks as $bank)
+                                        <option value="{{ $bank->id }}"
+                                            {{ (old('bank_id', $invoice->bank_id ?? '') == $bank->id) ? 'selected' : '' }}>
+                                            {{ $bank->bank_name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('bank_id')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
@@ -205,12 +222,15 @@
                                             <tr data-index="{{ $index }}">
                                                 <td class="text-center align-middle display-order">{{ $orderNumber }}</td>
                                                 <td>
-                                                    <input type="text"
-                                                        class="form-control form-control-sm description"
-                                                        name="items[{{ $index }}][description]"
-                                                        value="{{ $oldItem['description'] ?? '' }}"
-                                                        maxlength="500"
-                                                        placeholder="">
+                                                    <select class="form-select form-select-sm description" name="items[{{ $index }}][description]">
+                                                        <option value="">-- 選択してください --</option>
+                                                        @foreach($products as $product)
+                                                            <option value="{{ $product->name }}" 
+                                                                    {{ (isset($oldItem['description']) && $oldItem['description'] == $product->name) ? 'selected' : '' }}>
+                                                                {{ $product->name }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
                                                 </td>
                                                 <td>
                                                     <input type="number" class="form-control form-control-sm unit-price"
@@ -284,12 +304,12 @@
                     <tr>
                         <td class="text-center align-middle display-order"></td>
                         <td>
-                            <input type="text"
-                                class="form-control form-control-sm description"
-                                name="items[__index__][description]"
-                                value=""
-                                maxlength="500"
-                                placeholder="">
+                            <select class="form-select form-select-sm description" name="items[__index__][description]">
+                                <option value="">-- 選択してください --</option>
+                                @foreach($products as $product)
+                                    <option value="{{ $product->name }}">{{ $product->name }}</option>
+                                @endforeach
+                            </select>
                         </td>
                         <td>
                             <input type="number" class="form-control form-control-sm unit-price"
@@ -332,8 +352,8 @@
                         <button type="submit" class="btn btn-primary">
                             <i class="bi bi-check-circle"></i> 更新する
                         </button>
-                        <a href="{{ route('masters.invoices.show', $invoice) }}" class="btn btn-secondary">
-                            <i class="bi bi-eye"></i> 詳細を見る
+                        <a target="_blank"  href="/storage/{{  $invoice->pdf_file_path }}" class="btn btn-secondary">
+                            <i class="bi"></i> PDF表示
                         </a>
                         <a href="{{ route('masters.invoices.index', ['group_id' => $groupId]) }}" class="btn btn-secondary">
                             <i class="bi bi-x-circle"></i> キャンセル

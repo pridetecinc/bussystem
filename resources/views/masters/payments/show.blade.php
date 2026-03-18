@@ -69,10 +69,6 @@
                             <div class="fs-6">{{ \Carbon\Carbon::parse($payment->payment_date)->format('Y/m/d') }}</div>
                         </div>
                         <div class="col-md-3 mb-3">
-                            <label class="form-label text-muted small">振込銀行</label>
-                            <div class="fs-6">{{ $payment->bank_id ? $payment->bank_id : '-' }}</div>
-                        </div>
-                        <div class="col-md-3 mb-3">
                             <label class="form-label text-muted small">処理担当者</label>
                             <div class="fs-6">{{ $payment->handled_by }}</div>
                         </div>

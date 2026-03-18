@@ -69,7 +69,6 @@
                 
                 <!-- 【关键】顶层公共隐藏域 (提交时由 JS 填充) -->
                 <input type="hidden" name="payment_date" id="form-payment-date">
-                <input type="hidden" name="bank_id" id="form-bank-id">
                 <input type="hidden" name="remark" id="form-remark">
                 <input type="hidden" name="customer_id" id="form-customer-id"> 
 
@@ -82,16 +81,6 @@
                             <label class="form-label mb-0 small fw-bold text-primary">共通：入金日</label>
                             <input type="date" id="common-payment-date" class="form-control form-control-sm fw-bold" 
                                    value="{{ date('Y-m-d') }}" style="height: 31px;">
-                        </div>
-                        <!-- 2. 银行 -->
-                        <div class="flex-grow-1" style="max-width: 160px;">
-                            <label class="form-label mb-0 small fw-bold text-primary">共通：銀行</label>
-                            <select id="common-bank-id" class="form-select form-select-sm fw-bold" style="height: 31px;" required>
-                                <option value="">選択...</option>
-                                <option value="1">三菱 UFJ</option>
-                                <option value="2">三井住友</option>
-                                <option value="3">みずほ</option>
-                            </select>
                         </div>
                         <!-- 3. 备注 -->
                         <div class="flex-grow-1">
@@ -144,7 +133,6 @@
     <input type="hidden" name="group_id" value="{{ request('group_id') }}">
     <input type="hidden" name="mode" value="full">
     <input type="hidden" name="payment_date" id="full-form-payment-date">
-    <input type="hidden" name="bank_id" id="full-form-bank-id">
     <input type="hidden" name="remark" id="full-form-remark">
     
     <div id="full-payment-inputs"></div>
@@ -225,7 +213,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // 公共控件
     const commonDateInput = document.getElementById('common-payment-date');
-    const commonBankSelect = document.getElementById('common-bank-id');
     const commonRemarkInput = document.getElementById('common-remark');
 
     if (!btnBulkReconcile) return;
@@ -256,17 +243,15 @@ document.addEventListener('DOMContentLoaded', function () {
             
             fullPaymentFormInputs.innerHTML = '';
             const defaultDate = commonDateInput.value;
-            const defaultBank = commonBankSelect.value;
             const defaultRemark = commonRemarkInput ? commonRemarkInput.value : '';
 
             document.getElementById('full-form-payment-date').value = defaultDate;
-            document.getElementById('full-form-bank-id').value = defaultBank;
             document.getElementById('full-form-remark').value = defaultRemark;
 
             window.selectedInvoices.forEach((row, index) => {
                 try {
                     const id = row.querySelector('.invoice-checkbox').value;
-                    const amountStr = row.cells[8]?.innerText.replace(/,/g, '').trim() || '0';
+                    const amountStr = row.cells[9]?.innerText.replace(/,/g, '').trim() || '0';
                     
                     const createInput = (name, val) => {
                         const inp = document.createElement('input');
@@ -302,14 +287,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     const checkbox = row.querySelector('.invoice-checkbox');
                     const id = checkbox.value;
                     
-                    const invoiceNo   = row.cells[3]?.innerText.trim() || '';
-                    const customerName= row.cells[4]?.innerText.trim() || '不明';
+                    const invoiceNo   = row.cells[4]?.innerText.trim() || '';
+                    const customerName= row.cells[5]?.innerText.trim() || '不明';
                     
-                    const amountColIndex = 8; 
+                    const amountColIndex = 9; 
                     const amountStr = row.cells[amountColIndex]?.innerText.replace(/,/g, '').trim() || '0';
                     const requestAmount = parseFloat(amountStr) || 0;
 
-                    const balanceColIndex = 9; 
+                    const balanceColIndex = 10; 
                     let balanceStr = row.cells[balanceColIndex]?.innerText.replace(/,/g, '').trim() || '0';
                     const balanceAmount = parseFloat(balanceStr) || 0;
 
@@ -406,18 +391,11 @@ document.addEventListener('DOMContentLoaded', function () {
             try {
                 // 2. 同步公共字段
                 const pDate = document.getElementById('common-payment-date').value;
-                const pBank = document.getElementById('common-bank-id').value;
                 const pRemark = document.getElementById('common-remark').value;
 
                 document.getElementById('form-payment-date').value = pDate;
-                document.getElementById('form-bank-id').value = pBank;
                 document.getElementById('form-remark').value = pRemark;
 
-                if (!pBank) {
-                    alert('⚠️ エラー：銀行を選択してください。');
-                    commonBankSelect.focus();
-                    return false;
-                }
 
                 // 3. 严格校验逻辑
                 const paymentInputs = detailContainer.querySelectorAll('.item-payment-amount');
