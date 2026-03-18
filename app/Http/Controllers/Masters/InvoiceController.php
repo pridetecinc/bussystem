@@ -580,8 +580,11 @@ public function store(Request $request)
             DB::commit();
             DB::setDefaultConnection('mysql'); 
             GenerateRequestPdfJob::dispatch($id,auth()->user()->id);
-            return redirect()->route('masters.invoices.index', ['group_id' => $validated['group_id']])
-                ->with('success', '請求書を更新しました。');
+            return redirect()->route('masters.invoices.edit', [
+                'invoice' => $invoice->id, // 假设你的路由参数名是 {invoice} 或 {id}
+                'group_id' => $validated['group_id'] // 保留 group_id 参数，防止筛选条件丢失
+            ])
+            ->with('success', '請求書を更新しました。');
 
         } catch (\Exception $e) {
             DB::rollBack();
