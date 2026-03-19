@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class BusAssignment extends Model
 {
@@ -20,13 +21,22 @@ class BusAssignment extends Model
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';
 
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($model) {
+            if (empty($model->key_uuid)) {
+                $model->key_uuid = (string) Str::uuid();
+            }
+        });
+    }
+
     protected $fillable = [
-        'key_uuid',
-        'yoyaku_uuid',
-        'group_id',
-        'daily_itinerary_id',
+        'group_info_id',
         'vehicle_id',
         'driver_id',
+        'guide_id',
         'start_date',
         'start_time',
         'end_date',
@@ -37,26 +47,26 @@ class BusAssignment extends Model
         'count_daily',
         'created_by',
         'updated_by',
-        // 新增字段 - 車輛運行詳細信息
-        'vehicle_number',           // 号車
-        'step_car',                 // ステップカー情報
-        'adult_count',              // 大人人数（車輛別）
-        'child_count',              // 小人人数（車輛別）
-        'guide_count',              // ガイド人数（車輛別）
-        'other_count',              // その他人数（車輛別）
-        'luggage_count',            // 荷物数（車輛別）
-        'vehicle_type_spec_check',  // 車種指定チェック
-        'temporary_driver',         // 仮ドライバーチェック
-        'accompanying',             // 添乗者
-        'representative',           // 代表者名
-        'representative_phone',     // 代表者電話番号
-        'attention',                // 注意
-        'operation_remarks',        // 備考（指示書表示用）
-        'operation_memo',           // 手配メモ
-        'operation_basic_remarks',  // 基本タブ備考
-        'doc_remarks',              // DOCタブ備考
-        'history_remarks',          // 履歴タブ備考
-        'vehicle_index',            // 車輛索引（01,02,03...）
+        'vehicle_number',
+        'step_car',
+        'adult_count',
+        'child_count',
+        'guide_count',
+        'other_count',
+        'luggage_count',
+        'vehicle_type_spec_check',
+        'temporary_driver',
+        'representative',
+        'representative_phone',
+        'attention',
+        'operation_remarks',
+        'operation_memo',
+        'operation_basic_remarks',
+        'doc_remarks',
+        'history_remarks',
+        'vehicle_index',
+        'ignore_operation',
+        'ignore_driver',
     ];
 
     protected $dates = [
@@ -67,6 +77,8 @@ class BusAssignment extends Model
     ];
 
     protected $casts = [
+        'start_date' => 'date',
+        'end_date' => 'date',
         'start_time' => 'string',
         'end_time' => 'string',
         'lock_arrangement' => 'boolean',
@@ -77,7 +89,6 @@ class BusAssignment extends Model
         'updated_by' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
-        // 新增字段类型转换
         'vehicle_type_spec_check' => 'boolean',
         'temporary_driver' => 'boolean',
         'adult_count' => 'integer',
@@ -85,11 +96,13 @@ class BusAssignment extends Model
         'guide_count' => 'integer',
         'other_count' => 'integer',
         'luggage_count' => 'integer',
+        'ignore_operation' => 'boolean',
+        'ignore_driver' => 'boolean',
     ];
 
     public function groupInfo(): BelongsTo
     {
-        return $this->belongsTo(GroupInfo::class, 'yoyaku_uuid', 'key_uuid');
+        return $this->belongsTo(GroupInfo::class, 'group_info_id', 'id');
     }
 
     public function vehicle(): BelongsTo
@@ -102,9 +115,14 @@ class BusAssignment extends Model
         return $this->belongsTo(Driver::class, 'driver_id', 'id');
     }
 
+    public function guide(): BelongsTo
+    {
+        return $this->belongsTo(Guide::class, 'guide_id', 'id');
+    }
+
     public function dailyItineraries(): HasMany
     {
-        return $this->hasMany(DailyItinerary::class, 'bus_ass_uuid', 'key_uuid');
+        return $this->hasMany(DailyItinerary::class, 'bus_assignment_id', 'id');
     }
 
     public function dailyItinerary(): BelongsTo
@@ -126,9 +144,13 @@ class BusAssignment extends Model
 
     public function getPeriodDisplayAttribute(): string
     {
-        $start = $this->start_date ? $this->start_date->format('Y/m/d') : '';
-        $end = $this->end_date ? $this->end_date->format('Y/m/d') : '';
-        
+        $start = $this->start_date
+            ? (is_string($this->start_date) ? date('Y/m/d', strtotime($this->start_date)) : $this->start_date->format('Y/m/d'))
+            : '';
+        $end = $this->end_date
+            ? (is_string($this->end_date) ? date('Y/m/d', strtotime($this->end_date)) : $this->end_date->format('Y/m/d'))
+            : '';
+
         if ($start && $end) {
             return $start . ' 〜 ' . $end;
         } elseif ($start) {
@@ -139,9 +161,6 @@ class BusAssignment extends Model
         return '';
     }
 
-    /**
-     * 获取完整车辆显示名称
-     */
     public function getVehicleDisplayAttribute(): string
     {
         if ($this->vehicle) {
@@ -151,17 +170,11 @@ class BusAssignment extends Model
         return $this->vehicle_number ? '号車 ' . $this->vehicle_number : '未設定';
     }
 
-    /**
-     * 获取格式化后的车辆索引
-     */
     public function getFormattedVehicleIndexAttribute(): string
     {
         return sprintf('%02d', $this->vehicle_index ?? 1);
     }
 
-    /**
-     * 获取所有备注信息的数组
-     */
     public function getRemarksArrayAttribute(): array
     {
         return [
@@ -171,9 +184,6 @@ class BusAssignment extends Model
         ];
     }
 
-    /**
-     * 获取人数总计
-     */
     public function getTotalPassengersAttribute(): int
     {
         return ($this->adult_count ?? 0) + 
@@ -182,20 +192,14 @@ class BusAssignment extends Model
                ($this->other_count ?? 0);
     }
 
-    /**
-     * 范围查询：按车辆索引排序
-     */
     public function scopeOrderByVehicleIndex($query)
     {
         return $query->orderBy('vehicle_index', 'asc');
     }
 
-    /**
-     * 范围查询：获取指定团体的所有车辆分配
-     */
-    public function scopeForGroup($query, $yoyakuUuid)
+    public function scopeForGroup($query, $groupInfoId)
     {
-        return $query->where('yoyaku_uuid', $yoyakuUuid)
+        return $query->where('group_info_id', $groupInfoId)
                      ->orderBy('vehicle_index', 'asc');
     }
 }

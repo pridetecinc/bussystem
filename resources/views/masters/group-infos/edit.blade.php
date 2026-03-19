@@ -44,7 +44,7 @@
         @method('PUT')
         
         <div class="card shadow-sm mb-1" style="overflow: hidden;">
-            <div class="card-header py-2 px-3" style="background-color: #141c28; border-bottom: 1px solid #E5E7EB;">
+            <div class="card-header py-2 px-3" style="background-color: #141c28; border-bottom: 1px solid #aaa;">
                 <h6 class="mb-0" style="color: #fff; font-size: 0.875rem; font-weight: 500;">基本情報</h6>
             </div>
             <div class="card-body p-2">
@@ -55,8 +55,7 @@
                                 <div class="d-flex w-100">
                                     <div class="d-flex align-items-center me-2 flex-fill">
                                         <span class="span-label">予約ID</span>
-                                        <span class="border px-2 py-1 bg-white rounded w-100 text-center" style="color: #2563eb;">#{{ $groupInfo->id ?? '0' }}</span>
-                                        <input type="hidden" name="key_uuid" value="{{ $groupInfo->key_uuid }}">
+                                        <span class="border px-2 py-1 bg-white rounded w-100 text-center" style="color: #2563eb;">{{ $groupInfo->id ?? '0' }}</span>
                                     </div>
                                     <div class="d-flex align-items-center me-2 flex-fill">
                                         <span class="span-label">状態</span>
@@ -111,9 +110,9 @@
                                     <div class="d-flex align-items-center" style="flex: 1.2;">
                                         <span class="span-label" style="white-space: nowrap;">予約日</span>
                                         <div class="d-flex align-items-center" style="flex: 1;">
-                                            <input type="date" class="form-control form-control-sm border" name="start_date" id="start_date" value="{{ old('start_date', $groupInfo->start_date ? $groupInfo->start_date->format('Y-m-d') : '') }}" style="flex: 1; min-width: 0;">
+                                            <input type="text" class="form-control form-control-sm border datepicker-3months" name="start_date" id="start_date" value="{{ old('start_date', $groupInfo->start_date ? $groupInfo->start_date->format('Y-m-d') : '') }}" style="flex: 1; min-width: 0;" placeholder="YYYY-MM-DD" readonly>
                                             <span class="mx-1">~</span>
-                                            <input type="date" class="form-control form-control-sm border" name="end_date" id="end_date" value="{{ old('end_date', $groupInfo->end_date ? $groupInfo->end_date->format('Y-m-d') : '') }}" style="flex: 1; min-width: 0;">
+                                            <input type="text" class="form-control form-control-sm border datepicker-3months" name="end_date" id="end_date" value="{{ old('end_date', $groupInfo->end_date ? $groupInfo->end_date->format('Y-m-d') : '') }}" style="flex: 1; min-width: 0;" placeholder="YYYY-MM-DD" readonly>
                                         </div>
                                     </div>
                                 </div>
@@ -138,10 +137,15 @@
                                     <div class="d-flex align-items-center me-2 flex-fill">
                                         <span class="span-label">ガイド</span>
                                         <div class="flex-1 position-relative">
-                                            <input type="text" class="form-control form-control-sm border search-input" id="guide_search" value="{{ old('guide', $groupInfo->guide ?? '') }}" placeholder="ガイド名を入力" autocomplete="off">
-                                            <input type="hidden" name="guide" id="guide" value="{{ old('guide', $groupInfo->guide ?? '') }}">
-                                            <input type="hidden" name="guide_id" id="guide_id" value="{{ old('guide_id', $groupInfo->guide_id) }}">
-                                            <div class="suggestions-container" id="guide_suggestions" style="display: none;"></div>
+                                            <select class="form-select form-select-sm border guide-select" id="guide_select" name="guide_id" style="width: 100%;">
+                                                <option value="">-- ガイドを選択 --</option>
+                                                @foreach($guides as $guide)
+                                                    <option value="{{ $guide->id }}" {{ $groupInfo->guide_id == $guide->id ? 'selected' : '' }}>
+                                                        {{ $guide->name }} {{ $guide->guide_code ? '(' . $guide->guide_code . ')' : '' }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                            <input type="hidden" name="guide" id="guide" value="{{ $groupInfo->guide ?? '' }}">
                                         </div>
                                     </div>
                                     <div class="d-flex align-items-center flex-fill">
@@ -164,15 +168,15 @@
 
                     <div class="col-md-6" style="width:40%; padding-right: 5px; padding-left: 5px;">
                         <div class="tab-container">
-                            <div class="tab-wrapper" style="border-bottom: 1px solid #E5E7EB;">
-                                <span class="tab-item active" data-tab="basic" style="background-color: white; border: 1px solid #E5E7EB; border-bottom-color: white; border-top-left-radius: 4px; border-top-right-radius: 4px; margin-bottom: -1px; color: #374151; font-size: 0.8rem; padding: 4px 16px; cursor: pointer;">基本</span>
-                                <span class="tab-item inactive" data-tab="customer" style="background-color: #F3F4F6; border: 1px solid #E5E7EB; border-bottom-color: #E5E7EB; border-top-left-radius: 4px; border-top-right-radius: 4px; margin-bottom: -1px; color: #6B7280; font-size: 0.8rem; padding: 4px 16px; cursor: pointer; margin-left: -1px;">顧客</span>
-                                <span class="tab-item inactive" data-tab="history" style="background-color: #F3F4F6; border: 1px solid #E5E7EB; border-bottom-color: #E5E7EB; border-top-left-radius: 4px; border-top-right-radius: 4px; margin-bottom: -1px; color: #6B7280; font-size: 0.8rem; padding: 4px 16px; cursor: pointer; margin-left: -1px;">履歴</span>
+                            <div class="tab-wrapper" style="border-bottom: 1px solid #aaa;">
+                                <span class="tab-item active" data-tab="basic" style="background-color: white; border: 1px solid #aaa; border-bottom-color: white; border-top-left-radius: 4px; border-top-right-radius: 4px; margin-bottom: -1px; color: #374151; font-size: 0.8rem; padding: 4px 16px; cursor: pointer;">基本</span>
+                                <span class="tab-item inactive" data-tab="customer" style="background-color: #F3F4F6; border: 1px solid #aaa; border-bottom-color: #aaa; border-top-left-radius: 4px; border-top-right-radius: 4px; margin-bottom: -1px; color: #6B7280; font-size: 0.8rem; padding: 4px 16px; cursor: pointer; margin-left: -1px;">顧客</span>
+                                <span class="tab-item inactive" data-tab="history" style="background-color: #F3F4F6; border: 1px solid #aaa; border-bottom-color: #aaa; border-top-left-radius: 4px; border-top-right-radius: 4px; margin-bottom: -1px; color: #6B7280; font-size: 0.8rem; padding: 4px 16px; cursor: pointer; margin-left: -1px;">履歴</span>
                             </div>
                             <div class="tab-line"></div>
                         </div>
 
-                        <div id="tabContent" class="tab-content" style="border: 1px solid #E5E7EB; border-top: 0; background-color: #fff; padding: 10px; height: 157px; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px;">
+                        <div id="tabContent" class="tab-content" style="border: 1px solid #aaa; border-top: 0; background-color: #fff; padding: 10px; height: 157px; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px;">
                             <div class="tab-pane active" id="basic-tab">
                                 <div class="row mb-1">
                                     <div class="col-md-12">
@@ -228,7 +232,7 @@
                                 </div>
                                 <div class="d-flex align-items-center">
                                     <span class="span-label" style="white-space: nowrap; min-width: 70px;">予約ID</span>
-                                    <input type="text" class="form-control form-control-sm border" name="key_uuid_display" value="{{ $groupInfo->key_uuid }}" readonly style="flex: 1; background-color: #f9fafb;">
+                                    <input type="text" class="form-control form-control-sm border" name="id_display" value="{{ $groupInfo->id }}" readonly style="flex: 1; background-color: #f9fafb;">
                                 </div>
                             </div>
 
@@ -249,14 +253,14 @@
                     @php 
                         $vehicleIndex = $loop->iteration;
                         $busAssignment = $group['bus_assignment'] ?? null;
-                        $busUuid = $busAssignment->key_uuid ?? $vehicleKey;
+                        $busId = $busAssignment->id ?? $vehicleKey;
                         $vehicleName = $group['vehicle_name'] ?? '';
                         $vehicleId = $group['vehicle_id'] ?? '';
                         $driverName = $group['driver_name'] ?? ($busAssignment->driver_name ?? '');
                         $driverId = $busAssignment->driver_id ?? '';
                     @endphp
-                    <div class="card shadow-sm mb-1 vehicle-detail-card" data-vehicle-id="{{ $vehicleId }}" data-vehicle-index="{{ $vehicleIndex }}" data-bus-uuid="{{ $busUuid }}">
-                        <div class="card-header py-1 px-3 d-flex align-items-center" style="background-color: #141c28; border-bottom: 1px solid #E5E7EB;">
+                    <div class="card shadow-sm mb-1 vehicle-detail-card" data-vehicle-id="{{ $vehicleId }}" data-vehicle-index="{{ $vehicleIndex }}" data-bus-id="{{ $busId }}">
+                        <div class="card-header py-1 px-3 d-flex align-items-center" style="background-color: #141c28; border-bottom: 1px solid #aaa;">
                             <h6 class="mb-0 me-3" style="color: #fff; font-size: 0.875rem; font-weight: 500;">
                                 運行詳細-{{ sprintf('%02d', $vehicleIndex) }} 
                                 <span style="font-size: 0.75rem; margin-left: 10px; color: #a0aec0;">
@@ -272,7 +276,7 @@
                                     <input type="checkbox" class="form-check-input" id="lock_arrangement_{{ $vehicleIndex }}" name="bus_assignments[{{ $vehicleIndex }}][lock_arrangement]" value="1" {{ $busAssignment && $busAssignment->lock_arrangement ? 'checked' : '' }} style="margin: 0;">
                                 </div>
                                 <div class="d-flex align-items-center" style="gap: 5px;">
-                                    <input type="text" class="form-control form-control-sm border merge-operation-id" placeholder="運行ID (例: 24)" style="width: 120px;">
+                                    <input type="text" class="form-control form-control-sm border merge-operation-id" placeholder="運行ID" style="width: 80px;">
                                     <button type="button" class="btn btn-sm btn-primary merge-btn" style="font-size: 0.75rem; padding: 4px 8px;">統合</button>
                                     <button type="button" class="btn btn-sm btn-secondary split-btn" style="font-size: 0.75rem; padding: 4px 8px;">分割</button>
                                     <button type="button" class="btn btn-sm btn-info copy-btn" style="font-size: 0.75rem; padding: 4px 8px; background-color: #17a2b8; border-color: #17a2b8; color: white;">Copy</button>
@@ -281,7 +285,7 @@
                             </div>
                         </div>
                         <div class="card-body p-2">
-                            <input type="hidden" name="bus_assignments[{{ $vehicleIndex }}][key_uuid]" value="{{ $busUuid }}">
+                            <input type="hidden" name="bus_assignments[{{ $vehicleIndex }}][id]" value="{{ $busId }}">
                             <input type="hidden" name="bus_assignments[{{ $vehicleIndex }}][vehicle_index]" value="{{ $vehicleIndex }}">
                             
                             <div class="row" style="margin-right: -5px; margin-left: -5px;">
@@ -292,7 +296,7 @@
                                                 <div class="d-flex align-items-center" style="gap: 8px;">
                                                     <span class="span-label" style="white-space: nowrap;">運行ID</span>
                                                     <span class="border px-2 py-1 bg-white rounded" style="min-width: 338px; color: #2563eb;">
-                                                        #{{ $busAssignment->id ?? '' }}
+                                                        {{ $busAssignment->id ?? '' }}
                                                     </span>
                                                 </div>
                                                 
@@ -338,18 +342,18 @@
                                             <div class="d-flex align-items-center w-100" style="gap: 10px;">
                                                 <div class="d-flex align-items-center" style="gap: 8px;">
                                                     <span class="span-label" style="white-space: nowrap;">車両</span>
-                                                    <div class="position-relative" style="width: 338px;">
-                                                        <input type="text" class="form-control form-control-sm border search-input vehicle-search" 
-                                                               id="vehicle_search_{{ $vehicleIndex }}" 
-                                                               data-vehicle-index="{{ $vehicleIndex }}" 
-                                                               value="{{ $vehicleName }}" 
-                                                               placeholder="車両名を入力" autocomplete="off" required>
-                                                        <input type="hidden" name="bus_assignments[{{ $vehicleIndex }}][vehicle_id]" 
-                                                               id="vehicle_id_{{ $vehicleIndex }}" 
-                                                               class="vehicle-id-field" 
-                                                               value="{{ $busAssignment->vehicle_id ?? $vehicleId }}">
-                                                        <div class="suggestions-container" id="vehicle_suggestions_{{ $vehicleIndex }}" style="display: none;"></div>
-                                                    </div>
+                                                    <select class="form-select form-select-sm border vehicle-select" 
+                                                            id="vehicle_select_{{ $vehicleIndex }}" 
+                                                            name="bus_assignments[{{ $vehicleIndex }}][vehicle_id]"
+                                                            data-vehicle-index="{{ $vehicleIndex }}"
+                                                            style="width: 338px;">
+                                                        <option value="">-- 車両を選択 --</option>
+                                                        @foreach($vehicles as $vehicle)
+                                                            <option value="{{ $vehicle->id }}" {{ ($busAssignment->vehicle_id ?? $vehicleId) == $vehicle->id ? 'selected' : '' }}>
+                                                                {{ $vehicle->registration_number }} {{ $vehicle->vehicle_model ? '(' . $vehicle->vehicle_model->model_name . ')' : '' }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
                                                 </div>
                                                 
                                                 <div class="d-flex align-items-center" style="margin-left: auto; gap: 8px;">
@@ -370,18 +374,18 @@
                                             <div class="d-flex align-items-center w-100" style="gap: 8px;">
                                                 <div class="d-flex align-items-center" style="gap: 8px;">
                                                     <span class="span-label" style="white-space: nowrap;">運転手</span>
-                                                    <div class="position-relative" style="width: 150px;">
-                                                        <input type="text" class="form-control form-control-sm border search-input driver-search" 
-                                                               id="driver_search_{{ $vehicleIndex }}" 
-                                                               data-vehicle-index="{{ $vehicleIndex }}" 
-                                                               value="{{ $driverName }}" 
-                                                               placeholder="運転手名" autocomplete="off">
-                                                        <input type="hidden" name="bus_assignments[{{ $vehicleIndex }}][driver_id]" 
-                                                               id="driver_id_{{ $vehicleIndex }}" 
-                                                               class="driver-id-field" 
-                                                               value="{{ $driverId }}">
-                                                        <div class="suggestions-container" id="driver_suggestions_{{ $vehicleIndex }}" style="display: none;"></div>
-                                                    </div>
+                                                    <select class="form-select form-select-sm border driver-select" 
+                                                            id="driver_select_{{ $vehicleIndex }}" 
+                                                            name="bus_assignments[{{ $vehicleIndex }}][driver_id]"
+                                                            data-vehicle-index="{{ $vehicleIndex }}"
+                                                            style="width: 150px;">
+                                                        <option value="">-- 選択 --</option>
+                                                        @foreach($drivers as $driver)
+                                                            <option value="{{ $driver->id }}" {{ ($busAssignment->driver_id ?? $driverId) == $driver->id ? 'selected' : '' }}>
+                                                                {{ $driver->name }} {{ $driver->driver_code ? '(' . $driver->driver_code . ')' : '' }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
                                                 </div>
                                                 
                                                 <div class="d-flex align-items-center" style="gap: 8px;">
@@ -391,7 +395,18 @@
                                                 
                                                 <div class="d-flex align-items-center" style="gap: 8px;">
                                                     <span class="span-label" style="white-space: nowrap; width: 33px !important; min-width: 33px !important; margin-right: 0;">添乗</span>
-                                                    <input type="text" class="form-control form-control-sm border" name="bus_assignments[{{ $vehicleIndex }}][accompanying]" value="{{ $busAssignment->accompanying ?? '' }}" style="width: 90px;">
+                                                    <select class="form-select form-select-sm border guide-select" 
+                                                            id="guide_select_{{ $vehicleIndex }}" 
+                                                            name="bus_assignments[{{ $vehicleIndex }}][guide_id]"
+                                                            data-vehicle-index="{{ $vehicleIndex }}"
+                                                            style="width: 90px;">
+                                                        <option value="">-- 選択 --</option>
+                                                        @foreach($guides as $guide)
+                                                            <option value="{{ $guide->id }}" {{ ($busAssignment->guide_id ?? '') == $guide->id ? 'selected' : '' }}>
+                                                                {{ $guide->name }} {{ $guide->guide_code ? '(' . $guide->guide_code . ')' : '' }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
                                                 </div>
 
                                                 <div class="d-flex align-items-center" style="margin-left: auto; gap: 8px;">
@@ -406,13 +421,13 @@
 
                                 <div class="col-md-6" style="width:40%; padding-right: 5px; padding-left: 5px;">
                                     <div class="tab-container-{{ $vehicleIndex }}">
-                                        <div class="d-flex w-100" style="border-bottom: 1px solid #E5E7EB;">
-                                            <span class="tab-button2 active flex-fill text-center px-2 py-1" data-container="{{ $vehicleIndex }}" data-tab2="basic2-{{ $vehicleIndex }}" style="background-color: white; border: 1px solid #E5E7EB; border-bottom-color: white; border-top-left-radius: 4px; border-top-right-radius: 4px; margin-bottom: -1px; color: #374151; font-size: 0.8rem; cursor: pointer;">基本</span>
-                                            <span class="tab-button2 flex-fill text-center px-2 py-1" data-container="{{ $vehicleIndex }}" data-tab2="doc-{{ $vehicleIndex }}" style="background-color: #F3F4F6; border: 1px solid #E5E7EB; border-bottom-color: #E5E7EB; border-top-left-radius: 4px; border-top-right-radius: 4px; margin-bottom: -1px; color: #6B7280; font-size: 0.8rem; cursor: pointer; margin-left: -1px;">DOC</span>
-                                            <span class="tab-button2 flex-fill text-center px-2 py-1" data-container="{{ $vehicleIndex }}" data-tab2="history2-{{ $vehicleIndex }}" style="background-color: #F3F4F6; border: 1px solid #E5E7EB; border-bottom-color: #E5E7EB; border-top-left-radius: 4px; border-top-right-radius: 4px; margin-bottom: -1px; color: #6B7280; font-size: 0.8rem; cursor: pointer; margin-left: -1px;">履歴</span>
+                                        <div class="d-flex w-100" style="border-bottom: 1px solid #aaa;">
+                                            <span class="tab-button2 active flex-fill text-center px-2 py-1" data-container="{{ $vehicleIndex }}" data-tab2="basic2-{{ $vehicleIndex }}" style="background-color: white; border: 1px solid #aaa; border-bottom-color: white; border-top-left-radius: 4px; border-top-right-radius: 4px; margin-bottom: -1px; color: #374151; font-size: 0.8rem; cursor: pointer;">基本</span>
+                                            <span class="tab-button2 flex-fill text-center px-2 py-1" data-container="{{ $vehicleIndex }}" data-tab2="doc-{{ $vehicleIndex }}" style="background-color: #F3F4F6; border: 1px solid #aaa; border-bottom-color: #aaa; border-top-left-radius: 4px; border-top-right-radius: 4px; margin-bottom: -1px; color: #6B7280; font-size: 0.8rem; cursor: pointer; margin-left: -1px;">DOC</span>
+                                            <span class="tab-button2 flex-fill text-center px-2 py-1" data-container="{{ $vehicleIndex }}" data-tab2="history2-{{ $vehicleIndex }}" style="background-color: #F3F4F6; border: 1px solid #aaa; border-bottom-color: #aaa; border-top-left-radius: 4px; border-top-right-radius: 4px; margin-bottom: -1px; color: #6B7280; font-size: 0.8rem; cursor: pointer; margin-left: -1px;">履歴</span>
                                         </div>
 
-                                        <div id="basic2-{{ $vehicleIndex }}" class="tab-content2" style="border: 1px solid #E5E7EB; border-top: 0; background-color: #fff; padding: 10px; height: 100px; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px;">
+                                        <div id="basic2-{{ $vehicleIndex }}" class="tab-content2" style="border: 1px solid #aaa; border-top: 0; background-color: #fff; padding: 10px; height: 100px; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px;">
                                             <div class="row">
                                                 <div class="col-md-12">
                                                     <div class="d-flex align-items-start">
@@ -423,7 +438,7 @@
                                             </div>
                                         </div>
 
-                                        <div id="doc-{{ $vehicleIndex }}" class="tab-content2" style="display: none; border: 1px solid #E5E7EB; border-top: 0; background-color: #fff; padding: 10px; height: 100px;">
+                                        <div id="doc-{{ $vehicleIndex }}" class="tab-content2" style="display: none; border: 1px solid #aaa; border-top: 0; background-color: #fff; padding: 10px; height: 100px;">
                                             <div class="row">
                                                 <div class="col-md-12">
                                                     <div class="d-flex align-items-start">
@@ -434,7 +449,7 @@
                                             </div>
                                         </div>
 
-                                        <div id="history2-{{ $vehicleIndex }}" class="tab-content2" style="display: none; border: 1px solid #E5E7EB; border-top: 0; background-color: #fff; padding: 10px; height: 100px;">
+                                        <div id="history2-{{ $vehicleIndex }}" class="tab-content2" style="display: none; border: 1px solid #aaa; border-top: 0; background-color: #fff; padding: 10px; height: 100px;">
                                             <div class="row">
                                                 <div class="col-md-12">
                                                     <div class="d-flex align-items-start">
@@ -466,17 +481,17 @@
                                             @php 
                                                 $globalIndex = ($vehicleIndex - 1) * 100 + $index;
                                                 $displayNumber = $index + 1;
-                                                $itineraryBusUuid = $itinerary->bus_ass_uuid ?? '';
+                                                $itineraryBusId = $itinerary->bus_assignment_id ?? '';
                                             @endphp
-                                            <tr class="itinerary-row" data-vehicle="{{ $vehicleIndex }}" data-index="{{ $globalIndex }}" data-bus-uuid="{{ $itineraryBusUuid }}" data-itinerary-id="{{ $itinerary->id }}">
+                                            <tr class="itinerary-row" data-vehicle="{{ $vehicleIndex }}" data-index="{{ $globalIndex }}" data-bus-id="{{ $itineraryBusId }}" data-itinerary-id="{{ $itinerary->id }}">
                                                 <td style="vertical-align: middle; text-align: center; background-color: #f9f9f9; position: relative;">
                                                     <span class="row-number" style="position: absolute; top: 2px; left: 2px; color: #2563eb; font-size: 10px; font-weight: bold;">{{ $displayNumber }}</span>
                                                     <input type="hidden" name="daily_itineraries[{{ $globalIndex }}][id]" value="{{ $itinerary->id }}">
                                                     <input type="hidden" name="daily_itineraries[{{ $globalIndex }}][display_order]" value="{{ $globalIndex + 1 }}">
-                                                    <input type="hidden" name="daily_itineraries[{{ $globalIndex }}][bus_ass_uuid]" value="{{ $itineraryBusUuid }}" class="itinerary-bus-uuid">
+                                                    <input type="hidden" name="daily_itineraries[{{ $globalIndex }}][bus_assignment_id]" value="{{ $itineraryBusId }}" class="itinerary-bus-id">
                                                     <input type="hidden" name="daily_itineraries[{{ $globalIndex }}][vehicle_id]" value="{{ $itinerary->vehicle_id ?? '' }}" class="itinerary-vehicle-id">
                                                     <input type="hidden" name="daily_itineraries[{{ $globalIndex }}][driver_id]" value="{{ $itinerary->driver_id ?? $driverId }}" class="itinerary-driver-id">
-                                                    <input type="date" class="form-control form-control-sm border" name="daily_itineraries[{{ $globalIndex }}][date]" value="{{ $itinerary->date ? \Carbon\Carbon::parse($itinerary->date)->format('Y-m-d') : '' }}" style="width: 100%; text-align: center;">
+                                                    <input type="text" class="form-control form-control-sm border datepicker-3months" name="daily_itineraries[{{ $globalIndex }}][date]" value="{{ $itinerary->date ? \Carbon\Carbon::parse($itinerary->date)->format('Y-m-d') : '' }}" style="width: 100%; text-align: center;" placeholder="YYYY-MM-DD">
                                                     <input type="hidden" name="daily_itineraries[{{ $globalIndex }}][vehicle_group]" value="{{ $vehicleIndex }}">
                                                 </td>
                                                 <td style="padding: 2px;">
@@ -561,15 +576,15 @@
             @else
                 @php 
                     $busAssignment = $busAssignments->first();
-                    $busUuid = $busAssignment->key_uuid ?? '';
+                    $busId = $busAssignment->id ?? '';
                     $firstGroup = reset($groupedItineraries);
                     $vehicleName = $firstGroup['vehicle_name'] ?? $groupInfo->vehicle ?? '';
                     $vehicleId = $firstGroup['vehicle_id'] ?? $groupInfo->vehicle_id ?? '';
                     $driverName = $firstGroup['driver_name'] ?? ($busAssignment->driver_name ?? $groupInfo->driver ?? '');
                     $driverId = $busAssignment->driver_id ?? '';
                 @endphp
-                <div class="card shadow-sm mb-1" data-vehicle-index="1" data-bus-uuid="{{ $busUuid }}">
-                    <div class="card-header py-1 px-3 d-flex align-items-center" style="background-color: #141c28; border-bottom: 1px solid #E5E7EB;">
+                <div class="card shadow-sm mb-1" data-vehicle-index="1" data-bus-id="{{ $busId }}">
+                    <div class="card-header py-1 px-3 d-flex align-items-center" style="background-color: #141c28; border-bottom: 1px solid #aaa;">
                         <h6 class="mb-0 me-3" style="color: #fff; font-size: 0.875rem; font-weight: 500;">
                             運行詳細-01
                             <span style="font-size: 0.75rem; margin-left: 10px; color: #a0aec0;">
@@ -585,7 +600,7 @@
                                 <input type="checkbox" class="form-check-input" id="lock_arrangement_1" name="bus_assignments[1][lock_arrangement]" value="1" {{ $busAssignment && $busAssignment->lock_arrangement ? 'checked' : '' }} style="margin: 0;">
                             </div>
                             <div class="d-flex align-items-center" style="gap: 5px;">
-                                <input type="text" class="form-control form-control-sm border merge-operation-id" placeholder="運行ID (例: 24)" style="width: 120px;">
+                                <input type="text" class="form-control form-control-sm border merge-operation-id" placeholder="運行ID" style="width: 80px;">
                                 <button type="button" class="btn btn-sm btn-primary merge-btn" style="font-size: 0.75rem; padding: 4px 8px;">統合</button>
                                 <button type="button" class="btn btn-sm btn-secondary split-btn" style="font-size: 0.75rem; padding: 4px 8px;">分割</button>
                                 <button type="button" class="btn btn-sm btn-info copy-btn" style="font-size: 0.75rem; padding: 4px 8px; background-color: #17a2b8; border-color: #17a2b8; color: white;">Copy</button>
@@ -594,7 +609,7 @@
                         </div>
                     </div>
                     <div class="card-body p-2">
-                        <input type="hidden" name="bus_assignments[1][key_uuid]" value="{{ $busUuid }}">
+                        <input type="hidden" name="bus_assignments[1][id]" value="{{ $busId }}">
                         <input type="hidden" name="bus_assignments[1][vehicle_index]" value="1">
                         
                         <div class="row" style="margin-right: -5px; margin-left: -5px;">
@@ -605,7 +620,7 @@
                                             <div class="d-flex align-items-center" style="gap: 8px;">
                                                 <span class="span-label" style="white-space: nowrap;">運行ID</span>
                                                 <span class="border px-2 py-1 bg-white rounded" style="min-width: 338px; color: #2563eb;">
-                                                    #{{ $busAssignment->id ?? '' }}
+                                                    {{ $busAssignment->id ?? '' }}
                                                 </span>
                                             </div>
                                             
@@ -651,18 +666,18 @@
                                         <div class="d-flex align-items-center w-100" style="gap: 10px;">
                                             <div class="d-flex align-items-center" style="gap: 8px;">
                                                 <span class="span-label" style="white-space: nowrap;">車両</span>
-                                                <div class="position-relative" style="width: 338px;">
-                                                    <input type="text" class="form-control form-control-sm border search-input vehicle-search" 
-                                                           id="vehicle_search_1" 
-                                                           data-vehicle-index="1" 
-                                                           value="{{ $vehicleName }}" 
-                                                           placeholder="車両名を入力" autocomplete="off" required>
-                                                    <input type="hidden" name="bus_assignments[1][vehicle_id]" 
-                                                           id="vehicle_id_1" 
-                                                           class="vehicle-id-field" 
-                                                           value="{{ $busAssignment->vehicle_id ?? $vehicleId }}">
-                                                    <div class="suggestions-container" id="vehicle_suggestions_1" style="display: none;"></div>
-                                                </div>
+                                                <select class="form-select form-select-sm border vehicle-select" 
+                                                        id="vehicle_select_1" 
+                                                        name="bus_assignments[1][vehicle_id]"
+                                                        data-vehicle-index="1"
+                                                        style="width: 338px;">
+                                                    <option value="">-- 車両を選択 --</option>
+                                                    @foreach($vehicles as $vehicle)
+                                                        <option value="{{ $vehicle->id }}" {{ ($busAssignment->vehicle_id ?? $vehicleId) == $vehicle->id ? 'selected' : '' }}>
+                                                            {{ $vehicle->registration_number }} {{ $vehicle->vehicle_model ? '(' . $vehicle->vehicle_model->model_name . ')' : '' }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
                                             </div>
                                             
                                             <div class="d-flex align-items-center" style="margin-left: auto; gap: 8px;">
@@ -683,18 +698,18 @@
                                         <div class="d-flex align-items-center w-100" style="gap: 8px;">
                                             <div class="d-flex align-items-center" style="gap: 8px;">
                                                 <span class="span-label" style="white-space: nowrap;">運転手</span>
-                                                <div class="position-relative" style="width: 150px;">
-                                                    <input type="text" class="form-control form-control-sm border search-input driver-search" 
-                                                           id="driver_search_1" 
-                                                           data-vehicle-index="1" 
-                                                           value="{{ $driverName }}" 
-                                                           placeholder="運転手名" autocomplete="off">
-                                                    <input type="hidden" name="bus_assignments[1][driver_id]" 
-                                                           id="driver_id_1" 
-                                                           class="driver-id-field" 
-                                                           value="{{ $driverId }}">
-                                                    <div class="suggestions-container" id="driver_suggestions_1" style="display: none;"></div>
-                                                </div>
+                                                <select class="form-select form-select-sm border driver-select" 
+                                                        id="driver_select_1" 
+                                                        name="bus_assignments[1][driver_id]"
+                                                        data-vehicle-index="1"
+                                                        style="width: 150px;">
+                                                    <option value="">-- 選択 --</option>
+                                                    @foreach($drivers as $driver)
+                                                        <option value="{{ $driver->id }}" {{ ($busAssignment->driver_id ?? $driverId) == $driver->id ? 'selected' : '' }}>
+                                                            {{ $driver->name }} {{ $driver->driver_code ? '(' . $driver->driver_code . ')' : '' }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
                                             </div>
                                             
                                             <div class="d-flex align-items-center" style="gap: 8px;">
@@ -704,7 +719,18 @@
                                             
                                             <div class="d-flex align-items-center" style="gap: 8px;">
                                                 <span class="span-label" style="white-space: nowrap; width: 33px !important; min-width: 33px !important; margin-right: 0;">添乗</span>
-                                                <input type="text" class="form-control form-control-sm border" name="bus_assignments[1][accompanying]" value="{{ $busAssignment->accompanying ?? '' }}" style="width: 90px;">
+                                                <select class="form-select form-select-sm border guide-select" 
+                                                        id="guide_select_1" 
+                                                        name="bus_assignments[1][guide_id]"
+                                                        data-vehicle-index="1"
+                                                        style="width: 90px;">
+                                                    <option value="">-- 選択 --</option>
+                                                    @foreach($guides as $guide)
+                                                        <option value="{{ $guide->id }}" {{ ($busAssignment->guide_id ?? '') == $guide->id ? 'selected' : '' }}>
+                                                            {{ $guide->name }} {{ $guide->guide_code ? '(' . $guide->guide_code . ')' : '' }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
                                             </div>
 
                                             <div class="d-flex align-items-center" style="margin-left: auto; gap: 8px;">
@@ -719,13 +745,13 @@
 
                             <div class="col-md-6" style="width:40%; padding-right: 5px; padding-left: 5px;">
                                 <div class="tab-container-1">
-                                    <div class="d-flex w-100" style="border-bottom: 1px solid #E5E7EB;">
-                                        <span class="tab-button2 active flex-fill text-center px-2 py-1" data-container="1" data-tab2="basic2-1" style="background-color: white; border: 1px solid #E5E7EB; border-bottom-color: white; border-top-left-radius: 4px; border-top-right-radius: 4px; margin-bottom: -1px; color: #374151; font-size: 0.8rem; cursor: pointer;">基本</span>
-                                        <span class="tab-button2 flex-fill text-center px-2 py-1" data-container="1" data-tab2="doc-1" style="background-color: #F3F4F6; border: 1px solid #E5E7EB; border-bottom-color: #E5E7EB; border-top-left-radius: 4px; border-top-right-radius: 4px; margin-bottom: -1px; color: #6B7280; font-size: 0.8rem; cursor: pointer; margin-left: -1px;">DOC</span>
-                                        <span class="tab-button2 flex-fill text-center px-2 py-1" data-container="1" data-tab2="history2-1" style="background-color: #F3F4F6; border: 1px solid #E5E7EB; border-bottom-color: #E5E7EB; border-top-left-radius: 4px; border-top-right-radius: 4px; margin-bottom: -1px; color: #6B7280; font-size: 0.8rem; cursor: pointer; margin-left: -1px;">履歴</span>
+                                    <div class="d-flex w-100" style="border-bottom: 1px solid #aaa;">
+                                        <span class="tab-button2 active flex-fill text-center px-2 py-1" data-container="1" data-tab2="basic2-1" style="background-color: white; border: 1px solid #aaa; border-bottom-color: white; border-top-left-radius: 4px; border-top-right-radius: 4px; margin-bottom: -1px; color: #374151; font-size: 0.8rem; cursor: pointer;">基本</span>
+                                        <span class="tab-button2 flex-fill text-center px-2 py-1" data-container="1" data-tab2="doc-1" style="background-color: #F3F4F6; border: 1px solid #aaa; border-bottom-color: #aaa; border-top-left-radius: 4px; border-top-right-radius: 4px; margin-bottom: -1px; color: #6B7280; font-size: 0.8rem; cursor: pointer; margin-left: -1px;">DOC</span>
+                                        <span class="tab-button2 flex-fill text-center px-2 py-1" data-container="1" data-tab2="history2-1" style="background-color: #F3F4F6; border: 1px solid #aaa; border-bottom-color: #aaa; border-top-left-radius: 4px; border-top-right-radius: 4px; margin-bottom: -1px; color: #6B7280; font-size: 0.8rem; cursor: pointer; margin-left: -1px;">履歴</span>
                                     </div>
 
-                                    <div id="basic2-1" class="tab-content2" style="border: 1px solid #E5E7EB; border-top: 0; background-color: #fff; padding: 10px; height: 100px; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px;">
+                                    <div id="basic2-1" class="tab-content2" style="border: 1px solid #aaa; border-top: 0; background-color: #fff; padding: 10px; height: 100px; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px;">
                                         <div class="row">
                                             <div class="col-md-12">
                                                 <div class="d-flex align-items-start">
@@ -736,7 +762,7 @@
                                         </div>
                                     </div>
 
-                                    <div id="doc-1" class="tab-content2" style="display: none; border: 1px solid #E5E7EB; border-top: 0; background-color: #fff; padding: 10px; height: 100px;">
+                                    <div id="doc-1" class="tab-content2" style="display: none; border: 1px solid #aaa; border-top: 0; background-color: #fff; padding: 10px; height: 100px;">
                                         <div class="row">
                                             <div class="col-md-12">
                                                 <div class="d-flex align-items-start">
@@ -747,7 +773,7 @@
                                         </div>
                                     </div>
 
-                                    <div id="history2-1" class="tab-content2" style="display: none; border: 1px solid #E5E7EB; border-top: 0; background-color: #fff; padding: 10px; height: 100px;">
+                                    <div id="history2-1" class="tab-content2" style="display: none; border: 1px solid #aaa; border-top: 0; background-color: #fff; padding: 10px; height: 100px;">
                                         <div class="row">
                                             <div class="col-md-12">
                                                 <div class="d-flex align-items-start">
@@ -778,17 +804,17 @@
                                         @forelse($allItineraries as $index => $itinerary)
                                         @php 
                                             $displayNumber = $index + 1;
-                                            $itineraryBusUuid = $itinerary->bus_ass_uuid ?? '';
+                                            $itineraryBusId = $itinerary->bus_assignment_id ?? '';
                                         @endphp
-                                        <tr class="itinerary-row" data-index="{{ $index }}" data-vehicle="1" data-bus-uuid="{{ $itineraryBusUuid }}" data-itinerary-id="{{ $itinerary->id }}">
+                                        <tr class="itinerary-row" data-index="{{ $index }}" data-vehicle="1" data-bus-id="{{ $itineraryBusId }}" data-itinerary-id="{{ $itinerary->id }}">
                                             <td style="vertical-align: middle; text-align: center; background-color: #f9f9f9; position: relative;">
                                                 <span class="row-number" style="position: absolute; top: 2px; left: 2px; color: #2563eb; font-size: 10px; font-weight: bold;">{{ $displayNumber }}</span>
                                                 <input type="hidden" name="daily_itineraries[{{ $index }}][id]" value="{{ $itinerary->id }}">
                                                 <input type="hidden" name="daily_itineraries[{{ $index }}][display_order]" value="{{ $index + 1 }}">
-                                                <input type="hidden" name="daily_itineraries[{{ $index }}][bus_ass_uuid]" value="{{ $itineraryBusUuid }}" class="itinerary-bus-uuid">
+                                                <input type="hidden" name="daily_itineraries[{{ $index }}][bus_assignment_id]" value="{{ $itineraryBusId }}" class="itinerary-bus-id">
                                                 <input type="hidden" name="daily_itineraries[{{ $index }}][vehicle_id]" value="{{ $itinerary->vehicle_id ?? '' }}" class="itinerary-vehicle-id">
                                                 <input type="hidden" name="daily_itineraries[{{ $index }}][driver_id]" value="{{ $itinerary->driver_id ?? $driverId }}" class="itinerary-driver-id">
-                                                <input type="date" class="form-control form-control-sm border" name="daily_itineraries[{{ $index }}][date]" value="{{ $itinerary->date ? \Carbon\Carbon::parse($itinerary->date)->format('Y-m-d') : '' }}" style="width: 100%; text-align: center;">
+                                                <input type="text" class="form-control form-control-sm border datepicker-3months" name="daily_itineraries[{{ $index }}][date]" value="{{ $itinerary->date ? \Carbon\Carbon::parse($itinerary->date)->format('Y-m-d') : '' }}" style="width: 100%; text-align: center;" placeholder="YYYY-MM-DD">
                                                 <input type="hidden" name="daily_itineraries[{{ $index }}][vehicle_group]" value="1">
                                             </td>
                                             <td style="padding: 2px;">
@@ -867,6 +893,18 @@
                                     <span class="span-label" style="min-width: 30px;">備考</span>
                                     <textarea name="bus_assignments[1][operation_remarks]" rows="1" class="form-control form-control-sm border" placeholder="指示書に表示">{{ $busAssignment->operation_remarks ?? '' }}</textarea>
                                 </div>
+                                
+                                <div class="d-flex align-items-center gap-4 mt-2">
+                                    <div class="form-check d-flex align-items-center">
+                                        <input type="checkbox" class="form-check-input me-1" name="bus_assignments[1][ignore_operation]" value="1" {{ $busAssignment->ignore_operation ?? false ? 'checked' : '' }} style="margin: 0 0 0 40px;">
+                                        <label class="form-check-label">運行無視</label>
+                                    </div>
+                                    <div class="form-check d-flex align-items-center">
+                                        <input type="checkbox" class="form-check-input me-1" name="bus_assignments[1][ignore_driver]" value="1" {{ $busAssignment->ignore_driver ?? false ? 'checked' : '' }} style="margin: 0;">
+                                        <label class="form-check-label">運転無視</label>
+                                    </div>
+                                </div>
+                        
                             </div>
                             
                             <div class="col-md-6" style="width:40%; padding-right: 5px; padding-left: 5px;">
@@ -903,10 +941,9 @@
 </div>
 
 <style>
-/* 既存のスタイルはそのまま */
 .text-gray { color: #6b7280; font-size: 11px; }
-.form-input { width: 100%; border: 1px solid #E5E7EB; border-radius: 4px; font-size: 11px; padding: 4px 6px; height: 28px; }
-.form-input-small { border: 1px solid #E5E7EB; border-radius: 4px; padding: 4px; height: 28px; font-size: 11px; }
+.form-input { width: 100%; border: 1px solid #aaa; border-radius: 4px; font-size: 11px; padding: 4px 6px; height: 28px; }
+.form-input-small { border: 1px solid #aaa; border-radius: 4px; padding: 4px; height: 28px; font-size: 11px; }
 .checkbox { width: 12px; height: 12px; margin-right: 2px; }
 .checkbox-large { width: 14px; height: 14px; margin-right: 4px; }
 .label-text { color: #374151; font-size: 11px; }
@@ -915,7 +952,7 @@
 .tab-wrapper { display: flex; margin-bottom: -1px; }
 .tab-item { font-size: 11px; padding: 6px 16px; border-radius: 4px 4px 0 0; cursor: pointer; }
 .tab-item.active { background-color: white; color: #374151; border-top: 1px solid #d1d5db; border-left: 1px solid #d1d5db; border-right: 1px solid #d1d5db; border-bottom: none; z-index: 2; }
-.tab-item.inactive { background-color: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; border-bottom: 1px solid #d1d5db; }
+.tab-item.inactive { background-color: #f3f4f6; color: #374151; border: 1px solid #aaa; border-bottom: 1px solid #d1d5db; }
 .tab-line { height: 1px; background-color: #d1d5db; width: 100%; margin-top: -1px; z-index: 1; }
 .tab-content { padding-top: 4px; }
 .btn-primary { background-color: #2563eb; border: none; color: white; font-size: 12px; padding: 6px 24px; border-radius: 4px; cursor: pointer; }
@@ -985,7 +1022,7 @@
     left: 0;
     right: 0;
     background: white;
-    border: 1px solid #E5E7EB;
+    border: 1px solid #aaa;
     border-radius: 4px;
     max-height: 200px;
     overflow-y: auto;
@@ -1010,6 +1047,21 @@
 
 .vehicle-selected { border-color: #2563eb; background-color: #f0f7ff; }
 .warning-message { color: #f59e0b; font-size: 10px; margin-top: 2px; animation: fadeIn 0.3s ease; }
+
+.card {
+    border: 1px solid #999;
+    overflow: hidden;
+}
+.card-body {
+    color: #aaa !important;
+}
+
+input[type="text"],
+input[type="checkbox"],
+input[type="number"],
+.border{
+    border: 1px solid #aaa !important;
+}
 
 @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -1068,9 +1120,6 @@ input[readonly]:focus { outline: none; border-color: #E5E7EB; }
 .gap-4 {
     gap: 1.5rem;
 }
-.border {
-    border: 1px solid #E5E7EB !important;
-}
 .bg-white {
     background-color: #ffffff !important;
 }
@@ -1093,7 +1142,7 @@ input[readonly]:focus { outline: none; border-color: #E5E7EB; }
 }
 .tab-button:not(.active), .tab-button2:not(.active) {
     background-color: #F3F4F6 !important;
-    border-bottom-color: #E5E7EB !important;
+    border-bottom-color: #aaa !important;
     color: #6B7280 !important;
 }
 .table {
@@ -1101,7 +1150,7 @@ input[readonly]:focus { outline: none; border-color: #E5E7EB; }
 }
 .table th {
     font-weight: 500;
-    color: #374151;
+    color: #aaa;
     border-color: #E5E7EB;
 }
 .table td {
@@ -1110,7 +1159,7 @@ input[readonly]:focus { outline: none; border-color: #E5E7EB; }
 }
 .vehicle-detail-card {
     margin-bottom: 1rem;
-    border: 1px solid #E5E7EB;
+    border: 1px solid #aaa;
 }
 .vehicle-detail-card .card-header {
     background-color: #141c28;
@@ -1144,10 +1193,243 @@ input[readonly]:focus { outline: none; border-color: #E5E7EB; }
     opacity: 0.4;
     cursor: not-allowed;
 }
+
+/* Flatpickr 日历美化样式 - 紧凑版 */
+.flatpickr-calendar {
+    border: 1px solid #ddd !important;
+    border-radius: 6px !important;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12) !important;
+    font-family: inherit !important;
+    font-size: 11px !important;
+    overflow: hidden !important;
+}
+
+.flatpickr-calendar.multiMonth {
+    width: 516px !important;
+    max-width: 95vw !important;
+}
+
+.flatpickr-calendar.multiMonth .flatpickr-innerContainer {
+    width: 100% !important;
+}
+
+.flatpickr-calendar.multiMonth .flatpickr-months {
+    display: flex !important;
+}
+
+.flatpickr-calendar.multiMonth .flatpickr-month {
+    flex: 1 !important;
+}
+
+.flatpickr-calendar.multiMonth .flatpickr-month:not(:last-child) {
+    border-right: 1px solid #e9ecef !important;
+}
+
+.flatpickr-months {
+    background: linear-gradient(135deg, #1f3241 0%, #2d4a5e 100%) !important;
+    border-radius: 6px 6px 0 0 !important;
+    display: flex !important;
+}
+
+.flatpickr-month {
+    height: 28px !important;
+    padding-right: 0 !important;
+}
+
+.flatpickr-current-month {
+    padding: 3px 0 0 0 !important;
+}
+
+.flatpickr-current-month .flatpickr-monthDropdown-months {
+    font-weight: 600 !important;
+    color: #fff !important;
+    font-size: 11px !important;
+}
+
+.flatpickr-current-month .numInputWrapper span {
+    color: #fff !important;
+}
+
+.flatpickr-current-month input.cur-year {
+    color: #fff !important;
+    font-weight: 600 !important;
+    font-size: 11px !important;
+}
+
+.flatpickr-months .flatpickr-month,
+.flatpickr-months .flatpickr-next-month,
+.flatpickr-months .flatpickr-prev-month {
+    color: #fff !important;
+    fill: #fff !important;
+}
+
+.flatpickr-months .flatpickr-next-month:hover svg,
+.flatpickr-months .flatpickr-prev-month:hover svg {
+    fill: #ffc107 !important;
+}
+
+.flatpickr-months .flatpickr-next-month,
+.flatpickr-months .flatpickr-prev-month {
+    width: 20px !important;
+    height: 20px !important;
+    padding: 2px !important;
+}
+
+.flatpickr-weekdays {
+    background: #f8f9fa !important;
+    border-bottom: 1px solid #e9ecef !important;
+    margin: 0 !important;
+}
+
+.flatpickr-weekday {
+    color: #495057 !important;
+    font-weight: 600 !important;
+    font-size: 10px !important;
+    padding: 1px 0 !important;
+}
+
+.flatpickr-days {
+    border: none !important;
+    padding: 0 !important;
+}
+
+.flatpickr-day {
+    color: #374151 !important;
+    border-radius: 2px !important;
+    margin: 0 !important;
+    border: 1px solid transparent !important;
+    max-width: 24px !important;
+    width: 24px !important;
+    height: 22px !important;
+    line-height: 20px !important;
+    font-size: 10px !important;
+}
+
+.flatpickr-day:hover {
+    background: #e0f2fe !important;
+    border-color: #2563eb !important;
+    color: #2563eb !important;
+}
+
+.flatpickr-day.selected {
+    background: #2563eb !important;
+    border-color: #2563eb !important;
+    color: #fff !important;
+    font-weight: 600 !important;
+}
+
+.flatpickr-day.selected:hover {
+    background: #1d4ed8 !important;
+}
+
+.flatpickr-day.startRange,
+.flatpickr-day.endRange {
+    background: #2563eb !important;
+    border-color: #2563eb !important;
+    color: #fff !important;
+}
+
+.flatpickr-day.inRange {
+    background: #dbeafe !important;
+    border-color: transparent !important;
+    color: #1e40af !important;
+}
+
+.flatpickr-day.today {
+    border-color: #ffc107 !important;
+    background: #fffbeb !important;
+    color: #374151 !important;
+}
+
+.flatpickr-day.today:hover {
+    background: #fef3c7 !important;
+    border-color: #f59e0b !important;
+    color: #374151 !important;
+}
+
+.flatpickr-months .flatpickr-month {
+    background: transparent !important;
+}
+
+span.flatpickr-weekday {
+    background: #f8f9fa !important;
+}
+
+.flatpickr-calendar.showTimeInput.hasTime .flatpickr-time {
+    border-top: 1px solid #e9ecef !important;
+}
+
+/* 确保3个月完整显示 */
+.flatpickr-calendar.multiMonth .dayContainer {
+    width: 168px !important;
+    min-width: 168px !important;
+    max-width: 168px !important;
+    position: relative !important;
+}
+
+/* 外层包装器 - 用于显示竖线 */
+.month-wrapper {
+    flex: 1 !important;
+    position: relative !important;
+    padding: 2px !important;
+    height: 135px !important;
+}
+
+.month-wrapper:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background-color: #e9ecef;
+}
+
+/* 确保月份之间竖线显示到底部 - 使用 flex 让所有月份高度一致 */
+.flatpickr-calendar.multiMonth .flatpickr-days {
+    display: flex !important;
+    position: relative;
+    width: 514px !important;
+}
+
+/* 去除右边空白，确保竖线整齐 */
+.flatpickr-calendar.multiMonth .flatpickr-days .dayContainer {
+    padding: 0 !important;
+}
+
+.flatpickr-calendar.multiMonth .flatpickr-rContainer {
+    width: 514px !important;
+}
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    flatpickr('.datepicker-3months', {
+        locale: 'ja',
+        dateFormat: 'Y-m-d',
+        showMonths: 3,
+        allowInput: true,
+        clickOpens: true,
+        mode: 'single',
+        disableMobile: true,
+        wrap: false,
+        onOpen: function(selectedDates, dateStr, instance) {
+            instance.calendarContainer.style.zIndex = '9999';
+        },
+        onReady: function(selectedDates, dateStr, instance) {
+            const daysContainer = instance.daysContainer;
+            if (daysContainer) {
+                const dayContainers = daysContainer.querySelectorAll('.dayContainer');
+                dayContainers.forEach(function(dayContainer) {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'month-wrapper';
+                    dayContainer.parentNode.insertBefore(wrapper, dayContainer);
+                    wrapper.appendChild(dayContainer);
+                });
+            }
+        }
+    });
+    
     const vehicles = @json($vehicles ?? []);
     const guides = @json($guides ?? []);
     const drivers = @json($drivers ?? []);
@@ -1164,15 +1446,27 @@ document.addEventListener('DOMContentLoaded', function() {
         const btn = this;
         const card = btn.closest('.card');
         const groupId = {{ $groupInfo->id }};
-        const busUuid = card.getAttribute('data-bus-uuid');
+        const busId = card.getAttribute('data-bus-id');
         
-        if (!busUuid) {
-            alert('運行UUIDが見つかりません');
+        if (!busId) {
+            alert('運行IDが見つかりません');
+            return;
+        }
+        
+        const vehicleSelect = card.querySelector('.vehicle-select');
+        const driverSelect = card.querySelector('.driver-select');
+        const guideSelect = card.querySelector('.guide-select');
+        
+        const vehicleId = vehicleSelect ? vehicleSelect.value : '';
+        const driverId = driverSelect ? driverSelect.value : '';
+        const guideId = guideSelect ? guideSelect.value : '';
+        
+        if (!vehicleId) {
+            alert('車両を選択してください。');
             return;
         }
         
         const deletedForThisBus = [];
-        
         if (typeof deletedItineraryIds !== 'undefined' && deletedItineraryIds.length > 0) {
             deletedForThisBus.push(...deletedItineraryIds);
         }
@@ -1181,10 +1475,43 @@ document.addEventListener('DOMContentLoaded', function() {
         btn.innerHTML = '更新中...';
         btn.disabled = true;
         
+        const itineraries = [];
+        const rows = card.querySelectorAll('tr.itinerary-row:not(.no-data-row)');
+        
+        rows.forEach((row, index) => {
+            const dateInput = row.querySelector('input[name*="[date]"]');
+            const timeStartInput = row.querySelector('input[name*="[time_start]"]');
+            const timeEndInput = row.querySelector('input[name*="[time_end]"]');
+            const startLocationInput = row.querySelector('input[name*="[start_location]"]');
+            const endLocationInput = row.querySelector('input[name*="[end_location]"]');
+            const itineraryTextarea = row.querySelector('textarea[name*="[itinerary]"]');
+            const busAssignmentIdField = row.querySelector('.itinerary-bus-id');
+            
+            const itineraryId = row.getAttribute('data-itinerary-id') || '';
+            const currentBusId = busAssignmentIdField ? busAssignmentIdField.value : busId;
+            
+            if (currentBusId === busId) {
+                itineraries.push({
+                    id: itineraryId,
+                    date: dateInput ? dateInput.value : '',
+                    time_start: timeStartInput ? timeStartInput.value : '08:00',
+                    time_end: timeEndInput ? timeEndInput.value : '18:00',
+                    start_location: startLocationInput ? startLocationInput.value : '',
+                    end_location: endLocationInput ? endLocationInput.value : '',
+                    itinerary: itineraryTextarea ? itineraryTextarea.value : '',
+                    vehicle_id: vehicleId,
+                    driver_id: driverId,
+                    guide_id: guideId,
+                    bus_assignment_id: busId
+                });
+            }
+        });
+        
         const busData = {
-            bus_uuid: busUuid,
-            vehicle_id: card.querySelector('.vehicle-id-field')?.value || '',
-            driver_id: card.querySelector('.driver-id-field')?.value || '',
+            bus_id: busId,
+            vehicle_id: vehicleId,
+            driver_id: driverId,
+            guide_id: guideId,
             vehicle_number: card.querySelector('input[name*="[vehicle_number]"]')?.value || '',
             step_car: card.querySelector('input[name*="[step_car]"]')?.value || '',
             adult_count: card.querySelector('input[name*="[adult_count]"]')?.value || 0,
@@ -1209,6 +1536,10 @@ document.addEventListener('DOMContentLoaded', function() {
             _token: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}'
         };
         
+        if (itineraries.length > 0) {
+            busData.itineraries = itineraries;
+        }
+        
         if (deletedForThisBus.length > 0) {
             busData.deleted_itineraries = deletedForThisBus;
         }
@@ -1221,21 +1552,30 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             body: JSON.stringify(busData)
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                if (deletedForThisBus.length > 0) {
-                    deletedItineraryIds = deletedItineraryIds.filter(id => !deletedForThisBus.includes(id));
+        .then(async response => {
+            const text = await response.text();
+            
+            try {
+                const data = JSON.parse(text);
+                if (data.success) {
+                    if (deletedForThisBus.length > 0) {
+                        deletedItineraryIds = deletedItineraryIds.filter(id => !deletedForThisBus.includes(id));
+                    }
+                    location.reload();
+                } else {
+                    alert('エラー: ' + data.message);
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
                 }
-                location.reload();
-            } else {
-                alert('エラー: ' + data.message);
+            } catch (e) {
+                console.error('JSON解析エラー:', e);
+                alert('サーバーからの応答が不正です。コンソールを確認してください。');
                 btn.innerHTML = originalText;
                 btn.disabled = false;
             }
         })
         .catch(error => {
-            console.error('Error:', error);
+            console.error('Fetchエラー:', error);
             alert('更新中にエラーが発生しました: ' + error.message);
             btn.innerHTML = originalText;
             btn.disabled = false;
@@ -1293,39 +1633,51 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const existingCards = document.querySelectorAll('#operation-details-container > .card');
         const newIndex = existingCards.length + 1;
-        const newBusUuid = 'copy_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        const newBusId = 'copy_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         
         const sourceTable = sourceCard.querySelector('table tbody');
         const sourceRows = sourceTable.querySelectorAll('tr.itinerary-row:not(.no-data-row)');
         
-        const newCard = createCopyOperationDetailCard(newIndex, newBusUuid, sourceRows, sourceCard);
+        const newCard = createCopyOperationDetailCard(newIndex, newBusId, sourceRows, sourceCard);
         container.appendChild(newCard);
-        
+
         reindexAllTables();
         updateOperationDetailNumbers();
         refreshEventListeners();
-        
-        setTimeout(() => {
-            setupSearch('vehicle', vehicles, (item) => {
-                return {
-                    display: `${item.registration_number} ${item.vehicle_model?.model_name ? '(' + item.vehicle_model.model_name + ')' : ''}`,
-                    id: item.id,
-                    registration: item.registration_number,
-                    type: item.vehicleType?.type_name || '',
-                    model: item.vehicleModel?.model_name || '',
-                    branch: item.branch?.branch_name || '',
-                    seating: item.seating_capacity || ''
-                };
-            }, newIndex);
 
-            setupSearch('driver', drivers, (item) => {
-                return {
-                    display: `${item.name} ${item.driver_code ? '(' + item.driver_code + ')' : ''}`,
-                    id: item.id,
-                    code: item.driver_code,
-                    phone: item.phone_number
-                };
-            }, newIndex);
+        const newDateInputs = newCard.querySelectorAll('.datepicker-3months');
+        newDateInputs.forEach(function(dateInput) {
+            if (!dateInput._flatpickr) {
+                flatpickr(dateInput, {
+                    locale: 'ja',
+                    dateFormat: 'Y-m-d',
+                    showMonths: 3,
+                    allowInput: true,
+                    clickOpens: true,
+                    mode: 'single',
+                    disableMobile: true,
+                    wrap: false,
+                    onOpen: function(selectedDates, dateStr, instance) {
+                        instance.calendarContainer.style.zIndex = '9999';
+                    },
+                    onReady: function(selectedDates, dateStr, instance) {
+                        const daysContainer = instance.daysContainer;
+                        if (daysContainer) {
+                            const dayContainers = daysContainer.querySelectorAll('.dayContainer');
+                            dayContainers.forEach(function(dayContainer) {
+                                const wrapper = document.createElement('div');
+                                wrapper.className = 'month-wrapper';
+                                dayContainer.parentNode.insertBefore(wrapper, dayContainer);
+                                wrapper.appendChild(dayContainer);
+                            });
+                        }
+                    }
+                });
+            }
+        });
+
+        setTimeout(() => {
+            setupSelectChangeHandlers(newIndex);
         }, 100);
     }
 
@@ -1359,6 +1711,75 @@ document.addEventListener('DOMContentLoaded', function() {
             btn.removeEventListener('click', updateBusDetailClickHandler);
             btn.addEventListener('click', updateBusDetailClickHandler);
         });
+    }
+
+    function setupSelectChangeHandlers(vehicleIndex) {
+        const vehicleSelect = document.getElementById(`vehicle_select_${vehicleIndex}`);
+        const driverSelect = document.getElementById(`driver_select_${vehicleIndex}`);
+        const guideSelect = document.getElementById(`guide_select_${vehicleIndex}`);
+
+        if (vehicleSelect) {
+            vehicleSelect.addEventListener('change', function() {
+                const vehicleId = this.value;
+                const card = this.closest('.card');
+                
+                if (card) {
+                    const cardBusId = card.getAttribute('data-bus-id') || '';
+                    const rows = card.querySelectorAll('.itinerary-row');
+                    rows.forEach(row => {
+                        const rowBusIdField = row.querySelector('.itinerary-bus-id');
+                        if (rowBusIdField && rowBusIdField.value === cardBusId) {
+                            const vehicleIdInput = row.querySelector('.itinerary-vehicle-id');
+                            if (vehicleIdInput) {
+                                vehicleIdInput.value = vehicleId;
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        if (driverSelect) {
+            driverSelect.addEventListener('change', function() {
+                const driverId = this.value;
+                const card = this.closest('.card');
+                
+                if (card) {
+                    const cardBusId = card.getAttribute('data-bus-id') || '';
+                    const rows = card.querySelectorAll('.itinerary-row');
+                    rows.forEach(row => {
+                        const rowBusIdField = row.querySelector('.itinerary-bus-id');
+                        if (rowBusIdField && rowBusIdField.value === cardBusId) {
+                            const driverIdInput = row.querySelector('.itinerary-driver-id');
+                            if (driverIdInput) {
+                                driverIdInput.value = driverId;
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        if (guideSelect) {
+            guideSelect.addEventListener('change', function() {
+                const guideId = this.value;
+                const card = this.closest('.card');
+                
+                if (card) {
+                    const cardBusId = card.getAttribute('data-bus-id') || '';
+                    const rows = card.querySelectorAll('.itinerary-row');
+                    rows.forEach(row => {
+                        const rowBusIdField = row.querySelector('.itinerary-bus-id');
+                        if (rowBusIdField && rowBusIdField.value === cardBusId) {
+                            const guideIdInput = row.querySelector('.itinerary-guide-id');
+                            if (guideIdInput) {
+                                guideIdInput.value = guideId;
+                            }
+                        }
+                    });
+                }
+            });
+        }
     }
 
     function validateDateRange() {
@@ -1455,55 +1876,20 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (type === 'guide') {
                 const guideInput = document.getElementById('guide');
                 if (guideInput) guideInput.value = data.display;
+                const guideSelect = document.getElementById('guide_select');
+                if (guideSelect) {
+                    const option = guideSelect.querySelector(`option[value="${id}"]`);
+                    if (option) {
+                        option.selected = true;
+                        guideSelect.dispatchEvent(new Event('change'));
+                    }
+                }
             } else if (type === 'branch') {
                 const branchInput = document.getElementById('vehicle_branch');
                 if (branchInput) branchInput.value = data.display;
             } else if (type === 'category') {
                 const categoryInput = document.getElementById('business_category');
                 if (categoryInput) categoryInput.value = data.display;
-            } else if (type === 'vehicle') {
-                const vehicleIndex = searchInput.id.replace('vehicle_search_', '');
-                const vehicleIdField = document.getElementById(`vehicle_id_${vehicleIndex}`);
-                if (vehicleIdField) {
-                    vehicleIdField.value = id;
-                }
-                
-                const card = searchInput.closest('.card');
-                if (card) {
-                    const cardBusUuid = card.getAttribute('data-bus-uuid') || '';
-                    const rows = card.querySelectorAll('.itinerary-row');
-                    rows.forEach(row => {
-                        const rowBusUuidField = row.querySelector('.itinerary-bus-uuid');
-                        if (rowBusUuidField && rowBusUuidField.value === cardBusUuid) {
-                            const vehicleIdInput = row.querySelector('.itinerary-vehicle-id');
-                            if (vehicleIdInput) {
-                                vehicleIdInput.value = id;
-                            }
-                        }
-                    });
-                }
-            } else if (type === 'driver') {
-                const vehicleIndex = searchInput.id.replace('driver_search_', '');
-                const driverIdField = document.getElementById(`driver_id_${vehicleIndex}`);
-                
-                if (driverIdField) {
-                    driverIdField.value = id;
-                    
-                    const card = searchInput.closest('.card');
-                    if (card) {
-                        const cardBusUuid = card.getAttribute('data-bus-uuid') || '';
-                        const rows = card.querySelectorAll('.itinerary-row');
-                        rows.forEach(row => {
-                            const rowBusUuidField = row.querySelector('.itinerary-bus-uuid');
-                            if (rowBusUuidField && rowBusUuidField.value === cardBusUuid) {
-                                const driverIdInput = row.querySelector('.itinerary-driver-id');
-                                if (driverIdInput) {
-                                    driverIdInput.value = id;
-                                }
-                            }
-                        });
-                    }
-                }
             }
         });
 
@@ -1534,17 +1920,17 @@ document.addEventListener('DOMContentLoaded', function() {
         const vehicleGroupValue = vehicleGroup ? vehicleGroup.value : '1';
         
         const card = currentRow.closest('.card');
-        const cardBusUuid = card ? card.getAttribute('data-bus-uuid') || '' : '';
+        const cardBusId = card ? card.getAttribute('data-bus-id') || '' : '';
         
-        const vehicleId = currentRow.querySelector('input[name*="[vehicle_id]"]') ? currentRow.querySelector('input[name*="[vehicle_id]"]').value : '';
-        
-        const driverId = card ? card.querySelector('.driver-id-field')?.value || '' : '';
+        const vehicleId = card.querySelector('.vehicle-select') ? card.querySelector('.vehicle-select').value : '';
+        const driverId = card.querySelector('.driver-select') ? card.querySelector('.driver-select').value : '';
+        const guideId = card.querySelector('.guide-select') ? card.querySelector('.guide-select').value : '';
         
         const allRows = Array.from(tbody.querySelectorAll('tr.itinerary-row:not(.no-data-row)'));
         
         let newIndex = allRows.length;
         
-        const newRow = createNewRow(date, newIndex, vehicleGroupValue, cardBusUuid, vehicleId, driverId);
+        const newRow = createNewRow(date, newIndex, vehicleGroupValue, cardBusId, vehicleId, driverId, guideId);
         
         const nextRow = currentRow.nextElementSibling;
         if (nextRow && !nextRow.classList.contains('no-data-row')) {
@@ -1560,6 +1946,35 @@ document.addEventListener('DOMContentLoaded', function() {
         
         reindexRows(table);
         updateMoveButtons(table);
+
+        const newDateInput = newRow.querySelector('.datepicker-3months');
+        if (newDateInput && !newDateInput._flatpickr) {
+            flatpickr(newDateInput, {
+                locale: 'ja',
+                dateFormat: 'Y-m-d',
+                showMonths: 3,
+                allowInput: true,
+                clickOpens: true,
+                mode: 'single',
+                disableMobile: true,
+                wrap: false,
+                onOpen: function(selectedDates, dateStr, instance) {
+                    instance.calendarContainer.style.zIndex = '9999';
+                },
+                onReady: function(selectedDates, dateStr, instance) {
+                    const daysContainer = instance.daysContainer;
+                    if (daysContainer) {
+                        const dayContainers = daysContainer.querySelectorAll('.dayContainer');
+                        dayContainers.forEach(function(dayContainer) {
+                            const wrapper = document.createElement('div');
+                            wrapper.className = 'month-wrapper';
+                            dayContainer.parentNode.insertBefore(wrapper, dayContainer);
+                            wrapper.appendChild(dayContainer);
+                        });
+                    }
+                }
+            });
+        }
     }
 
     function deleteRow(clickedButton) {
@@ -1595,12 +2010,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    function createNewRow(date, index, vehicleGroup = '1', busUuid = '', vehicleId = '', driverId = '') {
+    function createNewRow(date, index, vehicleGroup = '1', busId = '', vehicleId = '', driverId = '', guideId = '') {
         const newRow = document.createElement('tr');
         newRow.className = 'itinerary-row';
         newRow.setAttribute('data-vehicle', vehicleGroup);
         newRow.setAttribute('data-index', index);
-        newRow.setAttribute('data-bus-uuid', busUuid);
+        newRow.setAttribute('data-bus-id', busId);
         newRow.setAttribute('data-itinerary-id', '');
         
         newRow.innerHTML = `
@@ -1608,10 +2023,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 <span class="row-number" style="position: absolute; top: 2px; left: 2px; color: #2563eb; font-size: 10px; font-weight: bold;">${index + 1}</span>
                 <input type="hidden" name="daily_itineraries[${index}][id]" value="">
                 <input type="hidden" name="daily_itineraries[${index}][display_order]" value="${index + 1}">
-                <input type="hidden" name="daily_itineraries[${index}][bus_ass_uuid]" value="${busUuid}" class="itinerary-bus-uuid">
+                <input type="hidden" name="daily_itineraries[${index}][bus_assignment_id]" value="${busId}" class="itinerary-bus-id">
                 <input type="hidden" name="daily_itineraries[${index}][vehicle_id]" value="${vehicleId}" class="itinerary-vehicle-id">
                 <input type="hidden" name="daily_itineraries[${index}][driver_id]" value="${driverId}" class="itinerary-driver-id">
-                <input type="date" class="form-control form-control-sm border" name="daily_itineraries[${index}][date]" value="${date}" style="width: 100%; text-align: center;">
+                <input type="hidden" name="daily_itineraries[${index}][guide_id]" value="${guideId}" class="itinerary-guide-id">
+                <input type="text" class="form-control form-control-sm border datepicker-3months" name="daily_itineraries[${index}][date]" value="${date}" style="width: 100%; text-align: center;" placeholder="YYYY-MM-DD">
                 <input type="hidden" name="daily_itineraries[${index}][vehicle_group]" value="${vehicleGroup}">
             </td>
             <td style="padding: 2px;">
@@ -1720,19 +2136,53 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    function createCopyOperationDetailCard(newIndex, newBusUuid, sourceRows, sourceCard) {
+    function createCopyOperationDetailCard(newIndex, newBusId, sourceRows, sourceCard) {
         const newCard = document.createElement('div');
         newCard.className = 'card shadow-sm mb-1 vehicle-detail-card';
         newCard.setAttribute('data-vehicle-id', 'new-vehicle');
         newCard.setAttribute('data-vehicle-index', newIndex);
-        newCard.setAttribute('data-bus-uuid', newBusUuid);
-        
-        const sourceVehicleName = sourceCard.querySelector('.card-header h6 span')?.textContent || '';
-        const sourceDriverName = sourceCard.querySelector('.driver-search')?.value || '';
-        
+        newCard.setAttribute('data-bus-id', newBusId);
+
+        const getSourceValue = (fieldName) => {
+            const input = sourceCard.querySelector(`[name*="[${fieldName}]"]`);
+            return input ? (input.type === 'checkbox' ? input.checked : input.value) : '';
+        };
+
+        const getSourceSelectValue = (selectClass) => {
+            const select = sourceCard.querySelector(`.${selectClass}`);
+            return select ? select.value : '';
+        };
+
+        const vehicleNumber = getSourceValue('vehicle_number');
+        const statusFinalized = getSourceValue('status_finalized');
+        const statusSent = getSourceValue('status_sent');
+        const stepCar = getSourceValue('step_car');
+        const adultCount = getSourceValue('adult_count');
+        const childCount = getSourceValue('child_count');
+        const guideCount = getSourceValue('guide_count');
+        const otherCount = getSourceValue('other_count');
+        const vehicleTypeSpecCheck = getSourceValue('vehicle_type_spec_check');
+        const luggageCount = getSourceValue('luggage_count');
+        const temporaryDriver = getSourceValue('temporary_driver');
+        const representative = getSourceValue('representative');
+        const representativePhone = getSourceValue('representative_phone');
+        const lockArrangement = getSourceValue('lock_arrangement');
+        const operationBasicRemarks = getSourceValue('operation_basic_remarks');
+        const docRemarks = getSourceValue('doc_remarks');
+        const historyRemarks = getSourceValue('history_remarks');
+        const attention = getSourceValue('attention');
+        const operationRemarks = getSourceValue('operation_remarks');
+        const ignoreOperation = getSourceValue('ignore_operation');
+        const ignoreDriver = getSourceValue('ignore_driver');
+        const operationMemo = getSourceValue('operation_memo');
+
+        const vehicleId = getSourceSelectValue('vehicle-select');
+        const driverId = getSourceSelectValue('driver-select');
+        const guideId = getSourceSelectValue('guide-select');
+
         let tableRows = '';
         if (sourceRows && sourceRows.length > 0) {
-            tableRows = generateRowsFromSource(sourceRows, newIndex, newBusUuid);
+            tableRows = generateRowsFromSource(sourceRows, newIndex, newBusId);
         } else {
             tableRows = `
                 <tr class="no-data-row">
@@ -1744,21 +2194,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         newCard.innerHTML = `
-            <div class="card-header py-1 px-3 d-flex align-items-center" style="background-color: #141c28; border-bottom: 1px solid #E5E7EB;">
+            <div class="card-header py-1 px-3 d-flex align-items-center" style="background-color: #141c28; border-bottom: 1px solid #aaa;">
                 <h6 class="mb-0 me-3" style="color: #fff; font-size: 0.875rem; font-weight: 500;">
-                    運行詳細-${newIndex.toString().padStart(2, '0')} 
-                    <span style="font-size: 0.75rem; margin-left: 10px; color: #a0aec0;">
-                        ${sourceVehicleName}
-                        ${sourceDriverName ? '(' + sourceDriverName + ')' : ''}
-                    </span>
+                    運行詳細-${newIndex.toString().padStart(2, '0')}
                 </h6>
                 <div class="d-flex align-items-center ms-auto" style="gap: 15px;">
                     <div class="form-check d-flex align-items-center">
                         <label class="form-check-label me-2" for="lock_arrangement_${newIndex}" style="font-size: 0.8rem; color: #fff;">操作ロック</label>
-                        <input type="checkbox" class="form-check-input" id="lock_arrangement_${newIndex}" name="bus_assignments[${newIndex}][lock_arrangement]" value="1" style="margin: 0;">
+                        <input type="checkbox" class="form-check-input" id="lock_arrangement_${newIndex}" name="bus_assignments[${newIndex}][lock_arrangement]" value="1" ${lockArrangement ? 'checked' : ''} style="margin: 0;">
                     </div>
                     <div class="d-flex align-items-center" style="gap: 5px;">
-                        <input type="text" class="form-control form-control-sm border merge-operation-id" placeholder="運行ID (例: 24)" style="width: 120px;">
+                        <input type="text" class="form-control form-control-sm border merge-operation-id" placeholder="運行ID" style="width: 80px;">
                         <button type="button" class="btn btn-sm btn-primary merge-btn" style="font-size: 0.75rem; padding: 4px 8px;">統合</button>
                         <button type="button" class="btn btn-sm btn-secondary split-btn" style="font-size: 0.75rem; padding: 4px 8px;">分割</button>
                         <button type="button" class="btn btn-sm btn-info copy-btn" style="font-size: 0.75rem; padding: 4px 8px; background-color: #17a2b8; border-color: #17a2b8; color: white;">Copy</button>
@@ -1767,7 +2213,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             </div>
             <div class="card-body p-2">
-                <input type="hidden" name="bus_assignments[${newIndex}][key_uuid]" value="${newBusUuid}">
+                <input type="hidden" name="bus_assignments[${newIndex}][id]" value="">
                 <input type="hidden" name="bus_assignments[${newIndex}][vehicle_index]" value="${newIndex}">
                 
                 <div class="row" style="margin-right: -5px; margin-left: -5px;">
@@ -1777,22 +2223,22 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <div class="d-flex align-items-center w-100" style="gap: 8px; justify-content: space-between;">
                                     <div class="d-flex align-items-center" style="gap: 8px;">
                                         <span class="span-label" style="white-space: nowrap;">運行ID</span>
-                                        <span class="border px-2 py-1 bg-white rounded" style="min-width: 338px; color: #2563eb;">#</span>
+                                        <span class="border px-2 py-1 bg-white rounded" style="min-width: 338px; color: #2563eb;">&nbsp;</span>
                                     </div>
                                     
                                     <div class="d-flex align-items-center" style="gap: 8px;">
                                         <span class="span-label" style="white-space: nowrap;">号車</span>
-                                        <input type="text" class="form-control form-control-sm border" name="bus_assignments[${newIndex}][vehicle_number]" value="${newIndex.toString().padStart(2, '0')}" style="width: 60px;">
+                                        <input type="text" class="form-control form-control-sm border" name="bus_assignments[${newIndex}][vehicle_number]" value="${vehicleNumber || newIndex.toString().padStart(2, '0')}" style="width: 60px;">
                                     </div>
                                     
                                     <div class="d-flex align-items-center" style="gap: 8px;">
                                         <span class="span-label" style="white-space: nowrap;">最終確認</span>
-                                        <input type="checkbox" class="form-check-input" name="bus_assignments[${newIndex}][status_finalized]" value="1" style="margin: 0;">
+                                        <input type="checkbox" class="form-check-input" name="bus_assignments[${newIndex}][status_finalized]" value="1" ${statusFinalized ? 'checked' : ''} style="margin: 0;">
                                     </div>
-                                    
+
                                     <div class="d-flex align-items-center" style="gap: 8px;">
                                         <span class="span-label" style="white-space: nowrap;">送信</span>
-                                        <input type="checkbox" class="form-check-input" name="bus_assignments[${newIndex}][status_sent]" value="1" style="margin: 0;">
+                                        <input type="checkbox" class="form-check-input" name="bus_assignments[${newIndex}][status_sent]" value="1" ${statusSent ? 'checked' : ''} style="margin: 0;">
                                     </div>
                                 </div>
                             </div>
@@ -1803,15 +2249,15 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <div class="d-flex align-items-center w-100" style="gap: 15px;">
                                     <div class="d-flex align-items-center" style="flex: 1; gap: 8px;">
                                         <span class="span-label" style="white-space: normal; word-break: break-all; line-height: 1.2; min-width: 70px;">ステップカー</span>
-                                        <input type="text" class="form-control form-control-sm border" name="bus_assignments[${newIndex}][step_car]" value="" placeholder="ステップカー情報" style="flex: 1; min-width: 338px;">
+                                        <input type="text" class="form-control form-control-sm border" name="bus_assignments[${newIndex}][step_car]" value="${stepCar || ''}" placeholder="ステップカー情報" style="flex: 1; min-width: 338px;">
                                     </div>
-                                    
+
                                     <div class="d-flex align-items-center" style="flex: 2; gap: 5px; justify-content: flex-end;">
                                         <span class="span-label" style="white-space: nowrap; line-height: 29px;">人数</span>
-                                        <input type="number" class="form-control form-control-sm border" name="bus_assignments[${newIndex}][adult_count]" value="0" placeholder="大人" style="width: 58px;" min="0">
-                                        <input type="number" class="form-control form-control-sm border" name="bus_assignments[${newIndex}][child_count]" value="0" placeholder="小人" style="width: 58px;" min="0">
-                                        <input type="number" class="form-control form-control-sm border" name="bus_assignments[${newIndex}][guide_count]" value="0" placeholder="Guide" style="width: 60px;" min="0">
-                                        <input type="number" class="form-control form-control-sm border" name="bus_assignments[${newIndex}][other_count]" value="0" placeholder="その他" style="width: 60px;" min="0">
+                                        <input type="number" class="form-control form-control-sm border" name="bus_assignments[${newIndex}][adult_count]" value="${adultCount || 0}" placeholder="大人" style="width: 58px;" min="0">
+                                        <input type="number" class="form-control form-control-sm border" name="bus_assignments[${newIndex}][child_count]" value="${childCount || 0}" placeholder="小人" style="width: 58px;" min="0">
+                                        <input type="number" class="form-control form-control-sm border" name="bus_assignments[${newIndex}][guide_count]" value="${guideCount || 0}" placeholder="Guide" style="width: 60px;" min="0">
+                                        <input type="number" class="form-control form-control-sm border" name="bus_assignments[${newIndex}][other_count]" value="${otherCount || 0}" placeholder="その他" style="width: 60px;" min="0">
                                     </div>
                                 </div>
                             </div>
@@ -1822,21 +2268,24 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <div class="d-flex align-items-center w-100" style="gap: 10px;">
                                     <div class="d-flex align-items-center" style="gap: 8px;">
                                         <span class="span-label" style="white-space: nowrap;">車両</span>
-                                        <div class="position-relative" style="width: 338px;">
-                                            <input type="text" class="form-control form-control-sm border search-input vehicle-search" id="vehicle_search_${newIndex}" data-vehicle-index="${newIndex}" value="" placeholder="車両名を入力" autocomplete="off" required>
-                                            <input type="hidden" name="bus_assignments[${newIndex}][vehicle_id]" id="vehicle_id_${newIndex}" class="vehicle-id-field" value="">
-                                            <div class="suggestions-container" id="vehicle_suggestions_${newIndex}" style="display: none;"></div>
-                                        </div>
+                                        <select class="form-select form-select-sm border vehicle-select" 
+                                                id="vehicle_select_${newIndex}" 
+                                                name="bus_assignments[${newIndex}][vehicle_id]"
+                                                data-vehicle-index="${newIndex}"
+                                                style="width: 338px;">
+                                            <option value="">-- 車両を選択 --</option>
+                                            ${vehicles.map(v => `<option value="${v.id}" ${vehicleId == v.id ? 'selected' : ''}>${v.registration_number} ${v.vehicle_model ? '(' + v.vehicle_model.model_name + ')' : ''}</option>`).join('')}
+                                        </select>
                                     </div>
                                     
                                     <div class="d-flex align-items-center" style="margin-left: auto; gap: 8px;">
                                         <span class="span-label" style="white-space: nowrap;">車種指定</span>
-                                        <input type="checkbox" class="form-check-input" name="bus_assignments[${newIndex}][vehicle_type_spec_check]" value="1" style="margin: 0;">
+                                        <input type="checkbox" class="form-check-input" name="bus_assignments[${newIndex}][vehicle_type_spec_check]" value="1" ${vehicleTypeSpecCheck ? 'checked' : ''} style="margin: 0;">
                                     </div>
-                                    
+
                                     <div class="d-flex align-items-center" style="gap: 8px;">
                                         <span class="span-label" style="white-space: nowrap;">荷物</span>
-                                        <input type="number" class="form-control form-control-sm border" name="bus_assignments[${newIndex}][luggage_count]" value="0" style="width: 60px;" min="0">
+                                        <input type="number" class="form-control form-control-sm border" name="bus_assignments[${newIndex}][luggage_count]" value="${luggageCount || 0}" style="width: 60px;" min="0">
                                     </div>
                                 </div>
                             </div>
@@ -1847,27 +2296,37 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <div class="d-flex align-items-center w-100" style="gap: 8px;">
                                     <div class="d-flex align-items-center" style="gap: 8px;">
                                         <span class="span-label" style="white-space: nowrap;">運転手</span>
-                                        <div class="position-relative" style="width: 150px;">
-                                            <input type="text" class="form-control form-control-sm border search-input driver-search" id="driver_search_${newIndex}" data-vehicle-index="${newIndex}" value="" placeholder="運転手名" autocomplete="off">
-                                            <input type="hidden" name="bus_assignments[${newIndex}][driver_id]" id="driver_id_${newIndex}" class="driver-id-field" value="">
-                                            <div class="suggestions-container" id="driver_suggestions_${newIndex}" style="display: none;"></div>
-                                        </div>
+                                        <select class="form-select form-select-sm border driver-select" 
+                                                id="driver_select_${newIndex}" 
+                                                name="bus_assignments[${newIndex}][driver_id]"
+                                                data-vehicle-index="${newIndex}"
+                                                style="width: 150px;">
+                                            <option value="">-- 選択 --</option>
+                                            ${drivers.map(d => `<option value="${d.id}" ${driverId == d.id ? 'selected' : ''}>${d.name} ${d.driver_code ? '(' + d.driver_code + ')' : ''}</option>`).join('')}
+                                        </select>
                                     </div>
                                     
                                     <div class="d-flex align-items-center" style="gap: 8px;">
                                         <span class="span-label" style="white-space: nowrap; width: 20px !important; min-width: 20px !important; margin-right: 0;">仮</span>
-                                        <input type="checkbox" class="form-check-input" name="bus_assignments[${newIndex}][temporary_driver]" value="1" style="margin: 0;">
+                                        <input type="checkbox" class="form-check-input" name="bus_assignments[${newIndex}][temporary_driver]" value="1" ${temporaryDriver ? 'checked' : ''} style="margin: 0;">
                                     </div>
-                                    
+
                                     <div class="d-flex align-items-center" style="gap: 8px;">
                                         <span class="span-label" style="white-space: nowrap; width: 33px !important; min-width: 33px !important; margin-right: 0;">添乗</span>
-                                        <input type="text" class="form-control form-control-sm border" name="bus_assignments[${newIndex}][accompanying]" value="" style="width: 90px;">
+                                        <select class="form-select form-select-sm border guide-select" 
+                                                id="guide_select_${newIndex}" 
+                                                name="bus_assignments[${newIndex}][guide_id]"
+                                                data-vehicle-index="${newIndex}"
+                                                style="width: 90px;">
+                                            <option value="">-- 選択 --</option>
+                                            ${guides.map(g => `<option value="${g.id}" ${guideId == g.id ? 'selected' : ''}>${g.name} ${g.guide_code ? '(' + g.guide_code + ')' : ''}</option>`).join('')}
+                                        </select>
                                     </div>
 
                                     <div class="d-flex align-items-center" style="margin-left: auto; gap: 8px;">
                                         <span class="span-label" style="white-space: nowrap;">代表</span>
-                                        <input type="text" class="form-control form-control-sm border" name="bus_assignments[${newIndex}][representative]" value="" placeholder="Name" style="width: 100px;">
-                                        <input type="text" class="form-control form-control-sm border" name="bus_assignments[${newIndex}][representative_phone]" value="" placeholder="Tel/Cell">
+                                        <input type="text" class="form-control form-control-sm border" name="bus_assignments[${newIndex}][representative]" value="${representative || ''}" placeholder="Name" style="width: 100px;">
+                                        <input type="text" class="form-control form-control-sm border" name="bus_assignments[${newIndex}][representative_phone]" value="${representativePhone || ''}" placeholder="Tel/Cell">
                                     </div>
                                 </div>
                             </div>
@@ -1876,40 +2335,40 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     <div class="col-md-6" style="width:40%; padding-right: 5px; padding-left: 5px;">
                         <div class="tab-container-${newIndex}">
-                            <div class="d-flex w-100" style="border-bottom: 1px solid #E5E7EB;">
-                                <span class="tab-button2 active flex-fill text-center px-2 py-1" data-container="${newIndex}" data-tab2="basic2-${newIndex}" style="background-color: white; border: 1px solid #E5E7EB; border-bottom-color: white; border-top-left-radius: 4px; border-top-right-radius: 4px; margin-bottom: -1px; color: #374151; font-size: 0.8rem; cursor: pointer;">基本</span>
-                                <span class="tab-button2 flex-fill text-center px-2 py-1" data-container="${newIndex}" data-tab2="doc-${newIndex}" style="background-color: #F3F4F6; border: 1px solid #E5E7EB; border-bottom-color: #E5E7EB; border-top-left-radius: 4px; border-top-right-radius: 4px; margin-bottom: -1px; color: #6B7280; font-size: 0.8rem; cursor: pointer; margin-left: -1px;">DOC</span>
-                                <span class="tab-button2 flex-fill text-center px-2 py-1" data-container="${newIndex}" data-tab2="history2-${newIndex}" style="background-color: #F3F4F6; border: 1px solid #E5E7EB; border-bottom-color: #E5E7EB; border-top-left-radius: 4px; border-top-right-radius: 4px; margin-bottom: -1px; color: #6B7280; font-size: 0.8rem; cursor: pointer; margin-left: -1px;">履歴</span>
+                            <div class="d-flex w-100" style="border-bottom: 1px solid #aaa;">
+                                <span class="tab-button2 active flex-fill text-center px-2 py-1" data-container="${newIndex}" data-tab2="basic2-${newIndex}" style="background-color: white; border: 1px solid #aaa; border-bottom-color: white; border-top-left-radius: 4px; border-top-right-radius: 4px; margin-bottom: -1px; color: #374151; font-size: 0.8rem; cursor: pointer;">基本</span>
+                                <span class="tab-button2 flex-fill text-center px-2 py-1" data-container="${newIndex}" data-tab2="doc-${newIndex}" style="background-color: #F3F4F6; border: 1px solid #aaa; border-bottom-color: #aaa; border-top-left-radius: 4px; border-top-right-radius: 4px; margin-bottom: -1px; color: #6B7280; font-size: 0.8rem; cursor: pointer; margin-left: -1px;">DOC</span>
+                                <span class="tab-button2 flex-fill text-center px-2 py-1" data-container="${newIndex}" data-tab2="history2-${newIndex}" style="background-color: #F3F4F6; border: 1px solid #aaa; border-bottom-color: #aaa; border-top-left-radius: 4px; border-top-right-radius: 4px; margin-bottom: -1px; color: #6B7280; font-size: 0.8rem; cursor: pointer; margin-left: -1px;">履歴</span>
                             </div>
 
-                            <div id="basic2-${newIndex}" class="tab-content2" style="border: 1px solid #E5E7EB; border-top: 0; background-color: #fff; padding: 10px; height: 100px; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px;">
+                            <div id="basic2-${newIndex}" class="tab-content2" style="border: 1px solid #aaa; border-top: 0; background-color: #fff; padding: 10px; height: 100px; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px;">
                                 <div class="row">
                                     <div class="col-md-12">
                                         <div class="d-flex align-items-start">
                                             <span class="span-label">備考</span>
-                                            <textarea name="bus_assignments[${newIndex}][operation_basic_remarks]" rows="3" class="form-control form-control-sm border" style="height: 80px;" placeholder="備考を入力..."></textarea>
+                                            <textarea name="bus_assignments[${newIndex}][operation_basic_remarks]" rows="3" class="form-control form-control-sm border" style="height: 80px;" placeholder="備考を入力...">${operationBasicRemarks || ''}</textarea>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div id="doc-${newIndex}" class="tab-content2" style="display: none; border: 1px solid #E5E7EB; border-top: 0; background-color: #fff; padding: 10px; height: 100px;">
+                            <div id="doc-${newIndex}" class="tab-content2" style="display: none; border: 1px solid #aaa; border-top: 0; background-color: #fff; padding: 10px; height: 100px;">
                                 <div class="row">
                                     <div class="col-md-12">
                                         <div class="d-flex align-items-start">
                                             <span class="span-label">備考</span>
-                                            <textarea name="bus_assignments[${newIndex}][doc_remarks]" rows="3" class="form-control form-control-sm border" style="height: 80px;" placeholder="DOC備考..."></textarea>
+                                            <textarea name="bus_assignments[${newIndex}][doc_remarks]" rows="3" class="form-control form-control-sm border" style="height: 80px;" placeholder="DOC備考...">${docRemarks || ''}</textarea>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div id="history2-${newIndex}" class="tab-content2" style="display: none; border: 1px solid #E5E7EB; border-top: 0; background-color: #fff; padding: 10px; height: 100px;">
+                            <div id="history2-${newIndex}" class="tab-content2" style="display: none; border: 1px solid #aaa; border-top: 0; background-color: #fff; padding: 10px; height: 100px;">
                                 <div class="row">
                                     <div class="col-md-12">
                                         <div class="d-flex align-items-start">
                                             <span class="span-label">備考</span>
-                                            <textarea name="bus_assignments[${newIndex}][history_remarks]" rows="3" class="form-control form-control-sm border" style="height: 80px;" placeholder="履歴備考..."></textarea>
+                                            <textarea name="bus_assignments[${newIndex}][history_remarks]" rows="3" class="form-control form-control-sm border" style="height: 80px;" placeholder="履歴備考...">${historyRemarks || ''}</textarea>
                                         </div>
                                     </div>
                                 </div>
@@ -1942,17 +2401,28 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="col-md-6" style="width:60%; padding-right: 5px; padding-left: 5px;">
                         <div class="d-flex w-100 mb-1">
                             <span class="span-label" style="min-width: 30px;">注意</span>
-                            <input type="text" name="bus_assignments[${newIndex}][attention]" class="form-control form-control-sm border" value="">
+                            <input type="text" name="bus_assignments[${newIndex}][attention]" class="form-control form-control-sm border" value="${attention || ''}">
                         </div>
-                            
+
                         <div class="d-flex w-100">
                             <span class="span-label" style="min-width: 30px;">備考</span>
-                            <textarea name="bus_assignments[${newIndex}][operation_remarks]" rows="1" class="form-control form-control-sm border" placeholder="指示書に表示"></textarea>
+                            <textarea name="bus_assignments[${newIndex}][operation_remarks]" rows="1" class="form-control form-control-sm border" placeholder="指示書に表示">${operationRemarks || ''}</textarea>
+                        </div>
+
+                        <div class="d-flex align-items-center gap-4 mt-2">
+                            <div class="form-check d-flex align-items-center">
+                                <input type="checkbox" class="form-check-input me-1" name="bus_assignments[${newIndex}][ignore_operation]" value="1" ${ignoreOperation ? 'checked' : ''} style="margin: 0 0 0 40px;">
+                                <label class="form-check-label">運行無視</label>
+                            </div>
+                            <div class="form-check d-flex align-items-center">
+                                <input type="checkbox" class="form-check-input me-1" name="bus_assignments[${newIndex}][ignore_driver]" value="1" ${ignoreDriver ? 'checked' : ''} style="margin: 0;">
+                                <label class="form-check-label">運転無視</label>
+                            </div>
                         </div>
                     </div>
-                    
+
                     <div class="col-md-6" style="width:40%; padding-right: 5px; padding-left: 5px;">
-                        <textarea name="bus_assignments[${newIndex}][operation_memo]" rows="2" class="form-control form-control-sm border" style="height: 62px;" placeholder="手配メモ一"></textarea>
+                        <textarea name="bus_assignments[${newIndex}][operation_memo]" rows="2" class="form-control form-control-sm border" style="height: 62px;" placeholder="手配メモ一">${operationMemo || ''}</textarea>
                     </div>
                 </div>
             </div>
@@ -1961,7 +2431,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return newCard;
     }
 
-    function generateRowsFromSource(sourceRows, newIndex, newBusUuid) {
+    function generateRowsFromSource(sourceRows, newIndex, newBusId) {
         let rowsHtml = '';
         sourceRows.forEach((row, idx) => {
             const dateInput = row.querySelector('input[name*="[date]"]');
@@ -1979,19 +2449,21 @@ document.addEventListener('DOMContentLoaded', function() {
             const itinerary = itineraryTextarea ? itineraryTextarea.value : '';
             const vehicleId = row.querySelector('.itinerary-vehicle-id')?.value || '';
             const driverId = row.querySelector('.itinerary-driver-id')?.value || '';
+            const guideId = row.querySelector('.itinerary-guide-id')?.value || '';
             
             const globalIndex = (newIndex - 1) * 100 + idx;
             
             rowsHtml += `
-                <tr class="itinerary-row" data-vehicle="${newIndex}" data-index="${globalIndex}" data-bus-uuid="${newBusUuid}" data-itinerary-id="">
+                <tr class="itinerary-row" data-vehicle="${newIndex}" data-index="${globalIndex}" data-bus-id="" data-itinerary-id="">
                     <td style="vertical-align: middle; text-align: center; background-color: #f9f9f9; position: relative;">
                         <span class="row-number" style="position: absolute; top: 2px; left: 2px; color: #2563eb; font-size: 10px; font-weight: bold;">${idx + 1}</span>
                         <input type="hidden" name="daily_itineraries[${globalIndex}][id]" value="">
                         <input type="hidden" name="daily_itineraries[${globalIndex}][display_order]" value="${globalIndex + 1}">
-                        <input type="hidden" name="daily_itineraries[${globalIndex}][bus_ass_uuid]" value="${newBusUuid}" class="itinerary-bus-uuid">
+                        <input type="hidden" name="daily_itineraries[${globalIndex}][bus_assignment_id]" value="" class="itinerary-bus-id">
                         <input type="hidden" name="daily_itineraries[${globalIndex}][vehicle_id]" value="${vehicleId}" class="itinerary-vehicle-id">
                         <input type="hidden" name="daily_itineraries[${globalIndex}][driver_id]" value="${driverId}" class="itinerary-driver-id">
-                        <input type="date" class="form-control form-control-sm border" name="daily_itineraries[${globalIndex}][date]" value="${date}" style="width: 100%; text-align: center;">
+                        <input type="hidden" name="daily_itineraries[${globalIndex}][guide_id]" value="${guideId}" class="itinerary-guide-id">
+                        <input type="text" class="form-control form-control-sm border datepicker-3months" name="daily_itineraries[${globalIndex}][date]" value="${date}" style="width: 100%; text-align: center;" placeholder="YYYY-MM-DD">
                         <input type="hidden" name="daily_itineraries[${globalIndex}][vehicle_group]" value="${newIndex}">
                     </td>
                     <td style="padding: 2px;">
@@ -2102,50 +2574,33 @@ document.addEventListener('DOMContentLoaded', function() {
                 historyTab.id = `history2-${newIndex}`;
             }
             
-            const vehicleSearch = card.querySelector('[id^="vehicle_search_"]');
-            if (vehicleSearch) {
-                const oldId = vehicleSearch.id;
+            const vehicleSelect = card.querySelector('[id^="vehicle_select_"]');
+            if (vehicleSelect) {
+                const oldId = vehicleSelect.id;
                 const newId = oldId.replace(/\d+$/, newIndex);
-                vehicleSearch.id = newId;
-                vehicleSearch.setAttribute('data-vehicle-index', newIndex);
+                vehicleSelect.id = newId;
+                vehicleSelect.setAttribute('data-vehicle-index', newIndex);
+                vehicleSelect.name = vehicleSelect.name.replace(/\[\d+\]/, `[${newIndex}]`);
             }
-            
-            const vehicleId = card.querySelector('[id^="vehicle_id_"]');
-            if (vehicleId) {
-                const oldId = vehicleId.id;
+
+            const driverSelect = card.querySelector('[id^="driver_select_"]');
+            if (driverSelect) {
+                const oldId = driverSelect.id;
                 const newId = oldId.replace(/\d+$/, newIndex);
-                vehicleId.id = newId;
+                driverSelect.id = newId;
+                driverSelect.setAttribute('data-vehicle-index', newIndex);
+                driverSelect.name = driverSelect.name.replace(/\[\d+\]/, `[${newIndex}]`);
             }
-            
-            const vehicleSuggestions = card.querySelector('[id^="vehicle_suggestions_"]');
-            if (vehicleSuggestions) {
-                const oldId = vehicleSuggestions.id;
+
+            const guideSelect = card.querySelector('[id^="guide_select_"]');
+            if (guideSelect) {
+                const oldId = guideSelect.id;
                 const newId = oldId.replace(/\d+$/, newIndex);
-                vehicleSuggestions.id = newId;
+                guideSelect.id = newId;
+                guideSelect.setAttribute('data-vehicle-index', newIndex);
+                guideSelect.name = guideSelect.name.replace(/\[\d+\]/, `[${newIndex}]`);
             }
-            
-            const driverSearch = card.querySelector('[id^="driver_search_"]');
-            if (driverSearch) {
-                const oldId = driverSearch.id;
-                const newId = oldId.replace(/\d+$/, newIndex);
-                driverSearch.id = newId;
-                driverSearch.setAttribute('data-vehicle-index', newIndex);
-            }
-            
-            const driverId = card.querySelector('[id^="driver_id_"]');
-            if (driverId) {
-                const oldId = driverId.id;
-                const newId = oldId.replace(/\d+$/, newIndex);
-                driverId.id = newId;
-            }
-            
-            const driverSuggestions = card.querySelector('[id^="driver_suggestions_"]');
-            if (driverSuggestions) {
-                const oldId = driverSuggestions.id;
-                const newId = oldId.replace(/\d+$/, newIndex);
-                driverSuggestions.id = newId;
-            }
-            
+
             const table = card.querySelector('table');
             if (table) {
                 table.setAttribute('data-vehicle-table', newIndex);
@@ -2185,9 +2640,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const existingCards = document.querySelectorAll('#operation-details-container > .card');
         const newIndex = existingCards.length + 1;
-        const newBusUuid = 'split_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        const newBusId = 'split_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         
-        const newCard = createCopyOperationDetailCard(newIndex, newBusUuid, [], sourceCard);
+        const newCard = createCopyOperationDetailCard(newIndex, newBusId, [], sourceCard);
         container.appendChild(newCard);
         
         const targetTable = newCard.querySelector('table tbody');
@@ -2196,7 +2651,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!sourceTable || !targetTable) return;
         
         const rowsToMove = [...selectedRows].reverse();
-        const newCardBusUuid = newCard.getAttribute('data-bus-uuid') || '';
+        const newCardBusId = newCard.getAttribute('data-bus-id') || '';
         
         rowsToMove.forEach(item => {
             const row = item.row;
@@ -2208,9 +2663,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 clonedCheckbox.checked = false;
             }
             
-            const busUuidField = clonedRow.querySelector('.itinerary-bus-uuid');
-            if (busUuidField) {
-                busUuidField.value = newCardBusUuid;
+            const busIdField = clonedRow.querySelector('.itinerary-bus-id');
+            if (busIdField) {
+                busIdField.value = newCardBusId;
+                busIdField.name = busIdField.name.replace(/\[\d+\]/, `[${globalIndex}]`);
             }
             
             const vehicleGroupInput = clonedRow.querySelector('input[name*="[vehicle_group]"]');
@@ -2219,7 +2675,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 clonedRow.setAttribute('data-vehicle', newIndex);
             }
             
-            clonedRow.setAttribute('data-bus-uuid', newCardBusUuid);
+            clonedRow.setAttribute('data-bus-id', newCardBusId);
             
             row.remove();
             targetTable.appendChild(clonedRow);
@@ -2248,33 +2704,45 @@ document.addEventListener('DOMContentLoaded', function() {
         
         updateOperationDetailNumbers();
         refreshEventListeners();
-        
+
+        const newDateInputs = newCard.querySelectorAll('.datepicker-3months');
+        newDateInputs.forEach(function(dateInput) {
+            if (!dateInput._flatpickr) {
+                flatpickr(dateInput, {
+                    locale: 'ja',
+                    dateFormat: 'Y-m-d',
+                    showMonths: 3,
+                    allowInput: true,
+                    clickOpens: true,
+                    mode: 'single',
+                    disableMobile: true,
+                    wrap: false,
+                    onOpen: function(selectedDates, dateStr, instance) {
+                        instance.calendarContainer.style.zIndex = '9999';
+                    },
+                    onReady: function(selectedDates, dateStr, instance) {
+                        const daysContainer = instance.daysContainer;
+                        if (daysContainer) {
+                            const dayContainers = daysContainer.querySelectorAll('.dayContainer');
+                            dayContainers.forEach(function(dayContainer) {
+                                const wrapper = document.createElement('div');
+                                wrapper.className = 'month-wrapper';
+                                dayContainer.parentNode.insertBefore(wrapper, dayContainer);
+                                wrapper.appendChild(dayContainer);
+                            });
+                        }
+                    }
+                });
+            }
+        });
+
         document.querySelectorAll('.itinerary-select:checked').forEach(cb => {
             cb.checked = false;
         });
         
         const finalNewIndex = document.querySelectorAll('#operation-details-container > .card').length;
         setTimeout(() => {
-            setupSearch('vehicle', vehicles, (item) => {
-                return {
-                    display: `${item.registration_number} ${item.vehicle_model?.model_name ? '(' + item.vehicle_model.model_name + ')' : ''}`,
-                    id: item.id,
-                    registration: item.registration_number,
-                    type: item.vehicleType?.type_name || '',
-                    model: item.vehicleModel?.model_name || '',
-                    branch: item.branch?.branch_name || '',
-                    seating: item.seating_capacity || ''
-                };
-            }, finalNewIndex);
-
-            setupSearch('driver', drivers, (item) => {
-                return {
-                    display: `${item.name} ${item.driver_code ? '(' + item.driver_code + ')' : ''}`,
-                    id: item.id,
-                    code: item.driver_code,
-                    phone: item.phone_number
-                };
-            }, finalNewIndex);
+            setupSelectChangeHandlers(finalNewIndex);
         }, 100);
     }
 
@@ -2366,7 +2834,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            const targetBusUuid = card.getAttribute('data-bus-uuid');
+            const targetBusId = card.getAttribute('data-bus-id');
             
             const targetOperationIdSpan = card.querySelector('.border.rounded');
             let targetOperationId = '';
@@ -2383,11 +2851,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            const vehicleIdField = card.querySelector('.vehicle-id-field');
-            const driverIdField = card.querySelector('.driver-id-field');
+            const vehicleSelect = card.querySelector('.vehicle-select');
+            const driverSelect = card.querySelector('.driver-select');
             
-            const vehicleId = vehicleIdField ? vehicleIdField.value : '';
-            const driverId = driverIdField ? driverIdField.value : '';
+            const vehicleId = vehicleSelect ? vehicleSelect.value : '';
+            const driverId = driverSelect ? driverSelect.value : '';
             
             const originalText = this.innerHTML;
             this.innerHTML = '統合中...';
@@ -2400,7 +2868,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}'
                 },
                 body: JSON.stringify({
-                    target_bus_uuid: targetBusUuid,
+                    target_bus_id: targetBusId,
                     source_operation_id: parseInt(sourceOperationId),
                     vehicle_id: vehicleId,
                     driver_id: driverId
@@ -2469,36 +2937,11 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     });
 
-    const initialVehicleSearches = document.querySelectorAll('[id^="vehicle_search_"]');
-    initialVehicleSearches.forEach(input => {
-        const id = input.id.replace('vehicle_search_', '');
+    const initialVehicleSelects = document.querySelectorAll('[id^="vehicle_select_"]');
+    initialVehicleSelects.forEach(select => {
+        const id = select.id.replace('vehicle_select_', '');
         if (id && !isNaN(parseInt(id))) {
-            setupSearch('vehicle', vehicles, (item) => {
-                return {
-                    display: `${item.registration_number} ${item.vehicle_model?.model_name ? '(' + item.vehicle_model.model_name + ')' : ''}`,
-                    id: item.id,
-                    registration: item.registration_number,
-                    type: item.vehicleType?.type_name || '',
-                    model: item.vehicleModel?.model_name || '',
-                    branch: item.branch?.branch_name || '',
-                    seating: item.seating_capacity || ''
-                };
-            }, id);
-        }
-    });
-
-    const initialDriverSearches = document.querySelectorAll('[id^="driver_search_"]');
-    initialDriverSearches.forEach(input => {
-        const id = input.id.replace('driver_search_', '');
-        if (id && !isNaN(parseInt(id))) {
-            setupSearch('driver', drivers, (item) => {
-                return {
-                    display: `${item.name} ${item.driver_code ? '(' + item.driver_code + ')' : ''}`,
-                    id: item.id,
-                    code: item.driver_code,
-                    phone: item.phone_number
-                };
-            }, id);
+            setupSelectChangeHandlers(id);
         }
     });
 
@@ -2529,25 +2972,31 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         let hasError = false;
-        document.querySelectorAll('.vehicle-search').forEach(searchField => {
-            const vehicleIndex = searchField.id.replace('vehicle_search_', '');
-            const hiddenField = document.getElementById(`vehicle_id_${vehicleIndex}`);
+        
+        document.querySelectorAll('.vehicle-select').forEach(selectField => {
+            const vehicleIndex = selectField.id.replace('vehicle_select_', '');
             
-            if (searchField.value && hiddenField && !hiddenField.value) {
-                const matchedVehicle = vehicles.find(v => 
-                    v.registration_number === searchField.value || 
-                    (v.registration_number + ' ' + (v.vehicle_model?.model_name || '')) === searchField.value ||
-                    searchField.value.includes(v.registration_number)
-                );
-                
-                if (matchedVehicle) {
-                    hiddenField.value = matchedVehicle.id;
-                } else {
-                    alert(`車両「${searchField.value}」のIDが見つかりません。検索ボックスから選択してください。`);
-                    searchField.focus();
-                    hasError = true;
-                    return;
-                }
+            if (!selectField.value) {
+                alert(`運行詳細-${vehicleIndex.padStart(2, '0')}の車両を選択してください。`);
+                selectField.focus();
+                hasError = true;
+                return;
+            }
+            
+            const card = selectField.closest('.card');
+            
+            if (card) {
+                const cardBusId = card.getAttribute('data-bus-id') || '';
+                const rows = card.querySelectorAll('.itinerary-row');
+                rows.forEach(row => {
+                    const rowBusIdField = row.querySelector('.itinerary-bus-id');
+                    if (rowBusIdField && rowBusIdField.value === cardBusId) {
+                        const vehicleIdInput = row.querySelector('.itinerary-vehicle-id');
+                        if (vehicleIdInput) {
+                            vehicleIdInput.value = selectField.value;
+                        }
+                    }
+                });
             }
         });
         
@@ -2558,40 +3007,48 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        document.querySelectorAll('.driver-search').forEach(searchField => {
-            const vehicleIndex = searchField.id.replace('driver_search_', '');
-            const hiddenField = document.getElementById(`driver_id_${vehicleIndex}`);
+        document.querySelectorAll('.driver-select').forEach(selectField => {
+            const card = selectField.closest('.card');
             
-            if (searchField.value) {
-                if (!hiddenField || !hiddenField.value) {
-                    const matchedDriver = drivers.find(d => 
-                        d.name === searchField.value || 
-                        searchField.value.includes(d.name)
-                    );
-                    
-                    if (matchedDriver && hiddenField) {
-                        hiddenField.value = matchedDriver.id;
+            if (card && selectField.value) {
+                const cardBusId = card.getAttribute('data-bus-id');
+                const rows = card.querySelectorAll('.itinerary-row');
+                rows.forEach(row => {
+                    const rowBusIdField = row.querySelector('.itinerary-bus-id');
+                    if (rowBusIdField && rowBusIdField.value === cardBusId) {
+                        const driverIdInput = row.querySelector('.itinerary-driver-id');
+                        if (driverIdInput) {
+                            driverIdInput.value = selectField.value;
+                        }
                     }
-                }
-                
-                if (hiddenField && hiddenField.value) {
-                    const card = searchField.closest('.card');
-                    if (card) {
-                        const cardBusUuid = card.getAttribute('data-bus-uuid');
-                        const rows = card.querySelectorAll('.itinerary-row');
-                        rows.forEach(row => {
-                            const rowBusUuidField = row.querySelector('.itinerary-bus-uuid');
-                            if (rowBusUuidField && rowBusUuidField.value === cardBusUuid) {
-                                const driverIdInput = row.querySelector('.itinerary-driver-id');
-                                if (driverIdInput) {
-                                    driverIdInput.value = hiddenField.value;
-                                }
-                            }
-                        });
-                    }
-                }
+                });
             }
         });
+
+        document.querySelectorAll('.guide-select').forEach(selectField => {
+            const card = selectField.closest('.card');
+            
+            if (card && selectField.value) {
+                const cardBusId = card.getAttribute('data-bus-id');
+                const rows = card.querySelectorAll('.itinerary-row');
+                rows.forEach(row => {
+                    const rowBusIdField = row.querySelector('.itinerary-bus-id');
+                    if (rowBusIdField && rowBusIdField.value === cardBusId) {
+                        const guideIdInput = row.querySelector('.itinerary-guide-id');
+                        if (guideIdInput) {
+                            guideIdInput.value = selectField.value;
+                        }
+                    }
+                });
+            }
+        });
+        
+        if (hasError) {
+            const submitBtn = document.getElementById('saveBtn');
+            submitBtn.innerHTML = '保存';
+            submitBtn.disabled = false;
+            return;
+        }
         
         if (deletedItineraryIds.length > 0) {
             deletedItineraryIds.forEach((id, index) => {
