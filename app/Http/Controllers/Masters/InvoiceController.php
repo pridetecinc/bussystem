@@ -537,7 +537,7 @@ public function store(Request $request)
                 'language' => $validated['language'],
                 'currency_code' => $validated['currency_code'],
                 'exchange_rate' => $currency->rate_to_jpy,
-                'pdf_file_path' => null,
+                'pdf_file_path' => '',
                 'notes' => $validated['notes'],
                 'updated_at' => now(),
             ]);
@@ -966,6 +966,25 @@ public function store(Request $request)
         ]);
     }
 
+
+    public function checkPdfStatus($invoiceId)
+    {
+        $invoice = Invoice::findOrFail($invoiceId);
+        
+        // 检查文件是否真的存在于磁盘上 (双重确认)
+        $hasFile = !empty($invoice->pdf_file_path) && \Storage::disk('public')->exists($invoice->pdf_file_path);
+
+        if ($hasFile) {
+            return response()->json([
+                'ready' => true,
+                'url' => '/storage/' . $invoice->pdf_file_path
+            ]);
+        }
+
+        return response()->json([
+            'ready' => false
+        ]);
+    }
 
 }
 
