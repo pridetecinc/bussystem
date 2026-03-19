@@ -69,12 +69,11 @@
     </div>
     
     <!-- 搜索结果提示 -->
-    @if(request()->hasAny(['customer_name', 'search', 'payment_date']))
+    @if(request()->hasAny(['search', 'payment_date']))
         <div class="alert alert-info mb-3 d-flex align-items-center">
             <i class="bi bi-info-circle me-2 fs-5"></i>
             <div>
                 検索条件: 
-                @if(request('customer_name')) "顧客：{{ request('customer_name') }}" @endif
                 @if(request('search')) "キーワード：{{ request('search') }}" @endif
                 @if(request('payment_date')) "日付：{{ request('payment_date') }}" @endif
                 
@@ -95,11 +94,11 @@
                     <tr>
                         <th class="text-center" style="width: 80px;">ID</th>
                         <th class="text-center" style="width: 160px;">バッチ番号</th>
-                        <th class="text-center" style="width: 150px;">取引先</th>
+                        <th class="text-center" style="width: 150px;">請求先</th>
                         <th class="text-center" style="width: 120px;">入金日</th>
                         <th class="text-center" style="width: 100px;">件数</th>
                         <th class="text-center" style="width: 140px;">合計金額</th>
-                        <th class="text-center" style="width: 100px;">担当者</th>
+                        <th class="text-center" style="width: 100px;">請求担当</th>
                         <th class="text-center" style="width: 160px;">操作</th>
                     </tr>
                 </thead>
@@ -107,11 +106,9 @@
                     @forelse($payments as $payment)
                     <tr class="{{ $payment->is_deleted ? 'table-secondary text-muted' : '' }}">
                         <td class="text-center text-muted small">{{ $payment->id }}</td>
-                        <td class="text-center font-monospace small">
-                            <span class="badge bg-light text-dark border">{{ $payment->batch_token }}</span>
-                        </td>
+                        <td class="text-center font-monospace small">{{ $payment->batch_token }}</td>
                         <td class="text-center fw-bold">
-                            {{ $payment->customer->name ?? '不明' }}
+                            {{ $payment->customer->customer_name ?? '' }}
                         </td>
                         <td class="text-center">
                             {{ \Carbon\Carbon::parse($payment->payment_date)->format('Y/m/d') }}
@@ -125,7 +122,7 @@
                             {{ number_format($payment->total_amount, 0) }} {{$payment->currency_code}}
                         </td>
                         <td class="text-center small text-muted">
-                            {{ $payment->handled_by }}
+                            {{ $payment->staff->name ?? '' }}
                         </td>
                         <td>
                             <div class="d-flex gap-1 justify-content-center">

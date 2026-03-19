@@ -251,16 +251,18 @@
                                 @endif
                                 
                                 <!-- 删除 -->
+                                 @if( !$invoice->is_locked && $invoice->total_amount == $invoice->paid_amount )
                                 <form action="{{ route('masters.invoices.destroy', ['invoice' => $invoice, 'group_id' => request('group_id')]) }}" 
-                                      method="POST" 
-                                      class="d-inline" 
-                                      onsubmit="return confirm('本当に請求書「{{ $invoice->invoice_number }}」を削除しますか？\nこの操作は元に戻せません。')">
+                                    method="POST" 
+                                    class="d-inline" 
+                                    onsubmit="return checkAndDelete({{ $invoice->type }}, '{{ $invoice->invoice_number }}')">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-outline-danger" title="削除">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </form>
+                                @endif
                             </div>
                         </td>
                     </tr>
@@ -388,6 +390,17 @@
 
 <!-- 【新增/修改】AJAX 脚本处理锁状态切换及批量操作 -->
 <script>
+function checkAndDelete(type, number) {
+    // 假设 2 代表 "临时" (臨時)，如果不是 2，则禁止删除
+    if (type != 2) {
+        alert('請求書タイプを臨時にしてから削除してください。');
+        return false; // 阻止表单提交
+    }
+
+    // 如果是临时类型，弹出二次确认框
+    const message = '本当に請求書「' + number + '」を削除しますか？\nこの操作は元に戻せません。';
+    return confirm(message); // 用户点"确定"返回 true，点"取消"返回 false
+}
 document.addEventListener('DOMContentLoaded', function () {
     const perPageSelect = document.getElementById('per_page_select');
     if (perPageSelect) {
