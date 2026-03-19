@@ -7,16 +7,6 @@
     <!-- 标题与新建按钮 -->
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h4><i class="bi bi-cash-coin me-2 text-success"></i>入金消し込み履歴</h4>
-        {{-- 通常入金是从发票列表发起的，这里可能不需要"新建"按钮，或者链接到手动录入页 --}}
-        {{-- 如果没有手动录入页，可以隐藏或删除这个按钮 --}}
-        {{-- <a href="{{ route('masters.payments.create') }}" class="btn btn-success">
-            <i class="bi bi-plus-lg"></i> 手動入力
-        </a> --}}
-        
-        {{-- 或者放一个返回发票列表的按钮 --}}
-        <!-- <a href="{{ route('masters.invoices.index') }}" class="btn btn-outline-primary">
-            <i class="bi bi-arrow-left"></i> 請求書一覧へ戻る
-        </a> -->
     </div>
 
     <!-- 成功/错误提示 -->
@@ -38,30 +28,32 @@
     <div class="mb-3">
         <div class="card shadow-sm">
             <div class="card-body">
-                <form method="GET" action="{{ route('masters.payments.index') }}" class="row g-2 align-items-center">
-                    {{-- 隐藏域：保持 group_id --}}
+                <form method="GET" action="{{ route('masters.payments.index') }}" class="row g-2 align-items-end">
+                    {{-- 隐藏域 --}}
                     <input type="hidden" name="group_id" value="{{ request('group_id') }}">
                     
                     <div class="col-md-3">
                         <label class="form-label small text-muted mb-1">バッチ番号/備考</label>
                         <input type="text" name="search" class="form-control" 
-                               placeholder="バッチまたは備考"
-                               value="{{ request('search') }}">
+                            placeholder="バッチまたは備考"
+                            value="{{ request('search') }}">
                     </div>
                     <div class="col-md-3">
                         <label class="form-label small text-muted mb-1">入金日</label>
                         <input type="date" name="payment_date" class="form-control" 
-                               value="{{ request('payment_date') }}">
+                            value="{{ request('payment_date') }}">
                     </div>
-                    <div class="col-md-auto mt-4">
-                        <button type="submit" class="btn btn-outline-primary">
-                            <i class="bi bi-search"></i> 検索
-                        </button>
-                        @if(request()->hasAny(['customer_name', 'search', 'payment_date']))
-                            <a href="{{ route('masters.payments.index', ['group_id' => request('group_id')]) }}" class="btn btn-outline-secondary">
-                                <i class="bi bi-x-circle"></i> クリア
-                            </a>
-                        @endif
+                    <div class="col-md-auto">
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-outline-primary">
+                                <i class="bi bi-search"></i> 検索
+                            </button>
+                            @if(request()->hasAny(['customer_name', 'search', 'payment_date']))
+                                <a href="{{ route('masters.payments.index', ['group_id' => request('group_id')]) }}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-x-circle"></i> クリア
+                                </a>
+                            @endif
+                        </div>
                     </div>
                 </form>
             </div>

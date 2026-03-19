@@ -75,15 +75,15 @@
 
                             <!-- 【可编辑】処理担当者 -->
                             <div class="col-md-3 mb-3">
-                                <label for="staff_id" class="form-label text-muted small">請求担当 <span class="text-danger">*</span></label>
-                                
+                                <label for="staff_id" class="form-label text-muted small">請求担当</label>
                                 <select id="staff_id" 
                                         name="staff_id" 
                                         class="form-select @error('staff_id') is-invalid @enderror" 
                                         required>
-
+                                    <option value="0">請求担当選択</option>
                                     <!-- 循环员工列表 -->
                                     @foreach($staffs as $staff)
+                                        
                                         <option value="{{ $staff->id }}" 
                                                 {{ old('staff_id', $payment->staff_id) == $staff->id ? 'selected' : '' }}>
                                             {{ $staff->name }}
@@ -92,6 +92,30 @@
                                 </select>
 
                                 @error('staff_id')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                                
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label for="bank_id" class="form-label text-muted small">銀行</label>
+                                
+                                <select id="bank_id" 
+                                        name="bank_id" 
+                                        class="form-select @error('bank_id') is-invalid @enderror" 
+                                        required>
+
+                                    <!-- 循环员工列表 -->
+                                    @foreach($banks as $bank)
+                                        <option value="0">銀行を選択</option>
+                                        <option value="{{ $bank->id }}" 
+                                                {{ old('bank_id', $payment->bank_id) == $bank->id ? 'selected' : '' }}>
+                                            {{ $bank->bank_name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+
+                                @error('bank_id')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                                 

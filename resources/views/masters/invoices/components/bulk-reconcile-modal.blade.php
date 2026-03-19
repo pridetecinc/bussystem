@@ -58,13 +58,22 @@
                     <div class="bg-white border rounded p-2 mb-2 shadow-sm d-flex align-items-end gap-3">
                         <!-- 1. 日期 -->
                         <div class="flex-grow-1" style="max-width: 160px;">
-                            <label class="form-label mb-0 small fw-bold text-primary">共通：入金日</label>
+                            <label class="form-label mb-0 small fw-bold text-primary">入金日</label>
                             <input type="date" id="common-payment-date" class="form-control form-control-sm fw-bold" 
                                    value="{{ date('Y-m-d') }}" style="height: 31px;">
                         </div>
+                        <div class="flex-grow-1" style="max-width: 200px;">
+                            <label class="form-label mb-0 small fw-bold text-primary">振込銀行</label>
+                            <select id="common-bank-id" name="bank_id" class="form-select form-select-sm" style="height: 31px;">
+                                <option value="0">銀行を選択</option>
+                                @foreach($banks as $bank)
+                                    <option value="{{ $bank->id }}">{{ $bank->bank_name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
                         <!-- 2. 备注 -->
                         <div class="flex-grow-1">
-                            <label class="form-label mb-0 small fw-bold text-primary">共通：備考</label>
+                            <label class="form-label mb-0 small fw-bold text-primary">備考</label>
                             <input type="text" id="common-remark" class="form-control form-control-sm" 
                                    placeholder="" style="height: 31px;">
                         </div>

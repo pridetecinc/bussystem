@@ -37,6 +37,12 @@
             </div>
             @endif
 
+            <div id="pdf-status-alert" class="alert alert-info alert-dismissible fade show" role="alert" style="display: none;">
+                <i class="bi bi-info-circle-fill"></i> 
+                <span id="pdf-status-message">PDF を生成中です...</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+
             <!-- Main Form -->
             <form action="{{ route('masters.invoices.update', $invoice) }}" method="POST" id="invoiceForm">
                 @csrf
@@ -356,12 +362,17 @@
                             $hasPdf = !empty($invoice->pdf_file_path);
                             $pdfUrl = $hasPdf ? '/storage/' . $invoice->pdf_file_path : '';
                         @endphp
-
                         <a href="javascript:void(0)" 
-                        onclick="if({{ $hasPdf ? 'true' : 'false' }}) { window.open('{{ $pdfUrl }}', '_blank'); } else { alert('PDF はバックグラウンドで生成中です。完了まで 5〜10 秒ほどかかる見込みですので、しばらくしてから再度開いてください'); }" 
-                        class="btn btn-secondary">
-                            <i class="bi bi-file-earmark-pdf"></i> PDF表示
+                        data-invoice-id="{{ $invoice->id }}"
+                        data-has-pdf="{{ $hasPdf ? '1' : '0' }}"
+                        data-pdf-url="{{ $pdfUrl }}"
+                        onclick="handlePdfClick(this)" 
+                        class="btn btn-secondary btn-pdf-action">
+                            <i class="bi bi-file-earmark-pdf"></i> <span class="btn-text">PDF 表示</span>
                         </a>
+                        <template id="loading-spinner">
+                            <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                        </template>
                         <a href="{{ route('masters.invoices.index', ['group_id' => $groupId]) }}" class="btn btn-secondary">
                             <i class="bi bi-x-circle"></i> キャンセル
                         </a>
@@ -451,6 +462,159 @@
 
     updateDisplayOrder();
 })();
+
+    const pollingTimers = {}; 
+
+    // 工具函数：显示状态提示
+    function showStatusMessage(message, type = 'info') {
+        // 1. 【关键修复】先获取元素，并检查是否存在
+        const alertBox = document.getElementById('pdf-status-alert');
+        
+        if (!alertBox) {
+            console.error('❌ 错误：找不到 ID 为 "pdf-status-alert" 的元素！请检查 HTML 是否已加载。');
+            // 如果找不到元素，可以选择降级使用 alert 提示用户，或者直接返回
+            // alert(message); 
+            return; 
+        }
+
+        // 2. 关闭页面上其他所有 alert (安全操作)
+        const existingAlerts = document.querySelectorAll('.alert-dismissible');
+        existingAlerts.forEach(alert => {
+            // 确保不要关闭自己（虽然关闭再打开也没事，但为了性能跳过自己）
+            if (alert === alertBox) return; 
+            
+            const bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
+            if(bsAlert) bsAlert.close();
+        });
+
+        // 3. 现在可以安全地修改 className 了
+        alertBox.className = `alert alert-${type} alert-dismissible fade show`;
+        
+        // 4. 设置图标
+        let iconClass = 'bi-info-circle-fill';
+        if (type === 'success') iconClass = 'bi-check-circle-fill';
+        if (type === 'warning') iconClass = 'bi-hourglass-split';
+        if (type === 'danger') iconClass = 'bi-exclamation-triangle-fill';
+        
+        // 5. 更新内容
+        alertBox.innerHTML = `
+            <i class="bi ${iconClass}"></i> 
+            <span>${message}</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        
+        // 6. 显示出来
+        alertBox.style.display = 'block';
+        
+        // 7. 成功消息自动消失逻辑
+        if (type === 'success') {
+            setTimeout(() => {
+                if(alertBox && alertBox.style.display !== 'none') {
+                    const bsAlert = bootstrap.Alert.getOrCreateInstance(alertBox);
+                    if(bsAlert) bsAlert.close();
+                }
+            }, 5000);
+        }
+    }
+
+    function handlePdfClick(btn) {
+        const invoiceId = btn.dataset.invoiceId;
+        const hasPdf = btn.dataset.hasPdf === '1';
+        const pdfUrl = btn.dataset.pdfUrl;
+
+        if (hasPdf) {
+            window.open(pdfUrl, '_blank');
+            return;
+        }
+
+        if (pollingTimers[invoiceId]) {
+            // 如果已经在轮询，提示用户正在后台处理
+            showStatusMessage('PDF はバックグラウンドで生成中です。しばらくお待ちください。', 'warning');
+            return;
+        }
+
+        startPolling(invoiceId, btn);
+    }
+
+    function startPolling(invoiceId, btn) {
+        // 1. UI 变为“生成中”
+        setBtnLoadingState(btn, true);
+        showStatusMessage('PDF を生成中です。完了まで数秒かかります...', 'info');
+
+        checkStatus(invoiceId, btn);
+        
+        pollingTimers[invoiceId] = setInterval(() => {
+            checkStatus(invoiceId, btn);
+        }, 2000);
+    }
+
+    function checkStatus(invoiceId, btn) {
+        fetch(`/masters/invoices/${invoiceId}/pdf-status`)
+            .then(response => response.json())
+            .then(data => {
+                // 兼容字符串 "true"
+                const isReady = (data.ready === true || data.ready === 'true');
+
+                if (isReady) {
+                    // ✅ 成功了！
+                    clearInterval(pollingTimers[invoiceId]);
+                    delete pollingTimers[invoiceId];
+
+                    // 更新按钮状态
+                    btn.dataset.hasPdf = '1';
+                    btn.dataset.pdfUrl = data.url;
+                    setBtnLoadingState(btn, false);
+                    
+                    // 🎉 关键修改：在这里显示成功提示，而不是 alert
+                    showStatusMessage('PDF の準備ができました！ボタンを再度クリックして表示してください。', 'success');
+                    
+                    // 可选：自动把按钮变绿，提示用户可以点了
+                    btn.classList.remove('btn-secondary');
+                    btn.classList.add('btn-success');
+                    btn.querySelector('.btn-text').textContent = 'PDF を開く';
+                }
+            })
+            .catch(err => {
+                console.error('轮询失败', err);
+                // 出错时也可以提示用户
+                // showStatusMessage('PDF 生成中にエラーが発生しました。', 'danger');
+            });
+    }
+
+    function setBtnLoadingState(btn, isLoading) {
+        const originalText = 'PDF 表示';
+        const loadingText = '生成中...';
+        const textSpan = btn.querySelector('.btn-text');
+        
+        if (isLoading) {
+            btn.classList.add('disabled'); // 禁用点击
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-secondary');
+            
+            // 添加 Spinner
+            if (!btn.querySelector('.spinner-border')) {
+                const spinner = document.createElement('span');
+                spinner.className = 'spinner-border spinner-border-sm me-2';
+                spinner.role = 'status';
+                btn.insertBefore(spinner, textSpan);
+            }
+            textSpan.textContent = loadingText;
+        } else {
+            btn.classList.remove('disabled', 'btn-secondary');
+            btn.classList.add('btn-success'); // 变绿
+            
+            // 移除 Spinner
+            const spinner = btn.querySelector('.spinner-border');
+            if (spinner) spinner.remove();
+            
+            textSpan.textContent = 'PDF を開く'; // 或者恢复原文本
+        }
+    }
+
+    // 页面关闭时清理所有定时器（防止内存泄漏）
+    window.addEventListener('beforeunload', () => {
+        Object.keys(pollingTimers).forEach(id => stopPolling(id));
+    });
 </script>
 
 <style>
