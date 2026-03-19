@@ -42,7 +42,7 @@
                     </div>
 
                     <div class="col-md-3">
-                        <label class="form-label small text-muted mb-1">账单标题</label>
+                        <label class="form-label small text-muted mb-1">タイトル</label>
                         <input type="text" name="billing_title" class="form-control" 
                                placeholder=""
                                value="{{ request('billing_title') }}">
@@ -141,15 +141,15 @@
                         </th>
                         <th class="text-center" style="width: 60px;">No.</th>
                         <th class="text-center" style="width: 80px;">ID</th>
-                        <th class="text-center" style="width: 150px;">账单标题</th>
+                        <th class="text-center" style="width: 150px;">タイトル</th>
                         <th class="text-center" style="width: 140px;">請求書番号</th>
-                        <th class="text-center" style="width: 120px;">顧客</th>
+                        <th class="text-center" style="width: 120px;">請求先</th>
                         <th class="text-center" style="width: 120px;">請求日</th>
                         <th class="text-center" style="width: 120px;">支払期日</th>
                         <th class="text-center" style="width: 100px;">通貨</th>
                         <th class="text-center" style="width: 120px;">合計金額</th>
                         <th class="text-center" style="width: 120px;">余额</th>
-                        <th class="text-center" style="width: 100px;">属性</th>
+                        <th class="text-center" style="width: 100px;">タイプ</th>
                         <th class="text-center" style="width: 100px;" title="データロック状態">ロック</th>
                         <th class="text-center" style="width: 160px;">操作</th>
                     </tr>
@@ -166,7 +166,7 @@
                                 data-customer-id="{{ $invoice->customer->name ?? '' }}"
                                 data-invoice-no="{{ $invoice->invoice_number }}"
                                 data-currency-code="{{ $invoice->currency_code }}"
-                                data-customer-name="{{ $invoice->customer_name }}"
+                                data-customer-name="{{ $invoice->customer->customer_name ?? '' }}"
                                 data-request-amount="{{ number_format($invoice->total_amount, 2, '.', '') }}" 
                                 data-balance-amount="{{ number_format($invoice->total_amount - $invoice->paid_amount, 2, '.', '') }}">
                         </td>
@@ -176,13 +176,7 @@
                         <td class="text-center text-muted small">{{ $invoice->id }}</td>
                         <td class="text-center fw-bold text-primary">{{ $invoice->billing_title }}</td>
                         <td class="text-center fw-bold text-primary">{{ $invoice->invoice_number }}</td>
-                        <td class="text-center">
-                            @if($invoice->customer)
-                                <span class="fw-medium">{{ $invoice->customer->name }}</span>
-                            @else
-                                <span class="text-muted">未設定</span>
-                            @endif
-                        </td>
+                        <td class="text-center">{{ $invoice->customer->customer_name ?? ''}}</td>
                         <td class="text-center">{{ \Carbon\Carbon::parse($invoice->invoice_date)->format('Y/m/d') }}</td>
                         <td class="text-center">{{ \Carbon\Carbon::parse($invoice->due_date)->format('Y/m/d') }}</td>
                         <td class="text-center">{{ $invoice->currency_code }}</td>
@@ -193,7 +187,7 @@
                             {{ number_format($invoice->total_amount - $invoice->paid_amount, 2) }}
                         </td>
                         <td class="text-center font-monospace">
-                            {{ $invoice->type == 1 ? '正式' : '临时' }}
+                            {{ $invoice->type == 1 ? '正式' : '臨時' }}
                         </td>
                         
                         <!-- 状态列：锁开关按钮 -->

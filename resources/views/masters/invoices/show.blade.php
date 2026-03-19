@@ -21,21 +21,22 @@
             <div class="row">
                 <div class="col-md-6">
                     <p><strong>請求書番号:</strong> {{ $invoice->invoice_number }}</p>
+                    <p><strong>タイトル:</strong> {{ $invoice->billing_title }}</p>
                     <p><strong>請求日:</strong> {{ \Carbon\Carbon::parse($invoice->invoice_date)->format('Y/m/d') }}</p>
                     <p><strong>支払期日:</strong> {{ \Carbon\Carbon::parse($invoice->due_date)->format('Y/m/d') }}</p>
-                    <p><strong>语言:</strong> {{ $invoice->language == 1 ? '日文' : '英文' }}</p>
+                    <p><strong>言語:</strong> {{ $invoice->language == 1 ? '日本語' : '英語' }}</p>
                     @if($invoice->notes)
                         <p><strong>備考:</strong><br>{{ nl2br(e($invoice->notes)) }}</p>
                     @endif
                 </div>
                 <div class="col-md-6">
-                    <p><strong>請求先名:</strong> {{ $invoice->billing_title ?: '未設定' }}</p>
+                    <p><strong>請求先:</strong> {{ $invoice->customer->customer_name ?? '' }}</p>
                     <p><strong>通貨:</strong> {{ $invoice->currency_code ?? '—' }}</p>
-                    <p><strong>税計算モード:</strong>
-                        {{ $invoice->tax_mode == 1 ? '税込価格' : '税別価格' }}
+                    <p><strong>税込/税別:</strong>
+                        {{ $invoice->tax_mode == 1 ? '税込' : '税別' }}
                     </p>
                     <p><strong>汇率:</strong> {{ $invoice-> exchange_rate}}</p>
-                    <p><strong>属性:</strong> {{ $invoice->type == 1 ? '正式' : '临时'}}</p>
+                    <p><strong>タイプ:</strong> {{ $invoice->type == 1 ? '正式' : '臨時'}}</p>
                 </div>
             </div>
             <div class="row">
@@ -58,12 +59,12 @@
             <table class="table table-bordered mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th width="5%">#</th>
+                        <th width="5%">No.</th>
                         <th>内容</th>
                         <th width="10%">数量</th>
                         <th width="12%">単価</th>
                         <th width="10%">税率 (%)</th>
-                        <th width="15%">金額（税抜）</th>
+                        <th width="15%">小計</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -82,7 +83,7 @@
                 </tbody>
                 <tfoot class="table-light fw-bold">
                     <tr>
-                        <td colspan="5" class="text-end">小計（税抜）:</td>
+                        <td colspan="5" class="text-end">小計:</td>
                         <td class="text-end">
                             @if ($invoice->tax_mode==1)
                                 {{ number_format($invoice->total_amount, 2) }}

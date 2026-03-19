@@ -54,7 +54,7 @@
                         <div class="row g-2">
                             <!-- 账单标题 -->
                             <div class="col-md-4">
-                                <label for="billing_title" class="form-label  mb-1">账单标题</label>
+                                <label for="billing_title" class="form-label  mb-1">タイトル</label>
                                 <input type="text" class="form-control @error('billing_title') is-invalid @enderror"
                                     id="billing_title" name="billing_title"
                                     value="{{ old('billing_title', $invoice->billing_title) }}"
@@ -66,11 +66,11 @@
 
                             <!-- 计税模式 -->
                             <div class="col-md-4">
-                                <label for="tax_mode" class="form-label required mb-1">计税模式</label>
+                                <label for="tax_mode" class="form-label required mb-1">税込/税別</label>
                                 <select class="form-select @error('tax_mode') is-invalid @enderror"
                                         id="tax_mode" name="tax_mode" required>
-                                    <option value="1" {{ (old('tax_mode', $invoice->tax_mode) == 1) ? 'selected' : '' }}>税入</option>
-                                    <option value="2" {{ (old('tax_mode', $invoice->tax_mode) == 2) ? 'selected' : '' }}>税别</option>
+                                    <option value="1" {{ (old('tax_mode', $invoice->tax_mode) == 1) ? 'selected' : '' }}>税込</option>
+                                    <option value="2" {{ (old('tax_mode', $invoice->tax_mode) == 2) ? 'selected' : '' }}>税別</option>
                                 </select>
                                 @error('tax_mode')
                                     <div class="invalid-feedback">{{ $message }}</div>
@@ -79,11 +79,11 @@
 
                             <!-- 语言 -->
                             <div class="col-md-4">
-                                <label for="language" class="form-label required mb-1">语言</label>
+                                <label for="language" class="form-label required mb-1">言語</label>
                                 <select class="form-select @error('language') is-invalid @enderror"
                                         id="language" name="language" required>
-                                    <option value="1" {{ (old('language', $invoice->language) == 1) ? 'selected' : '' }}>日语</option>
-                                    <option value="2" {{ (old('language', $invoice->language) == 2) ? 'selected' : '' }}>英语</option>
+                                    <option value="1" {{ (old('language', $invoice->language) == 1) ? 'selected' : '' }}>日本語</option>
+                                    <option value="2" {{ (old('language', $invoice->language) == 2) ? 'selected' : '' }}>英語</option>
                                 </select>
                                 @error('language')
                                     <div class="invalid-feedback">{{ $message }}</div>
@@ -131,10 +131,10 @@
 
                             <!-- 特記事項 -->
                             <div class="col-md-4">
-                                <label for="notes" class="form-label mb-1">特記事項</label>
+                                <label for="notes" class="form-label mb-1">備考</label>
                                 <input type="text" class="form-control @error('notes') is-invalid @enderror"
                                     id="notes" name="notes"
-                                    value="{{ old('notes', $invoice->notes) }}" placeholder="特記事項">
+                                    value="{{ old('notes', $invoice->notes) }}" placeholder="請求書の下に表示する。">
                                 @error('notes')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -142,7 +142,7 @@
 
                             <!-- 入金银行 -->
                             <div class="col-md-4">
-                                <label for="bank_id" class="form-label required mb-1">入金银行</label>
+                                <label for="bank_id" class="form-label required mb-1">入金銀行</label>
                                 <select class="form-select @error('bank_id') is-invalid @enderror"
                                         id="bank_id" name="bank_id" required>
                                     @foreach($banks as $bank)
@@ -159,11 +159,11 @@
 
                             <!-- 属性 -->
                             <div class="col-md-4">
-                                <label for="type" class="form-label required mb-1">属性</label>
+                                <label for="type" class="form-label required mb-1">タイプ</label>
                                 <select class="form-select @error('type') is-invalid @enderror"
                                         id="type" name="type" required>
                                     <option value="1" {{ (old('type', $invoice->type) == 1) ? 'selected' : '' }}>正式</option>
-                                    <option value="2" {{ (old('type', $invoice->type) == 2) ? 'selected' : '' }}>临时</option>
+                                    <option value="2" {{ (old('type', $invoice->type) == 2) ? 'selected' : '' }}>臨時</option>
                                 </select>
                                 @error('type')
                                     <div class="invalid-feedback">{{ $message }}</div>
@@ -188,8 +188,8 @@
                             <table class="table table-bordered table-hover" id="itemsTable">
                                 <thead class="table-light">
                                     <tr>
-                                        <th style="width: 50px;">日次</th>
-                                        <th style="width: 200px;">品目名</th>
+                                        <th style="width: 50px;">No.</th>
+                                        <th style="width: 200px;">内容</th>
                                         <th style="width: 150px;">単価</th>
                                         <th style="width: 100px;">数量</th>
                                         <th style="width: 120px;">税率 (%)</th>
