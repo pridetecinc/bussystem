@@ -35,7 +35,7 @@
                     @endif
                     
                     @if($isAdmin || $isOperationsManager || $isCoordinator || $isManager)
-                    <a href="#" class="btn btn-outline-secondary btn-sm w-100 mb-1">運行一覧</a>
+                    <a href="{{ route('masters.bus-assignments.index') }}" class="btn btn-outline-secondary btn-sm w-100 mb-1">運行一覧</a>
                     @endif
                     
                     @if($isAdmin || $isOperationsManager || $isCoordinator || $isManager)
@@ -68,10 +68,9 @@
                 </div>
                 <div class="card-body p-2">
                     @if($isAdmin || $isOperationsManager || $isManager)
-                    <a href="{{ route('masters.products.index') }}" class="btn btn-outline-secondary btn-sm w-100 mb-1">品名</a>
-                    <a href="{{ route('masters.currencies.index') }}" class="btn btn-outline-secondary btn-sm w-100 mb-1">货币汇率</a>
-                    <a href="{{ route('masters.invoices.index', ['group_id' => 12]) }}" class="btn btn-outline-secondary btn-sm w-100 mb-1">請求管理</a>
-                    <a href="{{ route('masters.payments.index') }}" class="btn btn-outline-secondary btn-sm w-100 mb-1">入金管理</a>
+                    <a href="{{ route('masters.fees.index') }}" class="btn btn-outline-secondary btn-sm w-100 mb-1">請求管理</a>
+                    <a href="{{ route('masters.fees.index') }}" class="btn btn-outline-secondary btn-sm w-100 mb-1">請求詳細</a>
+                    <a href="{{ route('masters.fees.index') }}" class="btn btn-outline-secondary btn-sm w-100 mb-1">入金管理</a>
                     @endif
                 </div>
             </div>
