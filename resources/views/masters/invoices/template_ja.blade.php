@@ -202,10 +202,9 @@
         @endif
 
         <div class="bank-info">
-            <div class="bank-title">【振込先1】</div>
+            <div class="bank-title">【振込先】</div>
             <div class="bank-content">
                 @foreach($bank as $line)
-                    <!-- 每一行作为一个独立的块，天然换行 -->
                     <div class="bank-line">{{ $line }}</div>
                 @endforeach
             </div>
