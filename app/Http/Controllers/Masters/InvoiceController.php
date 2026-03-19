@@ -63,7 +63,9 @@ class InvoiceController extends Controller
         // appends 确保分页链接中携带当前搜索条件和 per_page 设置
         $invoices->appends($request->only(['search', 'billing_title', 'group_id', 'per_page']));
 
-        return view('masters.invoices.index', compact('invoices', 'groupId'));
+        $banks = Bank::where("is_active",1)->get();
+
+        return view('masters.invoices.index', compact('invoices', 'groupId','banks'));
     }
 
     public function create(Request $request)
@@ -319,7 +321,10 @@ public function store(Request $request)
         DB::commit();
         DB::setDefaultConnection('mysql'); 
         GenerateRequestPdfJob::dispatch($invoiceId,auth()->user()->id);
-        return redirect()->route('masters.invoices.index', ['group_id' => $validated['group_id']])
+        return redirect()->route('masters.invoices.edit', [
+                'invoice' => $invoiceId, // 假设你的路由参数名是 {invoice} 或 {id}
+                'group_id' => $validated['group_id'] // 保留 group_id 参数，防止筛选条件丢失
+            ])
             ->with('success', '請求書を登録しました。');
 
     } catch (\Exception $e) {

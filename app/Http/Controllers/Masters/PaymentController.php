@@ -7,6 +7,7 @@ use App\Models\Masters\Invoice;
 use App\Models\Masters\PaymentHeader;
 use App\Models\Masters\PaymentDetail;
 use App\Models\Masters\Staff;
+use App\Models\Masters\Bank;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -47,8 +48,10 @@ public function store(Request $request)
     // 1. 定义验证规则 (Rules)
     // ==========================================
     $rules = [
-        'group_id' => 'required|integer', // 确保组存在
+        'group_id' => 'required|integer', 
         'mode'     => 'required|in:full,detail',
+        'bank_id'  => 'nullable|integer', 
+        'staff_id'  => 'nullable|integer', 
         
         // Detail 模式特有字段
         'payment_date' => 'required_if:mode,detail|date',
@@ -67,8 +70,6 @@ public function store(Request $request)
     // 2. 定义错误消息 (Messages - 日文)
     // ==========================================
     $messages = [
-        'group_id.required'          => 'グループIDは必須です。',
-        'group_id.exists'            => '指定されたグループが存在しません。',
         'mode.required'              => 'モードの選択は必須です。',
         'mode.in'                    => '無効なモードが選択されています。',
         
@@ -96,7 +97,7 @@ public function store(Request $request)
     $validated = $request->validate($rules, $messages);
 
     $groupId    = $validated['group_id'];
-    $mode       = $validated['mode'];
+    $bank_id       = $validated['bank_id'];
     $items      = $validated['items'];
     $batchToken = 'BATCH-' . date('YmdHis') . '-' . rand(1000, 9999);
 
@@ -163,17 +164,19 @@ public function store(Request $request)
             throw new \Exception("有効な請求書データが見つかりません。");
         }
 
+        $staff = Staff::Where("user_company_id", Auth::user()->id)->first();
         // ==========================================
         // 5. 创建主表 (PaymentHeader)
         // ==========================================
         $payment = PaymentHeader::create([
             'group_id'       => $groupId,
+            'bank_id'        => $bank_id,
             'batch_token'    => $batchToken,
             'customer_id'    => $firstInvoice->customer_id, // 动态获取第一个发票的客户
             'payment_date'   => $paymentDate,
             'total_amount'   => $totalAmount,
             'remark'         => $remark,
-            'handled_by'     => 1,
+            'staff_id'     => $staff->id ?? 0,
             'created_by'     => 1,
             'is_deleted'     => 0,
             'notes'          => $notesValue,
@@ -258,7 +261,8 @@ public function store(Request $request)
         }
         $details = $payment->details; 
         $staffs = Staff::where("is_active",1)->get();
-        return view('masters.payments.show', compact('payment','details','staffs'));
+        $banks = Bank::where("is_active",1)->get();
+        return view('masters.payments.show', compact('payment','details','staffs','banks'));
     }
 
 
@@ -285,7 +289,8 @@ public function store(Request $request)
 
         $details = $payment->details;
         $staffs = Staff::where("is_active",1)->get();
-        return view('masters.payments.edit', compact('payment','details','staffs'));
+        $banks = Bank::where("is_active",1)->get();
+        return view('masters.payments.edit', compact('payment','details','staffs','banks'));
     }
 
     /**
@@ -297,7 +302,8 @@ public function store(Request $request)
         // 验证
         $validated = $request->validate([
             'payment_date' => 'required|date',
-            'staff_id'   => 'required|string|max:50',
+            'staff_id'   => 'nullable|integer',
+            'bank_id'   => 'nullable|integer',
             'remark'       => 'nullable|string|max:500',
             // 不允许修改金额或明细，所以这里不验证它们
         ]);
@@ -306,6 +312,7 @@ public function store(Request $request)
         $payment->update([
             'payment_date' => $validated['payment_date'],
             'staff_id'   => $validated['staff_id'],
+            'bank_id'   => $validated['bank_id'],
             'remark'       => $validated['remark'] ?? null,
         ]);
 
