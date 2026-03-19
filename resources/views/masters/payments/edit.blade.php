@@ -52,8 +52,8 @@
                         </h6>
                         <div class="row mb-4">
                             <div class="col-md-3 mb-3">
-                                <label class="form-label text-muted small">取引先</label>
-                                <div class="fw-bold fs-6 text-dark">{{ $payment->customer->name ?? '不明' }}</div>
+                                <label class="form-label text-muted small">請求先</label>
+                                <div class="fw-bold fs-6 text-dark">{{ $payment->customer->customer_name ?? '' }}</div>
                                 <input type="hidden" name="customer_id" value="{{ $payment->customer_id }}">
                             </div>
                             
@@ -75,17 +75,26 @@
 
                             <!-- 【可编辑】処理担当者 -->
                             <div class="col-md-3 mb-3">
-                                <label for="handled_by" class="form-label text-muted small">処理担当者 <span class="text-danger">*</span></label>
-                                <input type="text" 
-                                       id="handled_by" 
-                                       name="handled_by" 
-                                       class="form-control @error('handled_by') is-invalid @enderror" 
-                                       value="{{ old('handled_by', $payment->handled_by) }}"
-                                       required
-                                       placeholder="例: Yamada">
-                                @error('handled_by')
+                                <label for="staff_id" class="form-label text-muted small">請求担当 <span class="text-danger">*</span></label>
+                                
+                                <select id="staff_id" 
+                                        name="staff_id" 
+                                        class="form-select @error('staff_id') is-invalid @enderror" 
+                                        required>
+
+                                    <!-- 循环员工列表 -->
+                                    @foreach($staffs as $staff)
+                                        <option value="{{ $staff->id }}" 
+                                                {{ old('staff_id', $payment->staff_id) == $staff->id ? 'selected' : '' }}>
+                                            {{ $staff->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+
+                                @error('staff_id')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
+                                
                             </div>
                             
                             <!-- 【可编辑】備考 -->
@@ -95,11 +104,10 @@
                                           name="remark" 
                                           rows="2" 
                                           class="form-control @error('remark') is-invalid @enderror" 
-                                          placeholder="備考を入力...">{{ old('remark', $payment->remark) }}</textarea>
+                                          placeholder="">{{ old('remark', $payment->remark) }}</textarea>
                                 @error('remark')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
-                                <div class="form-text">必要に応じてメモを追加してください。</div>
                             </div>
                         </div>
 
@@ -153,7 +161,7 @@
                                     <tr>
                                         <th class="text-center" style="width: 60px;">No.</th>
                                         <th class="text-center" style="width: 150px;">請求書番号</th>
-                                        <th class="text-center" style="width: 200px;">取引先</th>
+                                        <th class="text-center" style="width: 200px;">請求先</th>
                                         <th class="text-center" style="width: 120px;">請求日</th>
                                         <th class="text-end" style="width: 120px;">請求金額</th>
                                         <th class="text-end" style="width: 120px;">消込金額</th>
@@ -182,10 +190,10 @@
                                         <tr>
                                             <td class="text-center text-muted">{{ $index + 1 }}</td>
                                             <td class="text-center font-monospace fw-bold text-primary">
-                                                {{ $invoice->invoice_number ?? 'N/A' }}
+                                                {{ $invoice->invoice_number ?? '' }}
                                             </td>
                                             <td class="small">
-                                                {{ $invoice->customer->name ?? '不明' }}
+                                                {{ $invoice->customer->customer_name ?? '' }}
                                             </td>
                                             <td class="text-center small">
                                                 {{ $invoice->invoice_date ? \Carbon\Carbon::parse($invoice->invoice_date)->format('Y/m/d') : '-' }}
@@ -212,9 +220,6 @@
                                     @endforelse
                                 </tbody>
                             </table>
-                        </div>
-                        <div class="alert alert-info mt-2 small">
-                            <i class="bi bi-info-circle-fill"></i> 明細の変更が必要な場合は、一旦この入金記録を取消し、再度登録してください。
                         </div>
 
                         <!-- 按钮区域 -->

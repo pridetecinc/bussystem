@@ -26,7 +26,7 @@ class PaymentHeader extends Model
         'total_amount',
         'bank_id',
         'payment_date',
-        'handled_by',
+        'staff_id',
         'remark',
         'batch_token',
         'created_by',
@@ -58,6 +58,13 @@ class PaymentHeader extends Model
         // 请根据实际 Customer 模型的路径调整
         return $this->belongsTo(Customer::class, 'customer_id');
     }
+
+    public function Staff()
+    {
+        // 请根据实际 Customer 模型的路径调整
+        return $this->belongsTo(Staff::class, 'staff_id');
+    }
+
 
     /**
      * 关联：入金明细列表 (一对多)

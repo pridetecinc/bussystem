@@ -15,6 +15,7 @@ use Spatie\Browsershot\Browsershot;
 use App\Models\Masters\Invoice;
 use App\Models\Masters\InvoiceItem;
 use App\Models\Masters\InvoiceTaxSummary;
+use App\Models\Masters\Bank;
 use Carbon\Carbon;
 use Throwable;
 use Exception;
@@ -137,6 +138,7 @@ class GenerateRequestPdfJob implements ShouldQueue
         $summary_10 = InvoiceTaxSummary::on($connectionName)->where('invoice_id', $invoice->id)->where('tax_rate', 10)->first();
         $symmary_8 = InvoiceTaxSummary::on($connectionName)->where('invoice_id', $invoice->id)->where('tax_rate', 8)->first();
         $non_taxable = InvoiceItem::on($connectionName)->where('invoice_id', $invoice->id)->where('tax_rate', 0)->sum('amount');
+        $bank = Bank::on($connectionName)->where('id', $invoice->bank_id)->first();
 
         // 3. 准备数据
         $data = [
@@ -155,12 +157,7 @@ class GenerateRequestPdfJob implements ShouldQueue
             'summary_10' => $summary_10,
             'summary_8' => $symmary_8,
             'items' => $items,
-            'bank' => (object)[
-                'bank_name' => '●●●●銀行',
-                'branch_name' => '●●●●●●支店',
-                'account_number' => '●●●●●●●●',
-                'account_holder' => '●●●●●●●●',
-            ],
+            'bank' => preg_split('/\r\n|\r|\n/', $bank->bank_info),
             'company' => (object)[
                 'name' => '株式会社〇〇〇',
                 'postal_code' => '123-4567',

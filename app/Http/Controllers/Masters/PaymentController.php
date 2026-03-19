@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Masters\Invoice;
 use App\Models\Masters\PaymentHeader;
 use App\Models\Masters\PaymentDetail;
+use App\Models\Masters\Staff;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -256,7 +257,8 @@ public function store(Request $request)
                 ->with('error', 'この入金記録はすでに取消されています。');
         }
         $details = $payment->details; 
-        return view('masters.payments.show', compact('payment','details'));
+        $staffs = Staff::where("is_active",1)->get();
+        return view('masters.payments.show', compact('payment','details','staffs'));
     }
 
 
@@ -282,7 +284,8 @@ public function store(Request $request)
         }
 
         $details = $payment->details;
-        return view('masters.payments.edit', compact('payment','details'));
+        $staffs = Staff::where("is_active",1)->get();
+        return view('masters.payments.edit', compact('payment','details','staffs'));
     }
 
     /**
@@ -294,7 +297,7 @@ public function store(Request $request)
         // 验证
         $validated = $request->validate([
             'payment_date' => 'required|date',
-            'handled_by'   => 'required|string|max:50',
+            'staff_id'   => 'required|string|max:50',
             'remark'       => 'nullable|string|max:500',
             // 不允许修改金额或明细，所以这里不验证它们
         ]);
@@ -302,7 +305,7 @@ public function store(Request $request)
         // 更新
         $payment->update([
             'payment_date' => $validated['payment_date'],
-            'handled_by'   => $validated['handled_by'],
+            'staff_id'   => $validated['staff_id'],
             'remark'       => $validated['remark'] ?? null,
         ]);
 

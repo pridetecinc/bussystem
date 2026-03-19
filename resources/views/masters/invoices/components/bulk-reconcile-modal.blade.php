@@ -66,7 +66,7 @@
                         <div class="flex-grow-1">
                             <label class="form-label mb-0 small fw-bold text-primary">共通：備考</label>
                             <input type="text" id="common-remark" class="form-control form-control-sm" 
-                                   placeholder="例：3 月分一括入金" style="height: 31px;">
+                                   placeholder="" style="height: 31px;">
                         </div>
                         <div class="text-muted small mb-1 d-none d-md-block">
                             <i class="bi bi-info-circle"></i> 自動反映
@@ -204,7 +204,7 @@
 
                 <!-- 2. 客户名 (col-md-2) - 调整顺序以匹配视觉习惯，或保持原样 -->
                 <div class="col-md-2 col-lg-2  text-center">
-                    <div class="small text-muted mb-0">取引先</div>
+                    <div class="small text-muted mb-0">請求先</div>
                     <div class="small text-muted item-customer-name text-truncate" title=""></div>
                 </div>
             </div>
@@ -319,7 +319,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 id: cb.value,
                 customer_id: cb.dataset.customerId || '',
                 invoice_no: cb.dataset.invoiceNo || '',
-                customer_name: cb.dataset.customerName || '不明',
+                customer_name: cb.dataset.customerName || '-',
                 currency_code: ds.currencyCode || '', 
                 request_amount: parseFloat(cb.dataset.requestAmount) || 0,
                 balance_amount: parseFloat(cb.dataset.balanceAmount) || 0

@@ -87,6 +87,7 @@ public function store(Request $request)
         'billing_title' => 'nullable|string|max:200',
         'tax_mode' => 'required|in:1,2',
         'language' => 'required|in:1,2',
+        'type' => 'required|in:1,2',
         'currency_code' => 'required|string|max:50',
         'invoice_date' => 'required|date',
         'due_date' => 'required|date|after_or_equal:invoice_date',
@@ -272,6 +273,7 @@ public function store(Request $request)
             'pdf_template_id' => null,
             'pdf_file_path' => null,
             'is_locked' => 0,
+            'type' => $validated['type'],
             'notes' => $validated['notes'],
             'created_at' => now(),
             'updated_at' => now(),
@@ -389,9 +391,11 @@ public function store(Request $request)
         $validated = $request->validate([
             'group_id' => 'nullable|integer',
             'bank_id' => 'required|integer',
+            
             'billing_title' => 'nullable|string|max:200',
             'tax_mode' => 'required|in:1,2', // 1=税込, 2=税別
             'language' => 'required|in:1,2', // 1=日语, 2=英语
+            'type' => 'required|in:1,2',
             'currency_code' => 'required|string|max:50',
             'invoice_date' => 'required|date',
             'due_date' => 'required|date|after_or_equal:invoice_date',
@@ -517,6 +521,7 @@ public function store(Request $request)
                 'group_id' => $validated['group_id'],
                 'bank_id' => $validated['bank_id'],
                 'customer_id' => 1, 
+                'type' => $validated['type'],
                 'invoice_date' => $validated['invoice_date'],
                 'due_date' => $validated['due_date'],
                 'billing_title' => $validated['billing_title'],

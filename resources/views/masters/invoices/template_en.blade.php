@@ -275,22 +275,11 @@
         @endif
 
         <div class="bank-info">
-            <div class="bank-title">Bank Details</div>
-            <div class="bank-row">
-                <span class="bank-label">Bank Name:</span>
-                <span>{{ $bank->bank_name }} {{ $bank->branch_name }}</span>
-            </div>
-            <div class="bank-row">
-                <span class="bank-label">Account Type:</span>
-                <span>Ordinary</span>
-            </div>
-            <div class="bank-row">
-                <span class="bank-label">Account No:</span>
-                <span>{{ $bank->account_number }}</span>
-            </div>
-            <div class="bank-row">
-                <span class="bank-label">Account Name:</span>
-                <span>{{ $bank->account_holder }}</span>
+            <div class="bank-title">Bank Details/div>
+            <div class="bank-content">
+                @foreach($bank as $line)
+                    <div class="bank-line">{{ $line }}</div>
+                @endforeach
             </div>
         </div>
     </div>

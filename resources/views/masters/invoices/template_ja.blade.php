@@ -203,21 +203,10 @@
 
         <div class="bank-info">
             <div class="bank-title">【振込先】</div>
-            <div class="bank-row">
-                <span class="bank-label">銀行名</span>
-                <span>{{ $bank->bank_name }} {{ $bank->branch_name }}</span>
-            </div>
-            <div class="bank-row">
-                <span class="bank-label">種別</span>
-                <span>普通預金</span>
-            </div>
-            <div class="bank-row">
-                <span class="bank-label">口座番号</span>
-                <span>{{ $bank->account_number }}</span>
-            </div>
-            <div class="bank-row">
-                <span class="bank-label">口座名義</span>
-                <span>{{ $bank->account_holder }}</span>
+            <div class="bank-content">
+                @foreach($bank as $line)
+                    <div class="bank-line">{{ $line }}</div>
+                @endforeach
             </div>
         </div>
     </div>
