@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\Masters;
 
 use App\Http\Controllers\Controller;
@@ -13,8 +14,8 @@ use App\Models\Masters\ReservationCategory;
 use App\Models\Masters\Branch;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Carbon\Carbon;
 
 class GroupInfoController extends Controller
@@ -85,76 +86,139 @@ class GroupInfoController extends Controller
         return view('masters.group-infos.create', compact('agencies', 'vehicles', 'drivers', 'guides', 'reservationCategories'));
     }
 
-private function checkConflict($vehicleId, $driverId, $startDate, $startTime, $endDate, $endTime, $excludeUuid = null)
-{
-    if (empty($vehicleId) && empty($driverId)) {
-        return;
-    }
+    private function checkConflict($vehicleId, $driverId, $startDate, $startTime, $endDate, $endTime, $excludeBusAssignmentId = null, $excludeGroupInfoId = null)
+    {
+        if (empty($vehicleId) && empty($driverId)) {
+            return;
+        }
 
-    if (strpos($startDate, ' ') !== false) {
-        $newStart = Carbon::parse($startDate);
-    } else {
-        $newStart = Carbon::parse($startDate . ' ' . ($startTime ?? '00:00:00'));
-    }
+        if (strpos($startDate, ' ') !== false) {
+            $newStart = Carbon::parse($startDate);
+        } else {
+            $newStart = Carbon::parse($startDate . ' ' . ($startTime ?? '00:00:00'));
+        }
 
-    if (strpos($endDate, ' ') !== false) {
-        $newEnd = Carbon::parse($endDate);
-    } else {
-        $newEnd = Carbon::parse($endDate . ' ' . ($endTime ?? '23:59:59'));
-    }
+        if (strpos($endDate, ' ') !== false) {
+            $newEnd = Carbon::parse($endDate);
+        } else {
+            $newEnd = Carbon::parse($endDate . ' ' . ($endTime ?? '23:59:59'));
+        }
 
-    if (!empty($vehicleId)) {
-        $existingAssignments = BusAssignment::where('vehicle_id', $vehicleId)
-            ->when($excludeUuid, function($query) use ($excludeUuid) {
-                return $query->where('key_uuid', '!=', $excludeUuid);
-            })
-            ->get();
+        if (!empty($vehicleId)) {
+            $query = BusAssignment::where('vehicle_id', $vehicleId);
 
-        foreach ($existingAssignments as $assignment) {
-            if (strpos($assignment->start_date, ' ') !== false) {
-                $existingStart = Carbon::parse($assignment->start_date);
-            } else {
-                $existingStart = Carbon::parse($assignment->start_date . ' ' . ($assignment->start_time ?? '00:00:00'));
+            if (!empty($excludeBusAssignmentId)) {
+                $query->where('id', '!=', $excludeBusAssignmentId);
             }
 
-            if (strpos($assignment->end_date, ' ') !== false) {
-                $existingEnd = Carbon::parse($assignment->end_date);
-            } else {
-                $existingEnd = Carbon::parse($assignment->end_date . ' ' . ($assignment->end_time ?? '23:59:59'));
+            if (!empty($excludeGroupInfoId)) {
+                $query->where('group_info_id', '!=', $excludeGroupInfoId);
             }
 
-            if ($newStart->lt($existingEnd) && $newEnd->gt($existingStart)) {
-                throw new \Exception('選択された車両は、指定された期間に既に割り当てられています。');
+            $existingAssignments = $query->get();
+
+            foreach ($existingAssignments as $assignment) {
+                if (strpos($assignment->start_date, ' ') !== false) {
+                    $existingStart = Carbon::parse($assignment->start_date);
+                } else {
+                    $existingStart = Carbon::parse($assignment->start_date . ' ' . ($assignment->start_time ?? '00:00:00'));
+                }
+
+                if (strpos($assignment->end_date, ' ') !== false) {
+                    $existingEnd = Carbon::parse($assignment->end_date);
+                } else {
+                    $existingEnd = Carbon::parse($assignment->end_date . ' ' . ($assignment->end_time ?? '23:59:59'));
+                }
+
+                if ($newStart->lt($existingEnd) && $newEnd->gt($existingStart)) {
+                    throw new \Exception('選択された車両は、指定された期間に既に割り当てられています。');
+                }
+            }
+        }
+
+        if (!empty($driverId)) {
+            $query = BusAssignment::where('driver_id', $driverId);
+
+            if (!empty($excludeBusAssignmentId)) {
+                $query->where('id', '!=', $excludeBusAssignmentId);
+            }
+
+            if (!empty($excludeGroupInfoId)) {
+                $query->where('group_info_id', '!=', $excludeGroupInfoId);
+            }
+
+            $existingAssignments = $query->get();
+
+            foreach ($existingAssignments as $assignment) {
+                if (strpos($assignment->start_date, ' ') !== false) {
+                    $existingStart = Carbon::parse($assignment->start_date);
+                } else {
+                    $existingStart = Carbon::parse($assignment->start_date . ' ' . ($assignment->start_time ?? '00:00:00'));
+                }
+
+                if (strpos($assignment->end_date, ' ') !== false) {
+                    $existingEnd = Carbon::parse($assignment->end_date);
+                } else {
+                    $existingEnd = Carbon::parse($assignment->end_date . ' ' . ($assignment->end_time ?? '23:59:59'));
+                }
+
+                if ($newStart->lt($existingEnd) && $newEnd->gt($existingStart)) {
+                    throw new \Exception('選択された運転手は、指定された期間に既に割り当てられています。');
+                }
             }
         }
     }
 
-    if (!empty($driverId)) {
-        $existingAssignments = BusAssignment::where('driver_id', $driverId)
-            ->when($excludeUuid, function($query) use ($excludeUuid) {
-                return $query->where('key_uuid', '!=', $excludeUuid);
-            })
-            ->get();
-
-        foreach ($existingAssignments as $assignment) {
-            if (strpos($assignment->start_date, ' ') !== false) {
-                $existingStart = Carbon::parse($assignment->start_date);
-            } else {
-                $existingStart = Carbon::parse($assignment->start_date . ' ' . ($assignment->start_time ?? '00:00:00'));
-            }
-
-            if (strpos($assignment->end_date, ' ') !== false) {
-                $existingEnd = Carbon::parse($assignment->end_date);
-            } else {
-                $existingEnd = Carbon::parse($assignment->end_date . ' ' . ($assignment->end_time ?? '23:59:59'));
-            }
-
+    private function checkResourceConflicts($resourceType, $resourceId, $date, $startTime, $endTime, $excludeBusId = null, $excludeGroupId = null)
+    {
+        if (empty($resourceId)) {
+            return;
+        }
+        
+        $query = DailyItinerary::whereDate('date', $date)
+            ->whereHas('busAssignment', function($q) use ($resourceType, $resourceId) {
+                if ($resourceType === 'vehicle') {
+                    $q->where('vehicle_id', $resourceId);
+                } elseif ($resourceType === 'driver') {
+                    $q->where('driver_id', $resourceId);
+                }
+            });
+        
+        if ($excludeBusId) {
+            $query->where('bus_assignment_id', '!=', $excludeBusId);
+        }
+        
+        if ($excludeGroupId) {
+            $query->whereHas('busAssignment', function($q) use ($excludeGroupId) {
+                $q->where('group_info_id', '!=', $excludeGroupId);
+            });
+        }
+        
+        $conflictingItineraries = $query->get();
+        
+        foreach ($conflictingItineraries as $itinerary) {
+            $existingStart = Carbon::parse($itinerary->time_start);
+            $existingEnd = Carbon::parse($itinerary->time_end);
+            $newStart = Carbon::parse($startTime);
+            $newEnd = Carbon::parse($endTime);
+            
             if ($newStart->lt($existingEnd) && $newEnd->gt($existingStart)) {
-                throw new \Exception('選択された運転手は、指定された期間に既に割り当てられています。');
+                $otherGroup = GroupInfo::find($itinerary->group_info_id);
+                $otherGroupName = $otherGroup ? $otherGroup->group_name : '不明';
+                $otherBusId = $itinerary->bus_assignment_id;
+                
+                if ($resourceType === 'vehicle') {
+                    $vehicle = Vehicle::find($resourceId);
+                    $resourceName = $vehicle ? $vehicle->registration_number : '不明';
+                    throw new \Exception("車両「{$resourceName}」は日付「{$date}」 " . substr($startTime, 0, 5) . "～" . substr($endTime, 0, 5) . " に他のグループ「{$otherGroupName}」(運行ID: {$otherBusId})の運行で既に使用されています。");
+                } else {
+                    $driver = Driver::find($resourceId);
+                    $resourceName = $driver ? $driver->name : '不明';
+                    throw new \Exception("運転手「{$resourceName}」は日付「{$date}」 " . substr($startTime, 0, 5) . "～" . substr($endTime, 0, 5) . " に他のグループ「{$otherGroupName}」(運行ID: {$otherBusId})の運行で既に使用されています。");
+                }
             }
         }
     }
-}
 
     public function store(Request $request)
     {
@@ -173,7 +237,6 @@ private function checkConflict($vehicleId, $driverId, $startDate, $startTime, $e
             'agency_code' => 'nullable|string|max:50',
             'agency_branch' => 'nullable|string|max:100',
             'agency_phone' => 'nullable|string|max:20',
-            'key_uuid' => 'nullable|string|max:200',
             'vehicle' => 'nullable|string|max:200',
             'vehicle_number' => 'nullable|string|max:50',
             'start_date' => 'required|date',
@@ -234,9 +297,7 @@ private function checkConflict($vehicleId, $driverId, $startDate, $startTime, $e
             DB::beginTransaction();
     
             $userId = session('user_id', auth()->id() ?? 0);
-    
-            $groupKeyUuid = (string) Str::uuid();
-            
+
             $startTime = !empty($validated['start_time']) ? $validated['start_time'] . ':00' : null;
             $endTime = !empty($validated['end_time']) ? $validated['end_time'] . ':00' : null;
             
@@ -274,7 +335,6 @@ private function checkConflict($vehicleId, $driverId, $startDate, $startTime, $e
             }
     
             $groupData = [
-                'key_uuid' => $groupKeyUuid,
                 'vehicle_id' => $request->vehicle_id,
                 'driver_id' => $request->driver_id,
                 'guide_id' => $request->guide_id,
@@ -284,7 +344,7 @@ private function checkConflict($vehicleId, $driverId, $startDate, $startTime, $e
                 'agency_phone' => $validated['agency_phone'] ?? ($agencyInfo->phone_number ?? null),
                 'agency_contact_name' => $validated['agency_contact_name'] ?? ($agencyInfo->manager_name ?? null),
                 'agency_country' => $validated['agency_country'] ?? ($agencyInfo->country ?? null),
-                'reservation_status' => $validated['reservation_status'] ?? '',
+                'reservation_status' => $validated['reservation_status'] ?? '予約',
                 'start_date' => $validated['start_date'],
                 'start_time' => $startTime,
                 'end_date' => $validated['end_date'],
@@ -324,14 +384,54 @@ private function checkConflict($vehicleId, $driverId, $startDate, $startTime, $e
             ];
     
             $groupInfo = GroupInfo::create($groupData);
-    
+
             $startDate = Carbon::parse($validated['start_date']);
             $endDate = Carbon::parse($validated['end_date']);
-            
             $daysDiff = $startDate->diffInDays($endDate) + 1;
-            
+
+            $busAssignmentData = [
+                'group_info_id' => (int)$groupInfo->id,
+                'daily_itinerary_id' => null,
+                'vehicle_id' => !empty($request->vehicle_id) ? (int)$request->vehicle_id : null,
+                'driver_id' => !empty($request->driver_id) ? (int)$request->driver_id : null,
+                'guide_id' => !empty($request->guide_id) ? (int)$request->guide_id : null,
+                'start_date' => $validated['start_date'],
+                'start_time' => $startTime,
+                'end_date' => $validated['end_date'],
+                'end_time' => $endTime,
+                'lock_arrangement' => 0,
+                'status_sent' => 0,
+                'status_finalized' => 0,
+                'count_daily' => (int)$daysDiff,
+                'vehicle_number' => '01',
+                'step_car' => null,
+                'adult_count' => $validated['adult_count'] ?? 0,
+                'child_count' => $validated['child_count'] ?? 0,
+                'guide_count' => $validated['guide_count'] ?? 0,
+                'other_count' => $validated['other_count'] ?? 0,
+                'luggage_count' => $validated['luggage_count'] ?? 0,
+                'vehicle_type_spec_check' => false,
+                'temporary_driver' => false,
+                'accompanying' => null,
+                'representative' => null,
+                'representative_phone' => null,
+                'attention' => null,
+                'operation_remarks' => null,
+                'operation_memo' => null,
+                'operation_basic_remarks' => null,
+                'doc_remarks' => null,
+                'history_remarks' => null,
+                'vehicle_index' => 1,
+                'created_by' => (int)$userId,
+                'updated_by' => (int)$userId,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+
+            $busAssignment = BusAssignment::create($busAssignmentData);
+
             $createdItineraries = [];
-    
+
             for ($i = 0; $i < $daysDiff; $i++) {
                 $currentDate = $startDate->copy()->addDays($i);
                 
@@ -360,13 +460,14 @@ private function checkConflict($vehicleId, $driverId, $startDate, $startTime, $e
                 if ($i == $daysDiff - 1) {
                     $endLocation = $validated['end_location'] ?? null;
                 }
-            
+
                 $vehicleDisplay = $groupData['vehicle'] ?? null;
                 $driverDisplay = $groupData['driver'] ?? null;
                 $guideDisplay = $groupData['guide'] ?? null;
-            
+
                 $dailyItineraryData = [
-                    'key_uuid' => $groupKeyUuid,
+                    'group_info_id' => (int)$groupInfo->id,
+                    'bus_assignment_id' => (int)$busAssignment->id,
                     'date' => $currentDate->format('Y-m-d'),
                     'time_start' => $startTime,
                     'time_end' => $endTime,
@@ -378,81 +479,37 @@ private function checkConflict($vehicleId, $driverId, $startDate, $startTime, $e
                     'driver' => $driverDisplay,
                     'guide' => $guideDisplay,
                     'remarks' => $validated['remarks'] ?? null,
-                    'bus_ass_uuid' => null,
-                    'created_by' => $userId,
-                    'updated_by' => $userId,
+                    'created_by' => (int)$userId,
+                    'updated_by' => (int)$userId,
                 ];
-            
+
                 if (!empty($request->vehicle_id)) {
-                    $dailyItineraryData['vehicle_id'] = $request->vehicle_id;
+                    $dailyItineraryData['vehicle_id'] = (int)$request->vehicle_id;
                 } else {
-                    $dailyItineraryData['vehicle_id'] = 0;
+                    $dailyItineraryData['vehicle_id'] = null;
                 }
-                
+
                 if (!empty($request->driver_id)) {
-                    $dailyItineraryData['driver_id'] = $request->driver_id;
+                    $dailyItineraryData['driver_id'] = (int)$request->driver_id;
                 } else {
-                    $dailyItineraryData['driver_id'] = 0;
+                    $dailyItineraryData['driver_id'] = null;
                 }
-                
+
                 if (!empty($request->guide_id)) {
-                    $dailyItineraryData['guide_id'] = $request->guide_id;
+                    $dailyItineraryData['guide_id'] = (int)$request->guide_id;
+                } else {
+                    $dailyItineraryData['guide_id'] = null;
                 }
             
                 $itinerary = DailyItinerary::create($dailyItineraryData);
                 $createdItineraries[] = $itinerary;
             }
-    
-            if (!empty($request->vehicle_id) || !empty($request->driver_id)) {
-                $busAssignmentUuid = (string) Str::uuid();
-                $firstItinerary = $createdItineraries[0] ?? null;
-                
-                $busAssignmentData = [
-                    'key_uuid' => $busAssignmentUuid,
-                    'yoyaku_uuid' => $groupKeyUuid,
-                    'daily_itinerary_id' => $firstItinerary ? $firstItinerary->id : null,
-                    'vehicle_id' => $request->vehicle_id,
-                    'driver_id' => $request->driver_id,
-                    'start_date' => $validated['start_date'],
-                    'start_time' => $startTime,
-                    'end_date' => $validated['end_date'],
-                    'end_time' => $endTime,
-                    'lock_arrangement' => 0,
-                    'status_sent' => 0,
-                    'status_finalized' => 0,
-                    'count_daily' => $daysDiff,
-                    'vehicle_number' => '01',
-                    'step_car' => null,
-                    'adult_count' => $validated['adult_count'] ?? 0,
-                    'child_count' => $validated['child_count'] ?? 0,
-                    'guide_count' => $validated['guide_count'] ?? 0,
-                    'other_count' => $validated['other_count'] ?? 0,
-                    'luggage_count' => $validated['luggage_count'] ?? 0,
-                    'vehicle_type_spec_check' => false,
-                    'temporary_driver' => false,
-                    'accompanying' => null,
-                    'representative' => null,
-                    'representative_phone' => null,
-                    'attention' => null,
-                    'operation_remarks' => null,
-                    'operation_memo' => null,
-                    'operation_basic_remarks' => null,
-                    'doc_remarks' => null,
-                    'history_remarks' => null,
-                    'vehicle_index' => 1,
-                    'created_by' => $userId,
-                    'updated_by' => $userId,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ];
-    
-                BusAssignment::create($busAssignmentData);
-                
-                foreach ($createdItineraries as $itinerary) {
-                    $itinerary->update(['bus_ass_uuid' => $busAssignmentUuid]);
-                }
+
+            $firstItinerary = $createdItineraries[0] ?? null;
+            if ($firstItinerary) {
+                $busAssignment->update(['daily_itinerary_id' => $firstItinerary->id]);
             }
-    
+
             DB::commit();
     
             if ($request->input('iframe') == '1') {
@@ -492,384 +549,414 @@ private function checkConflict($vehicleId, $driverId, $startDate, $startTime, $e
         }
     }
 
-public function edit($id)
-{
-    $groupInfo = GroupInfo::findOrFail($id);
-    
-    $agencies = Agency::where('is_active', true)
-                     ->orderBy('display_order', 'asc')
-                     ->orderBy('agency_code', 'asc')
-                     ->get();
-    
-    $vehicles = Vehicle::with(['vehicleType', 'vehicleModel', 'branch'])
+    public function edit($id)
+    {
+        $groupInfo = GroupInfo::findOrFail($id);
+        
+        $agencies = Agency::where('is_active', true)
+                         ->orderBy('display_order', 'asc')
+                         ->orderBy('agency_code', 'asc')
+                         ->get();
+        
+        $vehicles = Vehicle::with(['vehicleType', 'vehicleModel', 'branch'])
+                          ->where('is_active', true)
+                          ->orderBy('display_order', 'asc')
+                          ->orderBy('vehicle_code', 'asc')
+                          ->get();
+        
+        $drivers = Driver::with('branch')
+                        ->where('is_active', true)
+                        ->orderBy('display_order', 'asc')
+                        ->orderBy('driver_code', 'asc')
+                        ->get();
+        
+        $guides = Guide::with('branch')
                       ->where('is_active', true)
                       ->orderBy('display_order', 'asc')
-                      ->orderBy('vehicle_code', 'asc')
+                      ->orderBy('guide_code', 'asc')
                       ->get();
-    
-    $drivers = Driver::with('branch')
-                    ->where('is_active', true)
-                    ->orderBy('display_order', 'asc')
-                    ->orderBy('driver_code', 'asc')
-                    ->get();
-    
-    $guides = Guide::with('branch')
-                  ->where('is_active', true)
-                  ->orderBy('display_order', 'asc')
-                  ->orderBy('guide_code', 'asc')
-                  ->get();
-                  
-    $branches = Branch::orderBy('display_order', 'asc')
-                     ->orderBy('branch_code', 'asc')
-                     ->get();
-    
-    $reservationCategories = ReservationCategory::where('is_active', true)
-                                               ->orderBy('display_order', 'asc')
-                                               ->get();
-    
-    $busAssignments = BusAssignment::where('yoyaku_uuid', $groupInfo->key_uuid)
-                                  ->orderBy('vehicle_index', 'asc')
-                                  ->get();
-    
-    Log::info('===== edit画面表示 =====');
-    Log::info('グループID: ' . $id);
-    Log::info('キーUUID: ' . $groupInfo->key_uuid);
-    Log::info('BusAssignment数: ' . $busAssignments->count());
-    foreach ($busAssignments as $bus) {
-        Log::info('Bus: ' . $bus->key_uuid . ', 車両ID: ' . $bus->vehicle_id . ', インデックス: ' . $bus->vehicle_index);
-    }
-    
-    $allItineraries = DailyItinerary::where('key_uuid', $groupInfo->key_uuid)
-                                    ->orderBy('date', 'asc')
-                                    ->orderBy('id', 'asc')
-                                    ->get();
-    
-    Log::info('行程数: ' . $allItineraries->count());
-    foreach ($allItineraries as $it) {
-        Log::info('行程: ID=' . $it->id . ', bus_ass_uuid=' . ($it->bus_ass_uuid ?? 'なし') . ', vehicle_id=' . ($it->vehicle_id ?? 'なし'));
-    }
-    
-    $groupedItineraries = [];
-    $uniqueVehicles = [];
-    
-    foreach ($allItineraries as $itinerary) {
-        $groupKey = $itinerary->bus_ass_uuid ?? ($itinerary->vehicle_id ?? 0);
+                      
+        $branches = Branch::orderBy('display_order', 'asc')
+                         ->orderBy('branch_code', 'asc')
+                         ->get();
         
-        if (!isset($groupedItineraries[$groupKey])) {
-            $vehicleInfo = null;
-            if ($itinerary->vehicle_id && $itinerary->vehicle_id > 0) {
-                $vehicleInfo = $vehicles->firstWhere('id', $itinerary->vehicle_id);
-            }
+        $reservationCategories = ReservationCategory::where('is_active', true)
+                                                   ->orderBy('display_order', 'asc')
+                                                   ->get();
+        
+        $busAssignments = BusAssignment::where('group_info_id', $groupInfo->id)
+                                      ->orderBy('vehicle_index', 'asc')
+                                      ->get();
+
+        $allItineraries = DailyItinerary::where('group_info_id', $groupInfo->id)
+                                        ->orderBy('date', 'asc')
+                                        ->orderBy('id', 'asc')
+                                        ->get();
+
+        $groupedItineraries = [];
+        $uniqueVehicles = [];
+
+        foreach ($allItineraries as $itinerary) {
+            $groupKey = $itinerary->bus_assignment_id ?? ($itinerary->vehicle_id ?? 0);
             
-            $busAssignment = null;
-            if ($itinerary->bus_ass_uuid) {
-                $busAssignment = $busAssignments->firstWhere('key_uuid', $itinerary->bus_ass_uuid);
-            }
-            
-            $groupedItineraries[$groupKey] = [
-                'vehicle_id' => $itinerary->vehicle_id,
-                'vehicle_name' => $vehicleInfo ? $vehicleInfo->registration_number : ($itinerary->vehicle ?? '未分配车辆'),
-                'vehicle_model' => $vehicleInfo && $vehicleInfo->vehicleModel ? $vehicleInfo->vehicleModel->model_name : '',
-                'driver_name' => $itinerary->driver ?? '',
-                'bus_assignment' => $busAssignment,
-                'itineraries' => []
-            ];
-            
-            if ($itinerary->vehicle_id && $itinerary->vehicle_id > 0 && !in_array($itinerary->vehicle_id, array_column($uniqueVehicles, 'id'))) {
-                $uniqueVehicles[] = [
-                    'id' => $itinerary->vehicle_id,
-                    'name' => $vehicleInfo ? $vehicleInfo->registration_number : $itinerary->vehicle,
-                    'model' => $vehicleInfo && $vehicleInfo->vehicleModel ? $vehicleInfo->vehicleModel->model_name : ''
+            if (!isset($groupedItineraries[$groupKey])) {
+                $vehicleInfo = null;
+                if ($itinerary->vehicle_id && $itinerary->vehicle_id > 0) {
+                    $vehicleInfo = $vehicles->firstWhere('id', $itinerary->vehicle_id);
+                }
+                
+                $busAssignment = null;
+                if ($itinerary->bus_assignment_id) {
+                    $busAssignment = $busAssignments->firstWhere('id', $itinerary->bus_assignment_id);
+                }
+                
+                $groupedItineraries[$groupKey] = [
+                    'vehicle_id' => $itinerary->vehicle_id,
+                    'vehicle_name' => $vehicleInfo ? $vehicleInfo->registration_number : ($itinerary->vehicle ?? '未分配车辆'),
+                    'vehicle_model' => $vehicleInfo && $vehicleInfo->vehicleModel ? $vehicleInfo->vehicleModel->model_name : '',
+                    'driver_name' => $itinerary->driver ?? '',
+                    'bus_assignment' => $busAssignment,
+                    'itineraries' => []
                 ];
+                
+                if ($itinerary->vehicle_id && $itinerary->vehicle_id > 0 && !in_array($itinerary->vehicle_id, array_column($uniqueVehicles, 'id'))) {
+                    $uniqueVehicles[] = [
+                        'id' => $itinerary->vehicle_id,
+                        'name' => $vehicleInfo ? $vehicleInfo->registration_number : $itinerary->vehicle,
+                        'model' => $vehicleInfo && $vehicleInfo->vehicleModel ? $vehicleInfo->vehicleModel->model_name : ''
+                    ];
+                }
             }
+            
+            $groupedItineraries[$groupKey]['itineraries'][] = $itinerary;
         }
         
-        $groupedItineraries[$groupKey]['itineraries'][] = $itinerary;
+        foreach ($groupedItineraries as &$group) {
+            usort($group['itineraries'], function($a, $b) {
+                return strtotime($a->date) - strtotime($b->date);
+            });
+        }
+        
+        if (isset($groupedItineraries[0])) {
+            $groupedItineraries[0]['vehicle_name'] = '未分配车辆';
+        }
+        
+        $hasMultipleVehicles = count($groupedItineraries) > 1;
+        
+        return view('masters.group-infos.edit', compact(
+            'groupInfo', 
+            'agencies',
+            'vehicles', 
+            'drivers', 
+            'guides', 
+            'busAssignments', 
+            'allItineraries',
+            'groupedItineraries',
+            'uniqueVehicles',
+            'hasMultipleVehicles',
+            'branches',
+            'reservationCategories'
+        ));
     }
-    
-    foreach ($groupedItineraries as &$group) {
-        usort($group['itineraries'], function($a, $b) {
-            return strtotime($a->date) - strtotime($b->date);
-        });
-    }
-    
-    if (isset($groupedItineraries[0])) {
-        $groupedItineraries[0]['vehicle_name'] = '未分配车辆';
-    }
-    
-    $hasMultipleVehicles = count($groupedItineraries) > 1;
-    
-    Log::info('グループ化された運行詳細数: ' . count($groupedItineraries));
-    
-    return view('masters.group-infos.edit', compact(
-        'groupInfo', 
-        'agencies',
-        'vehicles', 
-        'drivers', 
-        'guides', 
-        'busAssignments', 
-        'allItineraries',
-        'groupedItineraries',
-        'uniqueVehicles',
-        'hasMultipleVehicles',
-        'branches',
-        'reservationCategories'
-    ));
-}
 
-public function update(Request $request, $id)
-{
-    $groupInfo = GroupInfo::findOrFail($id);
+    public function update(Request $request, $id)
+    {
+        $groupInfo = GroupInfo::findOrFail($id);
 
-    $rules = [
-        'agt_tour_id' => 'nullable|string|max:200',
-        'agency' => 'nullable|string|max:200',
-        'agency_code' => 'nullable|string|max:50',
-        'agency_branch' => 'nullable|string|max:100',
-        'agency_phone' => 'nullable|string|max:20',
-        'key_uuid' => 'required|string|max:200',
-        'vehicle' => 'nullable|string|max:200',
-        'vehicle_number' => 'nullable|string|max:50',
-        'start_date' => 'required|date',
-        'start_time' => 'nullable|date_format:H:i',
-        'end_date' => 'required|date|after_or_equal:start_date',
-        'end_time' => 'nullable|date_format:H:i',
-        'guide' => 'nullable|string|max:100',
-        'driver' => 'nullable|string|max:100',
-        'reservation_status' => 'nullable|string|max:50',
-        'business_category' => 'nullable|string|max:100',
-        'vehicle_type_selection' => 'nullable|string|max:200',
-        'adult_count' => 'nullable|integer|min:0',
-        'child_count' => 'nullable|integer|min:0',
-        'guide_count' => 'nullable|integer|min:0',
-        'other_count' => 'nullable|integer|min:0',
-        'agency_contact_name' => 'nullable|string|max:100',
-        'agency_country' => 'nullable|string|max:100',
-        'luggage_count' => 'nullable|integer|min:0',
-        'vehicle_type' => 'nullable|string|max:100',
-        'vehicle_model' => 'nullable|string|max:200',
-        'vehicle_branch' => 'nullable|string|max:200',
-        'remarks' => 'nullable|string',
-        'ignore_operation' => 'nullable',
-        'ignore_attendance' => 'nullable',
-        'reservation_channel' => 'nullable|string|max:100',
-        
-        'bus_assignments' => 'sometimes|array',
-        'bus_assignments.*.key_uuid' => 'nullable|string|max:200',
-        'bus_assignments.*.vehicle_id' => [
-            'required',
-            function ($attribute, $value, $fail) {
-                if (!empty($value) && !Vehicle::where('id', $value)->exists()) {
-                    $fail('選択された車両は存在しません。');
-                }
-            },
-        ],
-        'bus_assignments.*.driver_id' => [
-            'required',
-            function ($attribute, $value, $fail) {
-                if (!empty($value) && !Driver::where('id', $value)->exists()) {
-                    $fail('選択された運転手は存在しません。');
-                }
-            },
-        ],
-        'bus_assignments.*.vehicle_number' => 'nullable|string|max:50',
-        'bus_assignments.*.step_car' => 'nullable|string|max:255',
-        'bus_assignments.*.adult_count' => 'nullable|integer|min:0',
-        'bus_assignments.*.child_count' => 'nullable|integer|min:0',
-        'bus_assignments.*.guide_count' => 'nullable|integer|min:0',
-        'bus_assignments.*.other_count' => 'nullable|integer|min:0',
-        'bus_assignments.*.luggage_count' => 'nullable|integer|min:0',
-        'bus_assignments.*.vehicle_type_spec_check' => 'nullable|boolean',
-        'bus_assignments.*.temporary_driver' => 'nullable|boolean',
-        'bus_assignments.*.accompanying' => 'nullable|string|max:100',
-        'bus_assignments.*.representative' => 'nullable|string|max:100',
-        'bus_assignments.*.representative_phone' => 'nullable|string|max:20',
-        'bus_assignments.*.attention' => 'nullable|string',
-        'bus_assignments.*.operation_remarks' => 'nullable|string',
-        'bus_assignments.*.operation_memo' => 'nullable|string',
-        'bus_assignments.*.operation_basic_remarks' => 'nullable|string',
-        'bus_assignments.*.doc_remarks' => 'nullable|string',
-        'bus_assignments.*.history_remarks' => 'nullable|string',
-        'bus_assignments.*.lock_arrangement' => 'nullable|boolean',
-        'bus_assignments.*.status_sent' => 'nullable|boolean',
-        'bus_assignments.*.status_finalized' => 'nullable|boolean',
-        'bus_assignments.*.vehicle_index' => 'required|integer|min:1',
-        
-        'daily_itineraries' => 'sometimes|array',
-        'daily_itineraries.*.id' => 'nullable|integer|exists:daily_itinerary,id',
-        'daily_itineraries.*.date' => 'required|date',
-        'daily_itineraries.*.time_start' => 'required|date_format:H:i',
-        'daily_itineraries.*.time_end' => 'required|date_format:H:i',
-        'daily_itineraries.*.start_location' => 'nullable|string|max:255',
-        'daily_itineraries.*.end_location' => 'nullable|string|max:255',
-        'daily_itineraries.*.itinerary' => 'nullable|string',
-        'daily_itineraries.*.vehicle_id' => [
-            'required',
-            function ($attribute, $value, $fail) {
-                if (!empty($value) && !Vehicle::where('id', $value)->exists()) {
-                    $fail('選択された車両は存在しません。');
-                }
-            },
-        ],
-        'daily_itineraries.*.driver_id' => [
-            'required',
-            function ($attribute, $value, $fail) {
-                if (!empty($value) && !Driver::where('id', $value)->exists()) {
-                    $fail('選択された運転手は存在しません。');
-                }
-            },
-        ],
-        'daily_itineraries.*.bus_ass_uuid' => 'nullable|string|max:200',
-        'daily_itineraries.*.accommodation' => 'nullable|boolean',
-        'daily_itineraries.*.remarks' => 'nullable|string|max:255',
-        'daily_itineraries.*.display_order' => 'required|integer|min:1',
-        'daily_itineraries.*.vehicle_group' => 'nullable|integer',
-        
-        'deleted_itineraries' => 'sometimes|array',
-        'deleted_itineraries.*' => 'integer|exists:daily_itinerary,id',
-    ];
+        $rules = [
+            'agt_tour_id' => 'nullable|string|max:200',
+            'agency' => 'nullable|string|max:200',
+            'agency_code' => 'nullable|string|max:50',
+            'agency_branch' => 'nullable|string|max:100',
+            'agency_phone' => 'nullable|string|max:20',
+            'vehicle' => 'nullable|string|max:200',
+            'vehicle_number' => 'nullable|string|max:50',
+            'start_date' => 'required|date',
+            'start_time' => 'nullable|date_format:H:i',
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'end_time' => 'nullable|date_format:H:i',
+            'guide' => 'nullable|string|max:100',
+            'guide_id' => 'nullable|exists:guides,id',
+            'driver' => 'nullable|string|max:100',
+            'reservation_status' => 'nullable|string|max:50',
+            'business_category' => 'nullable|string|max:100',
+            'vehicle_type_selection' => 'nullable|string|max:200',
+            'adult_count' => 'nullable|integer|min:0',
+            'child_count' => 'nullable|integer|min:0',
+            'guide_count' => 'nullable|integer|min:0',
+            'other_count' => 'nullable|integer|min:0',
+            'agency_contact_name' => 'nullable|string|max:100',
+            'agency_country' => 'nullable|string|max:100',
+            'luggage_count' => 'nullable|integer|min:0',
+            'vehicle_type' => 'nullable|string|max:100',
+            'vehicle_model' => 'nullable|string|max:200',
+            'vehicle_branch' => 'nullable|string|max:200',
+            'remarks' => 'nullable|string',
+            'ignore_operation' => 'nullable',
+            'ignore_attendance' => 'nullable',
+            'reservation_channel' => 'nullable|string|max:100',
+            
+            'bus_assignments' => 'sometimes|array',
+            'bus_assignments.*.id' => 'nullable|string',
+            'bus_assignments.*.vehicle_id' => [
+                'nullable',
+                function ($attribute, $value, $fail) {
+                    if (!empty($value) && !Vehicle::where('id', $value)->exists()) {
+                        $fail('選択された車両は存在しません。');
+                    }
+                },
+            ],
+            'bus_assignments.*.driver_id' => [
+                'nullable',
+                function ($attribute, $value, $fail) {
+                    if (!empty($value) && !Driver::where('id', $value)->exists()) {
+                        $fail('選択された運転手は存在しません。');
+                    }
+                },
+            ],
+            'bus_assignments.*.guide_id' => [
+                'nullable',
+                function ($attribute, $value, $fail) {
+                    if (!empty($value) && !Guide::where('id', $value)->exists()) {
+                        $fail('選択された添乗員は存在しません。');
+                    }
+                },
+            ],
+            'bus_assignments.*.vehicle_number' => 'nullable|string|max:50',
+            'bus_assignments.*.step_car' => 'nullable|string|max:255',
+            'bus_assignments.*.adult_count' => 'nullable|integer|min:0',
+            'bus_assignments.*.child_count' => 'nullable|integer|min:0',
+            'bus_assignments.*.guide_count' => 'nullable|integer|min:0',
+            'bus_assignments.*.other_count' => 'nullable|integer|min:0',
+            'bus_assignments.*.luggage_count' => 'nullable|integer|min:0',
+            'bus_assignments.*.vehicle_type_spec_check' => 'nullable|boolean',
+            'bus_assignments.*.temporary_driver' => 'nullable|boolean',
+            'bus_assignments.*.accompanying' => 'nullable|string|max:100',
+            'bus_assignments.*.representative' => 'nullable|string|max:100',
+            'bus_assignments.*.representative_phone' => 'nullable|string|max:20',
+            'bus_assignments.*.attention' => 'nullable|string',
+            'bus_assignments.*.operation_remarks' => 'nullable|string',
+            'bus_assignments.*.operation_memo' => 'nullable|string',
+            'bus_assignments.*.operation_basic_remarks' => 'nullable|string',
+            'bus_assignments.*.doc_remarks' => 'nullable|string',
+            'bus_assignments.*.history_remarks' => 'nullable|string',
+            'bus_assignments.*.lock_arrangement' => 'nullable|boolean',
+            'bus_assignments.*.status_sent' => 'nullable|boolean',
+            'bus_assignments.*.status_finalized' => 'nullable|boolean',
+            'bus_assignments.*.vehicle_index' => 'required|integer|min:1',
+            
+            'daily_itineraries' => 'sometimes|array',
+            'daily_itineraries.*.id' => 'nullable|integer|exists:daily_itinerary,id',
+            'daily_itineraries.*.date' => 'required|date',
+            'daily_itineraries.*.time_start' => 'required|date_format:H:i',
+            'daily_itineraries.*.time_end' => 'required|date_format:H:i',
+            'daily_itineraries.*.start_location' => 'nullable|string|max:255',
+            'daily_itineraries.*.end_location' => 'nullable|string|max:255',
+            'daily_itineraries.*.itinerary' => 'nullable|string',
+            'daily_itineraries.*.vehicle_id' => [
+                'nullable',
+                function ($attribute, $value, $fail) {
+                    if (!empty($value) && !Vehicle::where('id', $value)->exists()) {
+                        $fail('選択された車両は存在しません。');
+                    }
+                },
+            ],
+            'daily_itineraries.*.driver_id' => [
+                'nullable',
+                function ($attribute, $value, $fail) {
+                    if (!empty($value) && !Driver::where('id', $value)->exists()) {
+                        $fail('選択された運転手は存在しません。');
+                    }
+                },
+            ],
+            'daily_itineraries.*.guide_id' => [
+                'nullable',
+                function ($attribute, $value, $fail) {
+                    if (!empty($value) && !Guide::where('id', $value)->exists()) {
+                        $fail('選択された添乗員は存在しません。');
+                    }
+                },
+            ],
+            'daily_itineraries.*.bus_assignment_id' => 'nullable|string',
+            'daily_itineraries.*.accommodation' => 'nullable|boolean',
+            'daily_itineraries.*.remarks' => 'nullable|string|max:255',
+            'daily_itineraries.*.display_order' => 'required|integer|min:1',
+            'daily_itineraries.*.vehicle_group' => 'nullable|integer',
+            
+            'deleted_itineraries' => 'sometimes|array',
+            'deleted_itineraries.*' => 'integer|exists:daily_itinerary,id',
+        ];
 
-    $messages = [
-        'key_uuid.required' => '予約IDは必須です。',
-        'start_date.required' => '開始日は必須です。',
-        'end_date.required' => '終了日は必須です。',
-        'end_date.after_or_equal' => '終了日は開始日以降の日付を入力してください。',
-        'vehicle_id.required' => '車両を選択してください。',
-        'driver_id.required' => '運転手を選択してください。',
-        'bus_assignments.*.vehicle_id.required' => 'すべての運行詳細で車両を選択してください。',
-        'bus_assignments.*.driver_id.required' => 'すべての運行詳細で運転手を選択してください。',
-        'daily_itineraries.*.date.required' => 'すべての旅程の運行日は必須です。',
-        'daily_itineraries.*.time_start.required' => 'すべての旅程の開始時刻は必須です。',
-        'daily_itineraries.*.time_end.required' => 'すべての旅程の終了時刻は必須です。',
-        'daily_itineraries.*.time_start.date_format' => '開始時刻はH:i形式で入力してください（例: 09:00）。',
-        'daily_itineraries.*.time_end.date_format' => '終了時刻はH:i形式で入力してください（例: 18:00）。',
-        'daily_itineraries.*.vehicle_id.required' => 'すべての旅程で車両を選択してください。',
-        'daily_itineraries.*.driver_id.required' => 'すべての旅程で運転手を選択してください。',
-        'adult_count.integer' => '大人人数は数値で入力してください。',
-        'child_count.integer' => '子供人数は数値で入力してください。',
-        'guide_count.integer' => 'ガイド人数は数値で入力してください。',
-        'other_count.integer' => 'その他人数は数値で入力してください。',
-        'luggage_count.integer' => '荷物数は数値で入力してください。',
-    ];
+        $messages = [
+            'start_date.required' => '開始日は必須です。',
+            'end_date.required' => '終了日は必須です。',
+            'end_date.after_or_equal' => '終了日は開始日以降の日付を入力してください。',
+            'daily_itineraries.*.date.required' => 'すべての旅程の運行日は必須です。',
+            'daily_itineraries.*.time_start.required' => 'すべての旅程の開始時刻は必須です。',
+            'daily_itineraries.*.time_end.required' => 'すべての旅程の終了時刻は必須です。',
+            'daily_itineraries.*.time_start.date_format' => '開始時刻はH:i形式で入力してください。',
+            'daily_itineraries.*.time_end.date_format' => '終了時刻はH:i形式で入力してください。',
+            'adult_count.integer' => '大人人数は数値で入力してください。',
+            'child_count.integer' => '子供人数は数値で入力してください。',
+            'guide_count.integer' => 'ガイド人数は数値で入力してください。',
+            'other_count.integer' => 'その他人数は数値で入力してください。',
+            'luggage_count.integer' => '荷物数は数値で入力してください。',
+        ];
 
-    $validated = $request->validate($rules, $messages);
+        $validated = $request->validate($rules, $messages);
 
-    $validated['ignore_operation'] = $request->has('ignore_operation');
-    $validated['ignore_attendance'] = $request->has('ignore_attendance');
+        $validated['ignore_operation'] = $request->has('ignore_operation');
+        $validated['ignore_attendance'] = $request->has('ignore_attendance');
 
-    try {
-        DB::beginTransaction();
+        try {
+            DB::beginTransaction();
 
-        $userId = session('user_id', auth()->id() ?? 0);
-        
-        $vehicleInfo = null;
-        if (!empty($request->vehicle_id)) {
-            $vehicleInfo = Vehicle::with(['vehicleType', 'vehicleModel', 'branch'])
-                                 ->find($request->vehicle_id);
-        }
-
-        $driverInfo = null;
-        if (!empty($request->driver_id)) {
-            $driverInfo = Driver::find($request->driver_id);
-        }
-
-        $guideInfo = null;
-        if (!empty($request->guide_id)) {
-            $guideInfo = Guide::find($request->guide_id);
-        }
-
-        $agencyInfo = null;
-        if (!empty($request->agency_id)) {
-            $agencyInfo = Agency::find($request->agency_id);
-        }
-
-        if ($request->has('deleted_itineraries')) {
-            $deletedIds = $request->input('deleted_itineraries');
-            if (is_array($deletedIds) && !empty($deletedIds)) {
-                DailyItinerary::whereIn('id', $deletedIds)
-                             ->where('key_uuid', $groupInfo->key_uuid)
-                             ->delete();
+            $userId = session('user_id', auth()->id() ?? 0);
+            
+            $guideId = null;
+            $guideName = null;
+            
+            if ($request->filled('guide_id')) {
+                $guideId = $request->guide_id;
+                $guide = Guide::find($guideId);
+                $guideName = $guide ? $guide->name : '';
             }
-        }
+            
+            $vehicleInfo = null;
+            if (!empty($request->vehicle_id)) {
+                $vehicleInfo = Vehicle::with(['vehicleType', 'vehicleModel', 'branch'])
+                                ->find($request->vehicle_id);
+            }
 
-        $existingBusUuids = BusAssignment::where('yoyaku_uuid', $groupInfo->key_uuid)
-                                        ->pluck('key_uuid')
+            $driverInfo = null;
+            if (!empty($request->driver_id)) {
+                $driverInfo = Driver::find($request->driver_id);
+            }
+
+            $guideInfo = null;
+            if (!empty($guideId)) {
+                $guideInfo = Guide::find($guideId);
+                if ($guideInfo) {
+                    $guideName = $guideInfo->name;
+                }
+            }
+
+            $agencyInfo = null;
+            if (!empty($request->agency_id)) {
+                $agencyInfo = Agency::find($request->agency_id);
+            }
+
+            if ($request->has('deleted_itineraries')) {
+                $deletedIds = $request->input('deleted_itineraries');
+                if (is_array($deletedIds) && !empty($deletedIds)) {
+                    DailyItinerary::whereIn('id', $deletedIds)
+                            ->where('group_info_id', $groupInfo->id)
+                            ->delete();
+                }
+            }
+
+            $existingBusIds = BusAssignment::where('group_info_id', $groupInfo->id)
+                                        ->pluck('id')
                                         ->toArray();
 
-        $hasExistingBusAssignments = !empty($existingBusUuids);
-        $hasVehicleInBusAssignments = false;
-        
-        if ($request->has('bus_assignments') && is_array($request->bus_assignments)) {
-            foreach ($request->bus_assignments as $busData) {
-                if (!empty($busData['vehicle_id'])) {
-                    $hasVehicleInBusAssignments = true;
-                    break;
+            $hasNewBusAssignment = false;
+            $newBusData = null;
+            $newBusIndex = null;
+            $tempBusId = null;
+
+            if ($request->has('bus_assignments') && is_array($request->bus_assignments)) {
+                foreach ($request->bus_assignments as $index => $busData) {
+                    if (empty($busData['id']) || 
+                        (is_string($busData['id']) && (strpos($busData['id'], 'copy_') === 0 || strpos($busData['id'], 'split_') === 0))) {
+                        $hasNewBusAssignment = true;
+                        $newBusData = $busData;
+                        $newBusIndex = $index;
+                        $tempBusId = $busData['id'] ?? null;
+                        break;
+                    }
                 }
             }
-        }
-        
-        if (!$hasExistingBusAssignments && $hasVehicleInBusAssignments) {
-            $firstBusData = null;
-            foreach ($request->bus_assignments as $busData) {
-                $firstBusData = $busData;
-                break;
-            }
-            
-            if ($firstBusData && !empty($firstBusData['vehicle_id'])) {
-                $newBusUuid = (string) Str::uuid();
+
+            $newlyCreatedBusIds = [];
+
+            if ($hasNewBusAssignment && $newBusData) {
+                $itinerariesForThisBus = collect($request->daily_itineraries)
+                    ->filter(function($item) use ($newBusIndex) {
+                        return isset($item['vehicle_group']) && $item['vehicle_group'] == $newBusIndex;
+                    })
+                    ->values();
                 
-                $itineraries = DailyItinerary::where('key_uuid', $groupInfo->key_uuid)
-                                            ->orderBy('date', 'asc')
-                                            ->get();
+                if ($itinerariesForThisBus->isEmpty()) {
+                    $itinerariesForThisBus = collect($request->daily_itineraries)
+                        ->filter(function($item) use ($tempBusId) {
+                            return isset($item['bus_assignment_id']) && $item['bus_assignment_id'] === $tempBusId;
+                        })
+                        ->values();
+                }
                 
-                $firstItinerary = $itineraries->first();
-                $lastItinerary = $itineraries->last();
+                $firstItinerary = $itinerariesForThisBus->first();
+                $lastItinerary = $itinerariesForThisBus->last();
+                
+                $startDate = $firstItinerary['date'] ?? $groupInfo->start_date;
+                $startTime = isset($firstItinerary['time_start']) ? $firstItinerary['time_start'] . ':00' : ($groupInfo->start_time ?? '08:00:00');
+                $endDate = $lastItinerary['date'] ?? $groupInfo->end_date;
+                $endTime = isset($lastItinerary['time_end']) ? $lastItinerary['time_end'] . ':00' : ($groupInfo->end_time ?? '18:00:00');
                 
                 $vehicleName = '';
-                if (!empty($firstBusData['vehicle_id'])) {
-                    $vehicle = Vehicle::find($firstBusData['vehicle_id']);
+                if (!empty($newBusData['vehicle_id']) && $newBusData['vehicle_id'] > 0) {
+                    $vehicle = Vehicle::find($newBusData['vehicle_id']);
                     $vehicleName = $vehicle ? $vehicle->registration_number : '';
                 }
                 
                 $driverName = '';
-                if (!empty($firstBusData['driver_id'])) {
-                    $driver = Driver::find($firstBusData['driver_id']);
+                if (!empty($newBusData['driver_id']) && $newBusData['driver_id'] > 0) {
+                    $driver = Driver::find($newBusData['driver_id']);
                     $driverName = $driver ? $driver->name : '';
                 }
                 
+                $guideNameForBus = '';
+                $guideIdForBus = $newBusData['guide_id'] ?? null;
+                if ($guideIdForBus) {
+                    $guide = Guide::find($guideIdForBus);
+                    $guideNameForBus = $guide ? $guide->name : '';
+                }
+                
+                $maxIndex = BusAssignment::where('group_info_id', $groupInfo->id)->max('vehicle_index') ?? 0;
+                $newVehicleIndex = $maxIndex + 1;
+                
                 $busAssignmentData = [
-                    'key_uuid' => $newBusUuid,
-                    'yoyaku_uuid' => $groupInfo->key_uuid,
-                    'daily_itinerary_id' => $firstItinerary ? $firstItinerary->id : null,
-                    'vehicle_id' => !empty($firstBusData['vehicle_id']) && $firstBusData['vehicle_id'] > 0 ? $firstBusData['vehicle_id'] : null,
-                    'driver_id' => $firstBusData['driver_id'] ?? null,
-                    'start_date' => $groupInfo->start_date,
-                    'start_time' => $groupInfo->start_time,
-                    'end_date' => $groupInfo->end_date,
-                    'end_time' => $groupInfo->end_time,
-                    'lock_arrangement' => isset($firstBusData['lock_arrangement']) ? (bool)$firstBusData['lock_arrangement'] : false,
-                    'status_sent' => isset($firstBusData['status_sent']) ? (bool)$firstBusData['status_sent'] : false,
-                    'status_finalized' => isset($firstBusData['status_finalized']) ? (bool)$firstBusData['status_finalized'] : false,
-                    'count_daily' => $itineraries->count(),
-                    'vehicle_number' => $firstBusData['vehicle_number'] ?? '01',
-                    'step_car' => $firstBusData['step_car'] ?? null,
-                    'adult_count' => $firstBusData['adult_count'] ?? $groupInfo->adult_count ?? 0,
-                    'child_count' => $firstBusData['child_count'] ?? $groupInfo->child_count ?? 0,
-                    'guide_count' => $firstBusData['guide_count'] ?? 0,
-                    'other_count' => $firstBusData['other_count'] ?? 0,
-                    'luggage_count' => $firstBusData['luggage_count'] ?? 0,
-                    'vehicle_type_spec_check' => isset($firstBusData['vehicle_type_spec_check']) ? (bool)$firstBusData['vehicle_type_spec_check'] : false,
-                    'temporary_driver' => isset($firstBusData['temporary_driver']) ? (bool)$firstBusData['temporary_driver'] : false,
-                    'accompanying' => $firstBusData['accompanying'] ?? null,
-                    'representative' => $firstBusData['representative'] ?? null,
-                    'representative_phone' => $firstBusData['representative_phone'] ?? null,
-                    'attention' => $firstBusData['attention'] ?? null,
-                    'operation_remarks' => $firstBusData['operation_remarks'] ?? null,
-                    'operation_memo' => $firstBusData['operation_memo'] ?? null,
-                    'operation_basic_remarks' => $firstBusData['operation_basic_remarks'] ?? null,
-                    'doc_remarks' => $firstBusData['doc_remarks'] ?? null,
-                    'history_remarks' => $firstBusData['history_remarks'] ?? null,
-                    'vehicle_index' => $firstBusData['vehicle_index'] ?? 1,
+                    'group_info_id' => $groupInfo->id,
+                    'daily_itinerary_id' => $firstItinerary ? ($firstItinerary['id'] ?? null) : null,
+                    'vehicle_id' => !empty($newBusData['vehicle_id']) && $newBusData['vehicle_id'] > 0 ? $newBusData['vehicle_id'] : null,
+                    'driver_id' => !empty($newBusData['driver_id']) && $newBusData['driver_id'] > 0 ? $newBusData['driver_id'] : null,
+                    'guide_id' => $guideIdForBus,
+                    'start_date' => $startDate,
+                    'start_time' => $startTime,
+                    'end_date' => $endDate,
+                    'end_time' => $endTime,
+                    'lock_arrangement' => isset($newBusData['lock_arrangement']) ? (bool)$newBusData['lock_arrangement'] : false,
+                    'status_sent' => isset($newBusData['status_sent']) ? (bool)$newBusData['status_sent'] : false,
+                    'status_finalized' => isset($newBusData['status_finalized']) ? (bool)$newBusData['status_finalized'] : false,
+                    'count_daily' => $itinerariesForThisBus->count(),
+                    'vehicle_number' => $newBusData['vehicle_number'] ?? sprintf('%02d', $newVehicleIndex),
+                    'step_car' => $newBusData['step_car'] ?? null,
+                    'adult_count' => $newBusData['adult_count'] ?? $groupInfo->adult_count ?? 0,
+                    'child_count' => $newBusData['child_count'] ?? $groupInfo->child_count ?? 0,
+                    'guide_count' => $newBusData['guide_count'] ?? 0,
+                    'other_count' => $newBusData['other_count'] ?? 0,
+                    'luggage_count' => $newBusData['luggage_count'] ?? 0,
+                    'vehicle_type_spec_check' => isset($newBusData['vehicle_type_spec_check']) ? (bool)$newBusData['vehicle_type_spec_check'] : false,
+                    'temporary_driver' => isset($newBusData['temporary_driver']) ? (bool)$newBusData['temporary_driver'] : false,
+                    'accompanying' => $newBusData['accompanying'] ?? null,
+                    'representative' => $newBusData['representative'] ?? null,
+                    'representative_phone' => $newBusData['representative_phone'] ?? null,
+                    'attention' => $newBusData['attention'] ?? null,
+                    'operation_remarks' => $newBusData['operation_remarks'] ?? null,
+                    'operation_memo' => $newBusData['operation_memo'] ?? null,
+                    'operation_basic_remarks' => $newBusData['operation_basic_remarks'] ?? null,
+                    'doc_remarks' => $newBusData['doc_remarks'] ?? null,
+                    'history_remarks' => $newBusData['history_remarks'] ?? null,
+                    'vehicle_index' => $newVehicleIndex,
                     'created_by' => $userId,
                     'updated_by' => $userId,
                     'created_at' => now(),
@@ -877,163 +964,304 @@ public function update(Request $request, $id)
                 ];
                 
                 $newBus = BusAssignment::create($busAssignmentData);
+                $newlyCreatedBusIds[] = $newBus->id;
                 
-                foreach ($itineraries as $itinerary) {
-                    $itinerary->update([
-                        'bus_ass_uuid' => $newBusUuid,
-                        'vehicle_id' => $firstBusData['vehicle_id'],
+                foreach ($itinerariesForThisBus as $itineraryData) {
+                    $newItineraryData = [
+                        'group_info_id' => $groupInfo->id,
+                        'bus_assignment_id' => $newBus->id,
+                        'date' => $itineraryData['date'],
+                        'time_start' => ($itineraryData['time_start'] ?? '08:00') . ':00',
+                        'time_end' => ($itineraryData['time_end'] ?? '18:00') . ':00',
+                        'itinerary' => $itineraryData['itinerary'] ?? '',
+                        'start_location' => $itineraryData['start_location'] ?? null,
+                        'end_location' => $itineraryData['end_location'] ?? null,
+                        'accommodation' => isset($itineraryData['accommodation']) ? (bool)$itineraryData['accommodation'] : false,
+                        'vehicle_id' => isset($newBusData['vehicle_id']) && $newBusData['vehicle_id'] > 0 ? (int)$newBusData['vehicle_id'] : 0,
                         'vehicle' => $vehicleName,
-                        'driver_id' => $firstBusData['driver_id'] ?? 0,
+                        'driver_id' => isset($newBusData['driver_id']) && $newBusData['driver_id'] > 0 ? (int)$newBusData['driver_id'] : 0,
                         'driver' => $driverName,
-                    ]);
+                        'guide_id' => $guideIdForBus ? (int)$guideIdForBus : 0,
+                        'guide' => $guideNameForBus,
+                        'remarks' => $itineraryData['remarks'] ?? null,
+                        'created_by' => $userId,
+                        'updated_by' => $userId,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                    
+                    DailyItinerary::create($newItineraryData);
                 }
                 
-                $request->merge([
-                    'bus_assignments' => [
-                        [
-                            'key_uuid' => $newBusUuid,
-                            'vehicle_id' => $firstBusData['vehicle_id'],
-                            'driver_id' => $firstBusData['driver_id'] ?? null,
-                            'vehicle_number' => $firstBusData['vehicle_number'] ?? '01',
-                            'step_car' => $firstBusData['step_car'] ?? null,
-                            'adult_count' => $firstBusData['adult_count'] ?? $groupInfo->adult_count ?? 0,
-                            'child_count' => $firstBusData['child_count'] ?? $groupInfo->child_count ?? 0,
-                            'guide_count' => $firstBusData['guide_count'] ?? 0,
-                            'other_count' => $firstBusData['other_count'] ?? 0,
-                            'luggage_count' => $firstBusData['luggage_count'] ?? 0,
-                            'vehicle_type_spec_check' => $firstBusData['vehicle_type_spec_check'] ?? 0,
-                            'temporary_driver' => $firstBusData['temporary_driver'] ?? 0,
-                            'accompanying' => $firstBusData['accompanying'] ?? null,
-                            'representative' => $firstBusData['representative'] ?? null,
-                            'representative_phone' => $firstBusData['representative_phone'] ?? null,
-                            'attention' => $firstBusData['attention'] ?? null,
-                            'operation_remarks' => $firstBusData['operation_remarks'] ?? null,
-                            'operation_memo' => $firstBusData['operation_memo'] ?? null,
-                            'operation_basic_remarks' => $firstBusData['operation_basic_remarks'] ?? null,
-                            'doc_remarks' => $firstBusData['doc_remarks'] ?? null,
-                            'history_remarks' => $firstBusData['history_remarks'] ?? null,
-                            'lock_arrangement' => $firstBusData['lock_arrangement'] ?? 0,
-                            'status_sent' => $firstBusData['status_sent'] ?? 0,
-                            'status_finalized' => $firstBusData['status_finalized'] ?? 0,
-                            'vehicle_index' => $firstBusData['vehicle_index'] ?? 1,
-                        ]
-                    ]
-                ]);
-                
-                $existingBusUuids = [$newBusUuid];
-                
-                $updatedItineraries = [];
-                foreach ($request->daily_itineraries as $idx => $itineraryData) {
-                    $itineraryData['bus_ass_uuid'] = $newBusUuid;
-                    $updatedItineraries[] = $itineraryData;
+                $updatedBusAssignments = [];
+                foreach ($request->bus_assignments as $idx => $busData) {
+                    if ($idx == $newBusIndex) {
+                        $busData['id'] = $newBus->id;
+                    }
+                    $updatedBusAssignments[$idx] = $busData;
                 }
-                $request->merge(['daily_itineraries' => $updatedItineraries]);
-            }
-        }
-
-        $submittedBusUuids = [];
-        $busAssignmentDataArray = [];
-
-        if ($request->has('bus_assignments') && is_array($request->bus_assignments)) {
-            foreach ($request->bus_assignments as $busData) {
-                $busUuid = $busData['key_uuid'] ?? (string) Str::uuid();
-                $submittedBusUuids[] = $busUuid;
+                $request->merge(['bus_assignments' => $updatedBusAssignments]);
                 
-                $busAssignmentDataArray[] = [
-                    'key_uuid' => $busUuid,
-                    'yoyaku_uuid' => $groupInfo->key_uuid,
-                    'vehicle_id' => !empty($busData['vehicle_id']) && $busData['vehicle_id'] > 0 ? $busData['vehicle_id'] : null,
-                    'driver_id' => $busData['driver_id'] ?? null,
-                    'lock_arrangement' => isset($busData['lock_arrangement']) ? (bool)$busData['lock_arrangement'] : false,
-                    'status_sent' => isset($busData['status_sent']) ? (bool)$busData['status_sent'] : false,
-                    'status_finalized' => isset($busData['status_finalized']) ? (bool)$busData['status_finalized'] : false,
-                    'vehicle_number' => $busData['vehicle_number'] ?? sprintf('%02d', $busData['vehicle_index'] ?? 1),
-                    'step_car' => $busData['step_car'] ?? null,
-                    'adult_count' => $busData['adult_count'] ?? 0,
-                    'child_count' => $busData['child_count'] ?? 0,
-                    'guide_count' => $busData['guide_count'] ?? 0,
-                    'other_count' => $busData['other_count'] ?? 0,
-                    'luggage_count' => $busData['luggage_count'] ?? 0,
-                    'vehicle_type_spec_check' => isset($busData['vehicle_type_spec_check']) ? (bool)$busData['vehicle_type_spec_check'] : false,
-                    'temporary_driver' => isset($busData['temporary_driver']) ? (bool)$busData['temporary_driver'] : false,
-                    'accompanying' => $busData['accompanying'] ?? null,
-                    'representative' => $busData['representative'] ?? null,
-                    'representative_phone' => $busData['representative_phone'] ?? null,
-                    'attention' => $busData['attention'] ?? null,
-                    'operation_remarks' => $busData['operation_remarks'] ?? null,
-                    'operation_memo' => $busData['operation_memo'] ?? null,
-                    'operation_basic_remarks' => $busData['operation_basic_remarks'] ?? null,
-                    'doc_remarks' => $busData['doc_remarks'] ?? null,
-                    'history_remarks' => $busData['history_remarks'] ?? null,
-                    'vehicle_index' => $busData['vehicle_index'] ?? 1,
-                    'updated_by' => $userId,
-                    'updated_at' => now(),
-                ];
+                $filteredItineraries = [];
+                foreach ($request->daily_itineraries as $itineraryData) {
+                    if (!(isset($itineraryData['vehicle_group']) && $itineraryData['vehicle_group'] == $newBusIndex)) {
+                        $filteredItineraries[] = $itineraryData;
+                    }
+                }
+                $request->merge(['daily_itineraries' => $filteredItineraries]);
+                
+                $existingBusIds[] = $newBus->id;
             }
-        }
 
-        $busAssignmentsToKeep = [];
-        foreach ($busAssignmentDataArray as $busData) {
-            $busUuid = $busData['key_uuid'];
-            $busAssignmentsToKeep[] = $busUuid;
-            
-            $existingBus = BusAssignment::where('key_uuid', $busUuid)->first();
-            if ($existingBus) {
-                $busData['created_by'] = $existingBus->created_by;
-                $busData['created_at'] = $existingBus->created_at;
-                $existingBus->update($busData);
-            } else {
-                $busData['created_by'] = $userId;
-                $busData['created_at'] = now();
-                BusAssignment::create($busData);
+            $submittedBusIds = [];
+            $busAssignmentDataArray = [];
+
+            if ($request->has('bus_assignments') && is_array($request->bus_assignments)) {
+                foreach ($request->bus_assignments as $busData) {
+                    $busId = $busData['id'] ?? null;
+                    if ($busId && is_numeric($busId)) {
+                        $submittedBusIds[] = (int)$busId;
+                    }
+                    
+                    $busDataGuideId = $busData['guide_id'] ?? null;
+                    
+                    $busAssignmentDataArray[] = [
+                        'id' => $busId,
+                        'group_info_id' => $groupInfo->id,
+                        'vehicle_id' => !empty($busData['vehicle_id']) && $busData['vehicle_id'] > 0 ? $busData['vehicle_id'] : null,
+                        'driver_id' => !empty($busData['driver_id']) && $busData['driver_id'] > 0 ? $busData['driver_id'] : null,
+                        'guide_id' => $busDataGuideId,
+                        'lock_arrangement' => isset($busData['lock_arrangement']) ? (bool)$busData['lock_arrangement'] : false,
+                        'status_sent' => isset($busData['status_sent']) ? (bool)$busData['status_sent'] : false,
+                        'status_finalized' => isset($busData['status_finalized']) ? (bool)$busData['status_finalized'] : false,
+                        'vehicle_number' => $busData['vehicle_number'] ?? sprintf('%02d', $busData['vehicle_index'] ?? 1),
+                        'step_car' => $busData['step_car'] ?? null,
+                        'adult_count' => $busData['adult_count'] ?? 0,
+                        'child_count' => $busData['child_count'] ?? 0,
+                        'guide_count' => $busData['guide_count'] ?? 0,
+                        'other_count' => $busData['other_count'] ?? 0,
+                        'luggage_count' => $busData['luggage_count'] ?? 0,
+                        'vehicle_type_spec_check' => isset($busData['vehicle_type_spec_check']) ? (bool)$busData['vehicle_type_spec_check'] : false,
+                        'temporary_driver' => isset($busData['temporary_driver']) ? (bool)$busData['temporary_driver'] : false,
+                        'accompanying' => $busData['accompanying'] ?? null,
+                        'representative' => $busData['representative'] ?? null,
+                        'representative_phone' => $busData['representative_phone'] ?? null,
+                        'attention' => $busData['attention'] ?? null,
+                        'operation_remarks' => $busData['operation_remarks'] ?? null,
+                        'operation_memo' => $busData['operation_memo'] ?? null,
+                        'operation_basic_remarks' => $busData['operation_basic_remarks'] ?? null,
+                        'doc_remarks' => $busData['doc_remarks'] ?? null,
+                        'history_remarks' => $busData['history_remarks'] ?? null,
+                        'vehicle_index' => $busData['vehicle_index'] ?? 1,
+                        'updated_by' => $userId,
+                        'updated_at' => now(),
+                    ];
+                }
             }
-        }
-        
-        $busAssignmentsToDelete = array_diff($existingBusUuids, $submittedBusUuids);
 
-        $busAssignmentMap = [];
-        $busAssignments = BusAssignment::where('yoyaku_uuid', $groupInfo->key_uuid)->get();
-        foreach ($busAssignments as $bus) {
-            if ($bus->vehicle_id) {
-                $busAssignmentMap[$bus->vehicle_id] = $bus->key_uuid;
-            }
-        }
-
-        $existingItineraryIds = DailyItinerary::where('key_uuid', $groupInfo->key_uuid)
-                                              ->pluck('id')
-                                              ->toArray();
-
-        $submittedItineraryIds = [];
-
-        $minStartDate = null;
-        $maxEndDate = null;
-        $minStartTime = null;
-        $maxEndTime = null;
-
-        if ($request->has('daily_itineraries') && is_array($request->daily_itineraries)) {
-            $itinerariesById = [];
-            foreach ($request->daily_itineraries as $index => $itineraryData) {
-                $itineraryId = $itineraryData['id'] ?? null;
-                if ($itineraryId) {
-                    $itinerariesById[$itineraryId] = $itineraryData;
-                    $submittedItineraryIds[] = $itineraryId;
+            $busAssignmentsToKeep = [];
+            foreach ($busAssignmentDataArray as $busData) {
+                $busId = $busData['id'];
+                if ($busId && is_numeric($busId)) {
+                    $busAssignmentsToKeep[] = (int)$busId;
+                }
+                
+                if ($busId && is_numeric($busId)) {
+                    $existingBus = BusAssignment::find($busId);
+                    if ($existingBus) {
+                        $busData['created_by'] = $existingBus->created_by;
+                        $busData['created_at'] = $existingBus->created_at;
+                        
+                        if (isset($busData['vehicle_id'])) {
+                            $busData['vehicle_id'] = $busData['vehicle_id'] > 0 ? $busData['vehicle_id'] : null;
+                        }
+                        if (isset($busData['driver_id'])) {
+                            $busData['driver_id'] = $busData['driver_id'] > 0 ? $busData['driver_id'] : null;
+                        }
+                        if (isset($busData['guide_id'])) {
+                            $busData['guide_id'] = $busData['guide_id'] > 0 ? $busData['guide_id'] : null;
+                        }
+                        
+                        $existingBus->update($busData);
+                    }
+                } elseif (empty($busId)) {
+                    $busData['created_by'] = $userId;
+                    $busData['created_at'] = now();
+                    BusAssignment::create($busData);
                 }
             }
             
-            $allExistingItineraries = DailyItinerary::where('key_uuid', $groupInfo->key_uuid)->get();
-            
-            foreach ($allExistingItineraries as $existingItinerary) {
-                $itineraryId = $existingItinerary->id;
+            $busAssignmentsToDelete = array_diff($existingBusIds, $busAssignmentsToKeep);
+
+            foreach ($busAssignmentsToDelete as $busIdToDelete) {
+                BusAssignment::where('id', $busIdToDelete)->delete();
+            }
+
+            $existingItineraryIds = DailyItinerary::where('group_info_id', $groupInfo->id)
+                                            ->pluck('id')
+                                            ->toArray();
+
+            $submittedItineraryIds = [];
+
+            $minStartDate = null;
+            $maxEndDate = null;
+            $minStartTime = null;
+            $maxEndTime = null;
+
+            $vehicleSchedules = [];
+            $driverSchedules = [];
+
+            if ($request->has('daily_itineraries') && is_array($request->daily_itineraries)) {
+                $itinerariesById = [];
+                foreach ($request->daily_itineraries as $index => $itineraryData) {
+                    $itineraryId = $itineraryData['id'] ?? null;
+                    if ($itineraryId) {
+                        $itinerariesById[$itineraryId] = $itineraryData;
+                        $submittedItineraryIds[] = $itineraryId;
+                    }
+                }
                 
-                if (isset($itinerariesById[$itineraryId])) {
-                    $itineraryData = $itinerariesById[$itineraryId];
+                $allExistingItineraries = DailyItinerary::where('group_info_id', $groupInfo->id)->get();
+                
+                foreach ($allExistingItineraries as $existingItinerary) {
+                    $itineraryId = $existingItinerary->id;
+                    
+                    if (isset($itinerariesById[$itineraryId])) {
+                        $itineraryData = $itinerariesById[$itineraryId];
+
+                        $timeStart = $itineraryData['time_start'] . ':00';
+                        $timeEnd = $itineraryData['time_end'] . ':00';
+
+                        $vehicleId = isset($itineraryData['vehicle_id']) ? (int)$itineraryData['vehicle_id'] : 0;
+                        $driverId = isset($itineraryData['driver_id']) ? (int)$itineraryData['driver_id'] : 0;
+
+                        $guideIdForItinerary = isset($itineraryData['guide_id']) ? (int)$itineraryData['guide_id'] : (int)$existingItinerary->guide_id;
+                        
+                        $vehicleName = '';
+                        if ($vehicleId > 0) {
+                            $vehicle = Vehicle::find($vehicleId);
+                            $vehicleName = $vehicle ? $vehicle->registration_number : '';
+                        }
+                        
+                        $driverName = '';
+                        if ($driverId > 0) {
+                            $driver = Driver::find($driverId);
+                            $driverName = $driver ? $driver->name : '';
+                        }
+                        
+                        $guideNameForItinerary = '';
+                        if ($guideIdForItinerary) {
+                            $guide = Guide::find($guideIdForItinerary);
+                            $guideNameForItinerary = $guide ? $guide->name : '';
+                        }
+                        
+                        $finalVehicleId = ($vehicleId > 0) ? $vehicleId : $existingItinerary->vehicle_id;
+                        $finalDriverId = ($driverId > 0) ? $driverId : $existingItinerary->driver_id;
+                        $finalGuideId = $guideIdForItinerary;
+                        
+                        $currentDate = $itineraryData['date'];
+                        $currentStartTime = $timeStart;
+                        $currentEndTime = $timeEnd;
+                        
+                        if (!$minStartDate || $currentDate < $minStartDate) {
+                            $minStartDate = $currentDate;
+                            $minStartTime = $currentStartTime;
+                        }
+                        
+                        if (!$maxEndDate || $currentDate > $maxEndDate) {
+                            $maxEndDate = $currentDate;
+                            $maxEndTime = $currentEndTime;
+                        }
+                        
+                        $busAssignmentId = isset($itineraryData['bus_assignment_id']) && is_numeric($itineraryData['bus_assignment_id']) 
+                            ? (int)$itineraryData['bus_assignment_id'] 
+                            : (int)$existingItinerary->bus_assignment_id;
+                        
+                        $itineraryFields = [
+                            'group_info_id' => (int)$groupInfo->id,
+                            'date' => $itineraryData['date'],
+                            'time_start' => $timeStart,
+                            'time_end' => $timeEnd,
+                            'itinerary' => $itineraryData['itinerary'] ?? $existingItinerary->itinerary,
+                            'start_location' => $itineraryData['start_location'] ?? $existingItinerary->start_location,
+                            'end_location' => $itineraryData['end_location'] ?? $existingItinerary->end_location,
+                            'accommodation' => isset($itineraryData['accommodation']) ? (bool)$itineraryData['accommodation'] : $existingItinerary->accommodation,
+                            'vehicle_id' => $finalVehicleId,
+                            'vehicle' => $vehicleName ?: $existingItinerary->vehicle,
+                            'driver_id' => $finalDriverId,
+                            'driver' => $driverName ?: $existingItinerary->driver,
+                            'guide_id' => $finalGuideId,
+                            'guide' => $guideNameForItinerary ?: $existingItinerary->guide,
+                            'remarks' => $itineraryData['remarks'] ?? $existingItinerary->remarks,
+                            'bus_assignment_id' => $busAssignmentId,
+                            'updated_at' => now(),
+                            'updated_by' => (int)$userId,
+                        ];
+
+                        $existingItinerary->update($itineraryFields);
+                        
+                        if (!$groupInfo->ignore_operation) {
+                            if ($finalVehicleId > 0) {
+                                $vehicleSchedules[] = [
+                                    'id' => $finalVehicleId,
+                                    'date' => $itineraryData['date'],
+                                    'start' => $timeStart,
+                                    'end' => $timeEnd,
+                                    'itinerary_id' => $itineraryId,
+                                    'bus_id' => $busAssignmentId
+                                ];
+                            }
+                            if ($finalDriverId > 0) {
+                                $driverSchedules[] = [
+                                    'id' => $finalDriverId,
+                                    'date' => $itineraryData['date'],
+                                    'start' => $timeStart,
+                                    'end' => $timeEnd,
+                                    'itinerary_id' => $itineraryId,
+                                    'bus_id' => $busAssignmentId
+                                ];
+                            }
+                        }
+                    } else {
+                        $currentDate = $existingItinerary->date;
+                        
+                        if (!$minStartDate || $currentDate < $minStartDate) {
+                            $minStartDate = $currentDate;
+                            $minStartTime = $existingItinerary->time_start;
+                        }
+                        
+                        if (!$maxEndDate || $currentDate > $maxEndDate) {
+                            $maxEndDate = $currentDate;
+                            $maxEndTime = $existingItinerary->time_end;
+                        }
+                    }
+                }
+                
+                $newItineraryRows = array_filter($request->daily_itineraries, function($itineraryData) {
+                    return empty($itineraryData['id']);
+                });
+                
+                foreach ($newItineraryRows as $index => $itineraryData) {
+                    $vehicleGroup = $itineraryData['vehicle_group'] ?? null;
+                    if ($vehicleGroup && in_array($vehicleGroup, array_column($request->bus_assignments ?? [], 'vehicle_index'))) {
+                        $busForThisGroup = collect($request->bus_assignments)->firstWhere('vehicle_index', $vehicleGroup);
+                        $busId = $busForThisGroup['id'] ?? null;
+                        
+                        if ($busId && !is_numeric($busId)) {
+                            continue;
+                        }
+                    }
                     
                     $timeStart = $itineraryData['time_start'] . ':00';
                     $timeEnd = $itineraryData['time_end'] . ':00';
-                    
-                    $vehicleId = $itineraryData['vehicle_id'] ?? 0;
-                    $driverId = $itineraryData['driver_id'] ?? 0;
-                    $busAssUuid = $itineraryData['bus_ass_uuid'] ?? null;
+
+                    $vehicleId = isset($itineraryData['vehicle_id']) ? (int)$itineraryData['vehicle_id'] : 0;
+                    $driverId = isset($itineraryData['driver_id']) ? (int)$itineraryData['driver_id'] : 0;
+
+                    $guideIdForItinerary = isset($itineraryData['guide_id']) ? (int)$itineraryData['guide_id'] : 0;
+                    $busAssignmentId = isset($itineraryData['bus_assignment_id']) && is_numeric($itineraryData['bus_assignment_id']) 
+                        ? (int)$itineraryData['bus_assignment_id'] 
+                        : 0;
                     
                     $vehicleName = '';
                     if ($vehicleId > 0) {
@@ -1047,8 +1275,11 @@ public function update(Request $request, $id)
                         $driverName = $driver ? $driver->name : '';
                     }
                     
-                    $finalVehicleId = ($vehicleId > 0) ? $vehicleId : $existingItinerary->vehicle_id;
-                    $finalDriverId = ($driverId > 0) ? $driverId : $existingItinerary->driver_id;
+                    $guideNameForItinerary = '';
+                    if ($guideIdForItinerary) {
+                        $guide = Guide::find($guideIdForItinerary);
+                        $guideNameForItinerary = $guide ? $guide->name : '';
+                    }
                     
                     $currentDate = $itineraryData['date'];
                     $currentStartTime = $timeStart;
@@ -1065,239 +1296,293 @@ public function update(Request $request, $id)
                     }
                     
                     $itineraryFields = [
-                        'key_uuid' => $groupInfo->key_uuid,
+                        'group_info_id' => (int)$groupInfo->id,
                         'date' => $itineraryData['date'],
                         'time_start' => $timeStart,
                         'time_end' => $timeEnd,
-                        'itinerary' => $itineraryData['itinerary'] ?? $existingItinerary->itinerary,
-                        'start_location' => $itineraryData['start_location'] ?? $existingItinerary->start_location,
-                        'end_location' => $itineraryData['end_location'] ?? $existingItinerary->end_location,
-                        'accommodation' => isset($itineraryData['accommodation']) ? (bool)$itineraryData['accommodation'] : $existingItinerary->accommodation,
-                        'vehicle_id' => $finalVehicleId,
-                        'vehicle' => $vehicleName ?: $existingItinerary->vehicle,
-                        'driver_id' => $finalDriverId,
-                        'driver' => $driverName ?: $existingItinerary->driver,
-                        'guide' => $existingItinerary->guide,
-                        'remarks' => $itineraryData['remarks'] ?? $existingItinerary->remarks,
-                        'bus_ass_uuid' => $itineraryData['bus_ass_uuid'] ?? $existingItinerary->bus_ass_uuid,
+                        'itinerary' => $itineraryData['itinerary'] ?? null,
+                        'start_location' => $itineraryData['start_location'] ?? null,
+                        'end_location' => $itineraryData['end_location'] ?? null,
+                        'accommodation' => isset($itineraryData['accommodation']) ? (bool)$itineraryData['accommodation'] : false,
+                        'vehicle_id' => $vehicleId,
+                        'vehicle' => $vehicleName,
+                        'driver_id' => $driverId,
+                        'driver' => $driverName,
+                        'guide_id' => $guideIdForItinerary,
+                        'guide' => $guideNameForItinerary,
+                        'remarks' => $itineraryData['remarks'] ?? null,
+                        'bus_assignment_id' => $busAssignmentId,
+                        'created_at' => now(),
                         'updated_at' => now(),
-                        'updated_by' => $userId,
+                        'created_by' => (int)$userId,
+                        'updated_by' => (int)$userId,
                     ];
-
-                    $existingItinerary->update($itineraryFields);
-                } else {
-                    $currentDate = $existingItinerary->date;
                     
-                    if (!$minStartDate || $currentDate < $minStartDate) {
-                        $minStartDate = $currentDate;
-                        $minStartTime = $existingItinerary->time_start;
+                    $newItinerary = DailyItinerary::create($itineraryFields);
+                    
+                    if (!$groupInfo->ignore_operation) {
+                        if ($vehicleId > 0) {
+                            $vehicleSchedules[] = [
+                                'id' => $vehicleId,
+                                'date' => $itineraryData['date'],
+                                'start' => $timeStart,
+                                'end' => $timeEnd,
+                                'itinerary_id' => $newItinerary->id,
+                                'bus_id' => $busAssignmentId
+                            ];
+                        }
+                        if ($driverId > 0) {
+                            $driverSchedules[] = [
+                                'id' => $driverId,
+                                'date' => $itineraryData['date'],
+                                'start' => $timeStart,
+                                'end' => $timeEnd,
+                                'itinerary_id' => $newItinerary->id,
+                                'bus_id' => $busAssignmentId
+                            ];
+                        }
+                    }
+                }
+                
+                if (!$groupInfo->ignore_operation) {
+                    foreach ($vehicleSchedules as $schedule) {
+                        $this->checkResourceConflicts(
+                            'vehicle',
+                            $schedule['id'],
+                            $schedule['date'],
+                            $schedule['start'],
+                            $schedule['end'],
+                            $schedule['bus_id'],
+                            $groupInfo->id
+                        );
                     }
                     
-                    if (!$maxEndDate || $currentDate > $maxEndDate) {
-                        $maxEndDate = $currentDate;
-                        $maxEndTime = $existingItinerary->time_end;
+                    foreach ($driverSchedules as $schedule) {
+                        $this->checkResourceConflicts(
+                            'driver',
+                            $schedule['id'],
+                            $schedule['date'],
+                            $schedule['start'],
+                            $schedule['end'],
+                            $schedule['bus_id'],
+                            $groupInfo->id
+                        );
+                    }
+                    
+                    $vehicleConflicts = [];
+                    foreach ($vehicleSchedules as $schedule) {
+                        $key = $schedule['id'] . '_' . $schedule['date'];
+                        if (!isset($vehicleConflicts[$key])) {
+                            $vehicleConflicts[$key] = [];
+                        }
+                        $vehicleConflicts[$key][] = $schedule;
+                    }
+                    
+                    foreach ($vehicleConflicts as $key => $schedules) {
+                        if (count($schedules) > 1) {
+                            for ($i = 0; $i < count($schedules); $i++) {
+                                for ($j = $i + 1; $j < count($schedules); $j++) {
+                                    $s1 = $schedules[$i];
+                                    $s2 = $schedules[$j];
+                                    
+                                    $start1 = Carbon::parse($s1['date'] . ' ' . $s1['start']);
+                                    $end1 = Carbon::parse($s1['date'] . ' ' . $s1['end']);
+                                    $start2 = Carbon::parse($s2['date'] . ' ' . $s2['start']);
+                                    $end2 = Carbon::parse($s2['date'] . ' ' . $s2['end']);
+                                    
+                                    if ($start1->lt($end2) && $end1->gt($start2)) {
+                                        $vehicle = Vehicle::find($s1['id']);
+                                        $vehicleName = $vehicle ? $vehicle->registration_number : '不明';
+                                        throw new \Exception("同一グループ内で車両「{$vehicleName}」が同じ日付（{$s1['date']}）に重複して割り当てられています。");
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    $driverConflicts = [];
+                    foreach ($driverSchedules as $schedule) {
+                        $key = $schedule['id'] . '_' . $schedule['date'];
+                        if (!isset($driverConflicts[$key])) {
+                            $driverConflicts[$key] = [];
+                        }
+                        $driverConflicts[$key][] = $schedule;
+                    }
+                    
+                    foreach ($driverConflicts as $key => $schedules) {
+                        if (count($schedules) > 1) {
+                            for ($i = 0; $i < count($schedules); $i++) {
+                                for ($j = $i + 1; $j < count($schedules); $j++) {
+                                    $s1 = $schedules[$i];
+                                    $s2 = $schedules[$j];
+                                    
+                                    $start1 = Carbon::parse($s1['date'] . ' ' . $s1['start']);
+                                    $end1 = Carbon::parse($s1['date'] . ' ' . $s1['end']);
+                                    $start2 = Carbon::parse($s2['date'] . ' ' . $s2['start']);
+                                    $end2 = Carbon::parse($s2['date'] . ' ' . $s2['end']);
+                                    
+                                    if ($start1->lt($end2) && $end1->gt($start2)) {
+                                        $driver = Driver::find($s1['id']);
+                                        $driverName = $driver ? $driver->name : '不明';
+                                        throw new \Exception("同一グループ内で運転手「{$driverName}」が同じ日付（{$s1['date']}）に重複して割り当てられています。");
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
-            }
-            
-            $newItineraryRows = array_filter($request->daily_itineraries, function($itineraryData) {
-                return empty($itineraryData['id']);
-            });
-            
-            foreach ($newItineraryRows as $index => $itineraryData) {
-                $timeStart = $itineraryData['time_start'] . ':00';
-                $timeEnd = $itineraryData['time_end'] . ':00';
                 
-                $vehicleId = $itineraryData['vehicle_id'] ?? 0;
-                $driverId = $itineraryData['driver_id'] ?? 0;
-                $busAssUuid = $itineraryData['bus_ass_uuid'] ?? null;
-                
-                $vehicleName = '';
-                if ($vehicleId > 0) {
-                    $vehicle = Vehicle::find($vehicleId);
-                    $vehicleName = $vehicle ? $vehicle->registration_number : '';
-                }
-                
-                $driverName = '';
-                if ($driverId > 0) {
-                    $driver = Driver::find($driverId);
-                    $driverName = $driver ? $driver->name : '';
-                }
-                
-                $currentDate = $itineraryData['date'];
-                $currentStartTime = $timeStart;
-                $currentEndTime = $timeEnd;
-                
-                if (!$minStartDate || $currentDate < $minStartDate) {
-                    $minStartDate = $currentDate;
-                    $minStartTime = $currentStartTime;
-                }
-                
-                if (!$maxEndDate || $currentDate > $maxEndDate) {
-                    $maxEndDate = $currentDate;
-                    $maxEndTime = $currentEndTime;
-                }
-                
-                $itineraryFields = [
-                    'key_uuid' => $groupInfo->key_uuid,
-                    'date' => $itineraryData['date'],
-                    'time_start' => $timeStart,
-                    'time_end' => $timeEnd,
-                    'itinerary' => $itineraryData['itinerary'] ?? null,
-                    'start_location' => $itineraryData['start_location'] ?? null,
-                    'end_location' => $itineraryData['end_location'] ?? null,
-                    'accommodation' => isset($itineraryData['accommodation']) ? (bool)$itineraryData['accommodation'] : false,
-                    'vehicle_id' => $vehicleId,
-                    'vehicle' => $vehicleName,
-                    'driver_id' => $driverId,
-                    'driver' => $driverName,
-                    'guide' => null,
-                    'remarks' => $itineraryData['remarks'] ?? null,
-                    'bus_ass_uuid' => $busAssUuid,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                    'created_by' => $userId,
-                    'updated_by' => $userId,
-                ];
-                
-                DailyItinerary::create($itineraryFields);
-            }
-            
-            foreach ($busAssignmentsToDelete as $busUuidToDelete) {
-                BusAssignment::where('key_uuid', $busUuidToDelete)->delete();
-            }
-            
-            $busAssignments = BusAssignment::where('yoyaku_uuid', $groupInfo->key_uuid)->get();
+                $busAssignments = BusAssignment::where('group_info_id', $groupInfo->id)->get();
 
-            if (!$groupInfo->ignore_operation && $minStartDate && $maxEndDate) {
+                $submittedBusAssignmentData = [];
+                if ($request->has('bus_assignments') && is_array($request->bus_assignments)) {
+                    foreach ($request->bus_assignments as $busData) {
+                        $busId = $busData['id'] ?? null;
+                        if ($busId && is_numeric($busId)) {
+                            $submittedBusAssignmentData[(int)$busId] = $busData;
+                        }
+                    }
+                }
+
                 foreach ($busAssignments as $bus) {
-                    if ($bus->vehicle_id) {
-                        $this->checkConflict(
-                            $bus->vehicle_id,
-                            null,
-                            $minStartDate,
-                            $minStartTime,
-                            $maxEndDate,
-                            $maxEndTime,
-                            $bus->key_uuid
-                        );
+                    $bus->refresh();
+
+                    $itinerariesForBus = DailyItinerary::where('group_info_id', $groupInfo->id)
+                                                    ->where('bus_assignment_id', $bus->id)
+                                                    ->orderBy('date', 'asc')
+                                                    ->get();
+
+                    if ($itinerariesForBus->isEmpty()) {
+                        $bus->delete();
+                        continue;
                     }
-                    
-                    if ($bus->driver_id) {
-                        $this->checkConflict(
-                            null,
-                            $bus->driver_id,
-                            $minStartDate,
-                            $minStartTime,
-                            $maxEndDate,
-                            $maxEndTime,
-                            $bus->key_uuid
-                        );
+
+                    $firstItinerary = $itinerariesForBus->first();
+                    $lastItinerary = $itinerariesForBus->last();
+
+                    $submittedBusData = $submittedBusAssignmentData[$bus->id] ?? null;
+
+                    $guideIdFromRequest = null;
+                    if ($submittedBusData && isset($submittedBusData['guide_id'])) {
+                        $guideIdFromRequest = $submittedBusData['guide_id'];
+                    }
+
+                    $finalGuideId = $guideIdFromRequest ?? $firstItinerary->guide_id;
+
+                    $bus->update([
+                        'vehicle_id' => $firstItinerary->vehicle_id > 0 ? $firstItinerary->vehicle_id : null,
+                        'driver_id' => $firstItinerary->driver_id > 0 ? $firstItinerary->driver_id : null,
+                        'guide_id' => $finalGuideId,
+                        'start_date' => $firstItinerary->date,
+                        'start_time' => $firstItinerary->time_start,
+                        'end_date' => $lastItinerary->date,
+                        'end_time' => $lastItinerary->time_end,
+                        'count_daily' => $itinerariesForBus->count(),
+                    ]);
+
+                    if ($guideIdFromRequest !== null) {
+                        $guideName = '';
+                        if ($finalGuideId) {
+                            $guide = Guide::find($finalGuideId);
+                            $guideName = $guide ? $guide->name : '';
+                        }
+
+                        foreach ($itinerariesForBus as $itinerary) {
+                            $itinerary->update([
+                                'guide_id' => $finalGuideId,
+                                'guide' => $guideName,
+                            ]);
+                        }
                     }
                 }
             }
 
-            foreach ($busAssignments as $bus) {
-                $itinerariesForBus = DailyItinerary::where('key_uuid', $groupInfo->key_uuid)
-                                                  ->where('bus_ass_uuid', $bus->key_uuid)
-                                                  ->orderBy('date', 'asc')
-                                                  ->get();
-                
-                if ($itinerariesForBus->isEmpty()) {
-                    $bus->delete();
-                    continue;
-                }
-                
-                $firstItinerary = $itinerariesForBus->first();
-                $lastItinerary = $itinerariesForBus->last();
-                
-                $bus->update([
-                    'vehicle_id' => $firstItinerary->vehicle_id > 0 ? $firstItinerary->vehicle_id : null,
-                    'driver_id' => $firstItinerary->driver_id > 0 ? $firstItinerary->driver_id : null,
-                    'start_date' => $firstItinerary->date,
-                    'start_time' => $firstItinerary->time_start,
-                    'end_date' => $lastItinerary->date,
-                    'end_time' => $lastItinerary->time_end,
-                    'count_daily' => $itinerariesForBus->count(),
+            $guideIdForGroup = $guideId;
+            $guideNameForGroup = $guideName;
+            
+            if ($request->filled('guide_id')) {
+                $guideIdForGroup = $request->guide_id;
+                $guide = Guide::find($guideIdForGroup);
+                $guideNameForGroup = $guide ? $guide->name : '';
+            }
+
+            $updateData = [
+                'agency' => $validated['agency_name_input'] ?? $validated['agency'] ?? $groupInfo->agency,
+                'agency_code' => $validated['agency_code'] ?? ($agencyInfo->agency_code ?? $groupInfo->agency_code),
+                'agency_branch' => $validated['agency_branch'] ?? ($agencyInfo->branch_name ?? $groupInfo->agency_branch),
+                'agency_phone' => $validated['agency_phone'] ?? ($agencyInfo->phone_number ?? $groupInfo->agency_phone),
+                'agency_contact_name' => $validated['agency_contact_name'] ?? ($agencyInfo->manager_name ?? $groupInfo->agency_contact_name),
+                'agency_country' => $validated['agency_country'] ?? ($agencyInfo->country ?? $groupInfo->agency_country),
+                'reservation_status' => $validated['reservation_status'] ?? '',
+                'start_date' => $minStartDate ?? $validated['start_date'],
+                'start_time' => $minStartTime,
+                'end_date' => $maxEndDate ?? $validated['end_date'],
+                'end_time' => $maxEndTime,
+                'vehicle_type_selection' => $validated['vehicle_type_selection'] ?? null,
+                'remarks' => $validated['remarks'] ?? null,
+                'agt_tour_id' => $validated['agt_tour_id'] ?? null,
+                'business_category' => $validated['business_category'] ?? null,
+                'adult_count' => $validated['adult_count'] ?? 0,
+                'child_count' => $validated['child_count'] ?? 0,
+                'other_count' => $validated['other_count'] ?? 0,
+                'luggage_count' => $validated['luggage_count'] ?? 0,
+                'reservation_channel' => $validated['reservation_channel'] ?? null,
+                'vehicle_type' => $validated['vehicle_type'] ?? ($vehicleInfo->vehicleType->type_name ?? $groupInfo->vehicle_type),
+                'vehicle_model' => $validated['vehicle_model'] ?? ($vehicleInfo->vehicleModel->model_name ?? $groupInfo->vehicle_model),
+                'vehicle' => $validated['vehicle_name_input'] ?? $validated['vehicle'] ?? ($vehicleInfo->registration_number ?? $groupInfo->vehicle),
+                'vehicle_number' => $validated['vehicle_number'] ?? $groupInfo->vehicle_number,
+                'driver' => $validated['driver_name_input'] ?? $validated['driver'] ?? ($driverInfo->name ?? $groupInfo->driver),
+                'guide' => $guideNameForGroup,
+                'guide_id' => $guideIdForGroup,
+                'vehicle_branch' => $validated['vehicle_branch'] ?? ($vehicleInfo->branch->branch_name ?? $groupInfo->vehicle_branch),
+                'guide_count' => $validated['guide_count'] ?? $groupInfo->guide_count,
+                'ignore_operation' => $validated['ignore_operation'] ? 1 : 0,
+                'ignore_attendance' => $validated['ignore_attendance'] ? 1 : 0,
+                'updated_at' => now(),
+                'updated_by' => $userId,
+            ];
+
+            $groupInfo->update($updateData);
+
+            DB::commit();
+
+            if ($request->input('iframe') == '1') {
+                return response()->json([
+                    'success' => true,
+                    'id' => $groupInfo->id,
+                    'message' => 'グループ情報を更新しました。',
+                    'redirect' => route('masters.group-infos.edit', $groupInfo->id),
+                    'reload' => true
+                ])->header('Content-Type', 'application/json');
+            }
+
+            return redirect()->route('masters.group-infos.edit', $groupInfo->id)
+                ->with([
+                    'success' => 'グループ情報を更新しました。データは正常に保存されました。',
+                    'alert-type' => 'success'
                 ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            if ($request->input('iframe') == '1') {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage(),
+                    'errors' => [
+                        'system' => [$e->getMessage()]
+                    ]
+                ], 422);
             }
+            
+            return redirect()->back()
+                ->withInput()
+                ->with([
+                    'error' => '更新中にエラーが発生しました: ' . $e->getMessage(),
+                    'alert-type' => 'danger'
+                ]);
         }
-
-        $updateData = [
-            'agency' => $validated['agency_name_input'] ?? $validated['agency'] ?? $groupInfo->agency,
-            'agency_code' => $validated['agency_code'] ?? ($agencyInfo->agency_code ?? $groupInfo->agency_code),
-            'agency_branch' => $validated['agency_branch'] ?? ($agencyInfo->branch_name ?? $groupInfo->agency_branch),
-            'agency_phone' => $validated['agency_phone'] ?? ($agencyInfo->phone_number ?? $groupInfo->agency_phone),
-            'agency_contact_name' => $validated['agency_contact_name'] ?? ($agencyInfo->manager_name ?? $groupInfo->agency_contact_name),
-            'agency_country' => $validated['agency_country'] ?? ($agencyInfo->country ?? $groupInfo->agency_country),
-            'reservation_status' => $validated['reservation_status'] ?? '',
-            'start_date' => $minStartDate ?? $validated['start_date'],
-            'start_time' => $minStartTime,
-            'end_date' => $maxEndDate ?? $validated['end_date'],
-            'end_time' => $maxEndTime,
-            'vehicle_type_selection' => $validated['vehicle_type_selection'] ?? null,
-            'remarks' => $validated['remarks'] ?? null,
-            'agt_tour_id' => $validated['agt_tour_id'] ?? null,
-            'business_category' => $validated['business_category'] ?? null,
-            'adult_count' => $validated['adult_count'] ?? 0,
-            'child_count' => $validated['child_count'] ?? 0,
-            'other_count' => $validated['other_count'] ?? 0,
-            'luggage_count' => $validated['luggage_count'] ?? 0,
-            'reservation_channel' => $validated['reservation_channel'] ?? null,
-            'vehicle_type' => $validated['vehicle_type'] ?? ($vehicleInfo->vehicleType->type_name ?? $groupInfo->vehicle_type),
-            'vehicle_model' => $validated['vehicle_model'] ?? ($vehicleInfo->vehicleModel->model_name ?? $groupInfo->vehicle_model),
-            'vehicle' => $validated['vehicle_name_input'] ?? $validated['vehicle'] ?? ($vehicleInfo->registration_number ?? $groupInfo->vehicle),
-            'vehicle_number' => $validated['vehicle_number'] ?? $groupInfo->vehicle_number,
-            'driver' => $validated['driver_name_input'] ?? $validated['driver'] ?? ($driverInfo->name ?? $groupInfo->driver),
-            'guide' => $validated['guide_name_input'] ?? $validated['guide'] ?? ($guideInfo->name ?? $groupInfo->guide),
-            'vehicle_branch' => $validated['vehicle_branch'] ?? ($vehicleInfo->branch->branch_name ?? $groupInfo->vehicle_branch),
-            'guide_count' => $validated['guide_count'] ?? $groupInfo->guide_count,
-            'ignore_operation' => $validated['ignore_operation'] ? 1 : 0,
-            'ignore_attendance' => $validated['ignore_attendance'] ? 1 : 0,
-            'updated_at' => now(),
-            'updated_by' => $userId,
-        ];
-
-        $groupInfo->update($updateData);
-
-        DB::commit();
-
-        if ($request->input('iframe') == '1') {
-            return response()->json([
-                'success' => true,
-                'id' => $groupInfo->id,
-                'message' => 'グループ情報を更新しました。',
-                'redirect' => route('masters.group-infos.edit', $groupInfo->id)
-            ]);
-        }
-
-        return redirect()->route('masters.group-infos.edit', $groupInfo->id)
-            ->with([
-                'success' => 'グループ情報を更新しました。',
-                'alert-type' => 'success'
-            ]);
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-        
-        if ($request->input('iframe') == '1') {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-                'errors' => [
-                    'system' => [$e->getMessage()]
-                ]
-            ], 422);
-        }
-        
-        return redirect()->back()
-            ->withInput()
-            ->with([
-                'error' => '更新中にエラーが発生しました: ' . $e->getMessage(),
-                'alert-type' => 'danger'
-            ]);
     }
-}
 
     public function destroy($id)
     {
@@ -1306,11 +1591,9 @@ public function update(Request $request, $id)
         try {
             DB::beginTransaction();
             
-            $keyUuid = $groupInfo->key_uuid;
+            DailyItinerary::where('group_info_id', $groupInfo->id)->delete();
             
-            DailyItinerary::where('key_uuid', $keyUuid)->delete();
-            
-            BusAssignment::where('yoyaku_uuid', $keyUuid)->delete();
+            BusAssignment::where('group_info_id', $groupInfo->id)->delete();
             
             $groupInfo->delete();
             
@@ -1374,28 +1657,26 @@ public function update(Request $request, $id)
             $userId = session('user_id', auth()->id() ?? 0);
             
             $selectedItineraries = DailyItinerary::whereIn('id', $request->itinerary_ids)
-                                                 ->where('key_uuid', $groupInfo->key_uuid)
+                                                 ->where('group_info_id', $groupInfo->id)
                                                  ->orderBy('date', 'asc')
                                                  ->get();
-            
+
             if ($selectedItineraries->isEmpty()) {
                 throw new \Exception('選択された行程が見つかりません。');
             }
-            
-            $newBusUuid = (string) Str::uuid();
-            
-            $maxVehicleIndex = BusAssignment::where('yoyaku_uuid', $groupInfo->key_uuid)
+
+            $maxVehicleIndex = BusAssignment::where('group_info_id', $groupInfo->id)
                                            ->max('vehicle_index') ?? 0;
             $newVehicleIndex = $maxVehicleIndex + 1;
-            
+
             $firstItinerary = $selectedItineraries->first();
             $lastItinerary = $selectedItineraries->last();
-            
+
             $busAssignmentData = [
-                'key_uuid' => $newBusUuid,
-                'yoyaku_uuid' => $groupInfo->key_uuid,
+                'group_info_id' => $groupInfo->id,
                 'vehicle_id' => $firstItinerary->vehicle_id > 0 ? $firstItinerary->vehicle_id : null,
                 'driver_id' => $firstItinerary->driver_id > 0 ? $firstItinerary->driver_id : null,
+                'guide_id' => $firstItinerary->guide_id,
                 'start_date' => $firstItinerary->date,
                 'start_time' => $firstItinerary->time_start,
                 'end_date' => $lastItinerary->date,
@@ -1429,23 +1710,23 @@ public function update(Request $request, $id)
                 'updated_at' => now(),
             ];
             
-            BusAssignment::create($busAssignmentData);
+            $newBus = BusAssignment::create($busAssignmentData);
             
             foreach ($selectedItineraries as $itinerary) {
                 $itinerary->update([
-                    'bus_ass_uuid' => $newBusUuid,
+                    'bus_assignment_id' => $newBus->id,
                     'updated_by' => $userId,
                     'updated_at' => now(),
                 ]);
             }
-            
+
             DB::commit();
-            
+
             return response()->json([
                 'success' => true,
                 'message' => $selectedItineraries->count() . '件の行程を分割しました。',
                 'new_vehicle_index' => $newVehicleIndex,
-                'new_bus_uuid' => $newBusUuid
+                'new_bus_id' => $newBus->id
             ]);
             
         } catch (\Exception $e) {
@@ -1463,7 +1744,7 @@ public function update(Request $request, $id)
         $groupInfo = GroupInfo::findOrFail($id);
         
         $request->validate([
-            'operation_id' => 'required|string|max:200',
+            'operation_id' => 'required|integer',
         ]);
         
         try {
@@ -1471,36 +1752,34 @@ public function update(Request $request, $id)
             
             $userId = session('user_id', auth()->id() ?? 0);
             
-            $sourceGroup = GroupInfo::where('id', $request->operation_id)
-                                   ->orWhere('key_uuid', $request->operation_id)
-                                   ->first();
-            
+            $sourceGroup = GroupInfo::find($request->operation_id);
+
             if (!$sourceGroup) {
                 throw new \Exception('指定された運行IDのグループが見つかりません。');
             }
-            
-            $sourceItineraries = DailyItinerary::where('key_uuid', $sourceGroup->key_uuid)
+
+            $sourceItineraries = DailyItinerary::where('group_info_id', $sourceGroup->id)
                                               ->orderBy('date', 'asc')
                                               ->orderBy('time_start', 'asc')
                                               ->get();
-            
+
             if ($sourceItineraries->isEmpty()) {
                 throw new \Exception('統合元のグループに行程がありません。');
             }
-            
+
             foreach ($sourceItineraries as $itinerary) {
                 $newItinerary = $itinerary->replicate();
-                $newItinerary->key_uuid = $groupInfo->key_uuid;
-                $newItinerary->bus_ass_uuid = null;
+                $newItinerary->group_info_id = $groupInfo->id;
+                $newItinerary->bus_assignment_id = null;
                 $newItinerary->created_by = $userId;
                 $newItinerary->updated_by = $userId;
                 $newItinerary->created_at = now();
                 $newItinerary->updated_at = now();
                 $newItinerary->save();
             }
-            
+
             DB::commit();
-            
+
             return response()->json([
                 'success' => true,
                 'message' => $sourceItineraries->count() . '件の行程を統合しました。',
@@ -1521,7 +1800,7 @@ public function update(Request $request, $id)
         $groupInfo = GroupInfo::findOrFail($id);
         
         $request->validate([
-            'target_bus_uuid' => 'required|string|max:200',
+            'target_bus_id' => 'required|integer',
             'source_operation_id' => 'required|integer',
             'vehicle_id' => 'nullable|integer|exists:vehicles,id',
             'driver_id' => 'nullable|integer|exists:drivers,id',
@@ -1533,29 +1812,29 @@ public function update(Request $request, $id)
             $userId = session('user_id', auth()->id() ?? 0);
             
             $sourceBus = BusAssignment::where('id', $request->source_operation_id)
-                                     ->where('yoyaku_uuid', $groupInfo->key_uuid)
+                                     ->where('group_info_id', $groupInfo->id)
                                      ->first();
-            
+
             if (!$sourceBus) {
                 throw new \Exception('指定された運行ID (#' . $request->source_operation_id . ') が見つかりません。');
             }
-            
-            $sourceBusUuid = $sourceBus->key_uuid;
-            
-            if ($sourceBusUuid === $request->target_bus_uuid) {
+
+            $sourceBusId = $sourceBus->id;
+
+            if ($sourceBusId === $request->target_bus_id) {
                 throw new \Exception('同じ運行ID (#' . $request->source_operation_id . ') には統合できません。');
             }
-            
-            $targetBus = BusAssignment::where('key_uuid', $request->target_bus_uuid)
-                                     ->where('yoyaku_uuid', $groupInfo->key_uuid)
+
+            $targetBus = BusAssignment::where('id', $request->target_bus_id)
+                                     ->where('group_info_id', $groupInfo->id)
                                      ->first();
-            
+
             if (!$targetBus) {
                 throw new \Exception('対象の運行が見つかりません。');
             }
-            
-            $sourceItineraries = DailyItinerary::where('bus_ass_uuid', $sourceBusUuid)
-                                              ->where('key_uuid', $groupInfo->key_uuid)
+
+            $sourceItineraries = DailyItinerary::where('bus_assignment_id', $sourceBusId)
+                                              ->where('group_info_id', $groupInfo->id)
                                               ->orderBy('date', 'asc')
                                               ->orderBy('time_start', 'asc')
                                               ->get();
@@ -1568,14 +1847,14 @@ public function update(Request $request, $id)
                 $itinerary->update([
                     'vehicle_id' => $request->vehicle_id ?? $targetBus->vehicle_id ?? 0,
                     'driver_id' => $request->driver_id ?? $targetBus->driver_id ?? 0,
-                    'bus_ass_uuid' => $request->target_bus_uuid,
+                    'bus_assignment_id' => $request->target_bus_id,
                     'updated_by' => $userId,
                     'updated_at' => now(),
                 ]);
             }
-            
-            $targetItineraries = DailyItinerary::where('bus_ass_uuid', $request->target_bus_uuid)
-                                              ->where('key_uuid', $groupInfo->key_uuid)
+
+            $targetItineraries = DailyItinerary::where('bus_assignment_id', $request->target_bus_id)
+                                              ->where('group_info_id', $groupInfo->id)
                                               ->orderBy('date', 'asc')
                                               ->get();
             
@@ -1615,56 +1894,125 @@ public function update(Request $request, $id)
 
     public function updateBusAssignment(Request $request, $id)
     {
-        Log::info('========== 运行详细更新按钮被点击 ==========');
-        Log::info('请求URL: ' . $request->fullUrl());
-        Log::info('请求方法: ' . $request->method());
-        Log::info('请求数据:', $request->all());
-        
         try {
             $groupInfo = GroupInfo::findOrFail($id);
             
             $request->validate([
-                'bus_uuid' => 'required|string|max:200',
+                'bus_id' => 'required|integer',
             ]);
             
             DB::beginTransaction();
             
             $userId = session('user_id', auth()->id() ?? 0);
             
-            Log::info('BusAssignment検索: key_uuid=' . $request->bus_uuid . ', yoyaku_uuid=' . $groupInfo->key_uuid);
-            
-            $busAssignment = BusAssignment::where('key_uuid', $request->bus_uuid)
-                                         ->where('yoyaku_uuid', $groupInfo->key_uuid)
-                                         ->first();
-            
+            $busAssignment = BusAssignment::where('id', $request->bus_id)
+                                            ->where('group_info_id', $groupInfo->id)
+                                            ->first();
+
             if (!$busAssignment) {
-                Log::error('BusAssignmentが見つかりません');
                 return response()->json([
                     'success' => false,
                     'message' => '指定された運行が見つかりません。'
                 ], 404);
             }
-            
-            Log::info('更新前のBusAssignment:', $busAssignment->toArray());
-            
+
             if ($request->has('deleted_itineraries') && is_array($request->deleted_itineraries)) {
                 $deletedIds = $request->deleted_itineraries;
-                Log::info('削除対象の行程ID: ' . json_encode($deletedIds));
                 
-                $deletedCount = DailyItinerary::whereIn('id', $deletedIds)
-                                             ->where('key_uuid', $groupInfo->key_uuid)
-                                             ->where('bus_ass_uuid', $request->bus_uuid)
-                                             ->delete();
-                
-                Log::info('削除された件数: ' . $deletedCount);
+                DailyItinerary::whereIn('id', $deletedIds)
+                                ->where('group_info_id', $groupInfo->id)
+                                ->where('bus_assignment_id', $request->bus_id)
+                                ->delete();
             }
-            
-            $itineraries = DailyItinerary::where('bus_ass_uuid', $request->bus_uuid)
-                                        ->where('key_uuid', $groupInfo->key_uuid)
+
+            $itinerariesData = $request->input('itineraries', []);
+            if (!empty($itinerariesData)) {
+                foreach ($itinerariesData as $itineraryData) {
+                    $date = $itineraryData['date'] ?? null;
+                    if ($date && strpos($date, ' ') !== false) {
+                        $date = explode(' ', $date)[0];
+                    }
+                    
+                    $timeStart = isset($itineraryData['time_start']) 
+                        ? (strpos($itineraryData['time_start'], ':') === false 
+                            ? $itineraryData['time_start'] . ':00' 
+                            : (strlen($itineraryData['time_start']) == 5 
+                                ? $itineraryData['time_start'] . ':00' 
+                                : $itineraryData['time_start']))
+                        : null;
+                        
+                    $timeEnd = isset($itineraryData['time_end']) 
+                        ? (strpos($itineraryData['time_end'], ':') === false 
+                            ? $itineraryData['time_end'] . ':00' 
+                            : (strlen($itineraryData['time_end']) == 5 
+                                ? $itineraryData['time_end'] . ':00' 
+                                : $itineraryData['time_end']))
+                        : null;
+                    
+                    if (!empty($itineraryData['id'])) {
+                        $itinerary = DailyItinerary::find($itineraryData['id']);
+                        if ($itinerary) {
+                            $updateData = [
+                                'date' => $date,
+                                'time_start' => $timeStart,
+                                'time_end' => $timeEnd,
+                                'start_location' => $itineraryData['start_location'] ?? null,
+                                'end_location' => $itineraryData['end_location'] ?? null,
+                                'itinerary' => $itineraryData['itinerary'] ?? null,
+                                'updated_by' => $userId,
+                                'updated_at' => now(),
+                            ];
+                            
+                            $itinerary->update($updateData);
+                        }
+                    } else {
+                        $vehicleName = '';
+                        if (!empty($request->vehicle_id)) {
+                            $vehicle = Vehicle::find($request->vehicle_id);
+                            $vehicleName = $vehicle ? $vehicle->registration_number : '';
+                        }
+                        
+                        $driverName = '';
+                        if (!empty($request->driver_id)) {
+                            $driver = Driver::find($request->driver_id);
+                            $driverName = $driver ? $driver->name : '';
+                        }
+                        
+                        $guideName = '';
+                        if (!empty($request->guide_id)) {
+                            $guide = Guide::find($request->guide_id);
+                            $guideName = $guide ? $guide->name : '';
+                        }
+                        
+                        DailyItinerary::create([
+                            'group_info_id' => $groupInfo->id,
+                            'bus_assignment_id' => $itineraryData['bus_assignment_id'] ?? $request->bus_id,
+                            'date' => $date,
+                            'time_start' => $timeStart,
+                            'time_end' => $timeEnd,
+                            'start_location' => $itineraryData['start_location'] ?? null,
+                            'end_location' => $itineraryData['end_location'] ?? null,
+                            'itinerary' => $itineraryData['itinerary'] ?? null,
+                            'vehicle_id' => $request->vehicle_id ?? 0,
+                            'vehicle' => $vehicleName,
+                            'driver_id' => $request->driver_id ?? 0,
+                            'driver' => $driverName,
+                            'guide_id' => $request->guide_id ?? 0,
+                            'guide' => $guideName,
+                            'accommodation' => false,
+                            'created_by' => $userId,
+                            'updated_by' => $userId,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                    }
+                }
+            }
+
+            $itineraries = DailyItinerary::where('bus_assignment_id', $request->bus_id)
+                                        ->where('group_info_id', $groupInfo->id)
                                         ->orderBy('date', 'asc')
                                         ->get();
-            
-            Log::info('関連する行程数: ' . $itineraries->count());
             
             $startDate = null;
             $startTime = null;
@@ -1676,11 +2024,18 @@ public function update(Request $request, $id)
                 $lastItinerary = $itineraries->last();
                 
                 $startDate = $firstItinerary->date;
-                $startTime = $firstItinerary->time_start;
-                $endDate = $lastItinerary->date;
-                $endTime = $lastItinerary->time_end;
+                if ($startDate && strpos($startDate, ' ') !== false) {
+                    $startDate = explode(' ', $startDate)[0];
+                }
                 
-                Log::info('計算された日付範囲: 開始=' . $startDate . ' ' . $startTime . ', 終了=' . $endDate . ' ' . $endTime);
+                $startTime = $firstItinerary->time_start;
+                
+                $endDate = $lastItinerary->date;
+                if ($endDate && strpos($endDate, ' ') !== false) {
+                    $endDate = explode(' ', $endDate)[0];
+                }
+                
+                $endTime = $lastItinerary->time_end;
             } else {
                 $startDate = $busAssignment->start_date;
                 $startTime = $busAssignment->start_time;
@@ -1692,37 +2047,118 @@ public function update(Request $request, $id)
             $driverChanged = $request->has('driver_id') && $request->driver_id != $busAssignment->driver_id;
             $ignoreOperation = $groupInfo->ignore_operation ?? false;
             
-            Log::info('競合チェック条件: vehicleChanged=' . ($vehicleChanged ? 'true' : 'false') . 
-                      ', driverChanged=' . ($driverChanged ? 'true' : 'false') . 
-                      ', ignoreOperation=' . ($ignoreOperation ? 'true' : 'false'));
-            
-            if (!$ignoreOperation && ($vehicleChanged || $driverChanged)) {
-                Log::info('競合チェック実行: vehicle_id=' . $request->vehicle_id . 
-                          ', driver_id=' . $request->driver_id . 
-                          ', 期間=' . $startDate . '〜' . $endDate);
-                
-                try {
+            if (!$ignoreOperation) {
+                if (!empty($busAssignment->vehicle_id) || !empty($busAssignment->driver_id)) {
                     $this->checkConflict(
-                        $request->vehicle_id,
-                        $request->driver_id,
+                        $busAssignment->vehicle_id,
+                        $busAssignment->driver_id,
                         $startDate,
                         $startTime,
                         $endDate,
                         $endTime,
-                        $busAssignment->key_uuid
+                        $busAssignment->id,
+                        null
                     );
-                    Log::info('競合チェック: 問題なし');
-                } catch (\Exception $e) {
-                    Log::error('競合チェックエラー: ' . $e->getMessage());
-                    throw new \Exception($e->getMessage());
                 }
-            } else {
-                Log::info('競合チェックをスキップ');
+            }
+            
+            if (!$ignoreOperation && $itineraries->count() > 1) {
+                $itinerariesByDate = [];
+                foreach ($itineraries as $itinerary) {
+                    $date = $itinerary->date;
+                    if ($date && strpos($date, ' ') !== false) {
+                        $date = explode(' ', $date)[0];
+                    }
+                    
+                    if (!isset($itinerariesByDate[$date])) {
+                        $itinerariesByDate[$date] = [];
+                    }
+                    $itinerariesByDate[$date][] = $itinerary;
+                }
+                
+                foreach ($itinerariesByDate as $date => $dateItineraries) {
+                    if (count($dateItineraries) > 1) {
+                        for ($i = 0; $i < count($dateItineraries); $i++) {
+                            for ($j = $i + 1; $j < count($dateItineraries); $j++) {
+                                $iti1 = $dateItineraries[$i];
+                                $iti2 = $dateItineraries[$j];
+                                
+                                $start1 = Carbon::parse($iti1->time_start);
+                                $end1 = Carbon::parse($iti1->time_end);
+                                $start2 = Carbon::parse($iti2->time_start);
+                                $end2 = Carbon::parse($iti2->time_end);
+                                
+                                if ($start1->lt($end2) && $end1->gt($start2)) {
+                                    throw new \Exception("同一運行内で日付「{$date}」に時間が重複する行程があります。");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if (!$ignoreOperation && $itineraries->isNotEmpty()) {
+                foreach ($itineraries as $itinerary) {
+                    $date = $itinerary->date;
+                    if ($date && strpos($date, ' ') !== false) {
+                        $date = explode(' ', $date)[0];
+                    }
+                    
+                    $timeStart = $itinerary->time_start;
+                    $timeEnd = $itinerary->time_end;
+                    
+                    $otherItineraries = DailyItinerary::where('bus_assignment_id', '!=', $busAssignment->id)
+                        ->whereDate('date', $date)
+                        ->get();
+                    
+                    foreach ($otherItineraries as $otherItinerary) {
+                        $otherBus = BusAssignment::find($otherItinerary->bus_assignment_id);
+                        if (!$otherBus) continue;
+                        
+                        if (!empty($busAssignment->vehicle_id) && $otherBus->vehicle_id == $busAssignment->vehicle_id) {
+                            $otherStart = Carbon::parse($otherItinerary->time_start);
+                            $otherEnd = Carbon::parse($otherItinerary->time_end);
+                            $thisStart = Carbon::parse($timeStart);
+                            $thisEnd = Carbon::parse($timeEnd);
+                            
+                            if ($thisStart->lt($otherEnd) && $thisEnd->gt($otherStart)) {
+                                $vehicle = Vehicle::find($busAssignment->vehicle_id);
+                                $vehicleName = $vehicle ? $vehicle->registration_number : '不明';
+                                $otherGroup = GroupInfo::find($otherItinerary->group_info_id);
+                                $otherGroupName = $otherGroup ? $otherGroup->group_name : '不明';
+                                throw new \Exception("車両「{$vehicleName}」は日付「{$date}」に他のグループ「{$otherGroupName}」の運行で既に使用されています。");
+                            }
+                        }
+                        
+                        if (!empty($busAssignment->driver_id) && $otherBus->driver_id == $busAssignment->driver_id) {
+                            $otherStart = Carbon::parse($otherItinerary->time_start);
+                            $otherEnd = Carbon::parse($otherItinerary->time_end);
+                            $thisStart = Carbon::parse($timeStart);
+                            $thisEnd = Carbon::parse($timeEnd);
+                            
+                            if ($thisStart->lt($otherEnd) && $thisEnd->gt($otherStart)) {
+                                $driver = Driver::find($busAssignment->driver_id);
+                                $driverName = $driver ? $driver->name : '不明';
+                                $otherGroup = GroupInfo::find($otherItinerary->group_info_id);
+                                $otherGroupName = $otherGroup ? $otherGroup->group_name : '不明';
+                                throw new \Exception("運転手「{$driverName}」は日付「{$date}」に他のグループ「{$otherGroupName}」の運行で既に使用されています。");
+                            }
+                        }
+                    }
+                }
+            }
+            
+            $guideIdForUpdate = $request->guide_id ?? $busAssignment->guide_id;
+            $guideNameForUpdate = '';
+            if ($guideIdForUpdate) {
+                $guide = Guide::find($guideIdForUpdate);
+                $guideNameForUpdate = $guide ? $guide->name : '';
             }
             
             $updateData = [
-                'vehicle_id' => $request->vehicle_id,
-                'driver_id' => $request->driver_id,
+                'vehicle_id' => !empty($request->vehicle_id) && $request->vehicle_id > 0 ? $request->vehicle_id : null,
+                'driver_id' => !empty($request->driver_id) && $request->driver_id > 0 ? $request->driver_id : null,
+                'guide_id' => $guideIdForUpdate,
                 'vehicle_number' => $request->vehicle_number,
                 'step_car' => $request->step_car,
                 'adult_count' => $request->adult_count ?? 0,
@@ -1748,8 +2184,6 @@ public function update(Request $request, $id)
                 'updated_at' => now(),
             ];
             
-            Log::info('更新データ:', $updateData);
-            
             if ($itineraries->isNotEmpty()) {
                 $updateData['start_date'] = $startDate;
                 $updateData['start_time'] = $startTime;
@@ -1759,8 +2193,6 @@ public function update(Request $request, $id)
             }
             
             $busAssignment->update($updateData);
-            
-            Log::info('更新後のBusAssignment:', $busAssignment->fresh()->toArray());
             
             foreach ($itineraries as $itinerary) {
                 $vehicleName = '';
@@ -1780,18 +2212,25 @@ public function update(Request $request, $id)
                     'vehicle' => $vehicleName,
                     'driver_id' => $request->driver_id ?? 0,
                     'driver' => $driverName,
+                    'guide_id' => $guideIdForUpdate,
+                    'guide' => $guideNameForUpdate,
                     'updated_by' => $userId,
                     'updated_at' => now(),
                 ];
                 
-                Log::info('行程更新: ID=' . $itinerary->id . ' → ', $itineraryUpdateData);
-                
-                $itinerary->update($itineraryUpdateData);
+                if (!$request->has('itineraries')) {
+                    $itinerary->update($itineraryUpdateData);
+                }
+            }
+            
+            if (!empty($guideIdForUpdate)) {
+                $groupInfo->update([
+                    'guide_id' => $guideIdForUpdate,
+                    'guide' => $guideNameForUpdate,
+                ]);
             }
             
             DB::commit();
-            
-            Log::info('========== updateBusAssignment 成功 ==========');
             
             return response()->json([
                 'success' => true,
@@ -1800,7 +2239,6 @@ public function update(Request $request, $id)
             
         } catch (\Illuminate\Validation\ValidationException $e) {
             DB::rollBack();
-            Log::error('バリデーションエラー: ' . json_encode($e->errors()));
             
             return response()->json([
                 'success' => false,
@@ -1810,11 +2248,6 @@ public function update(Request $request, $id)
             
         } catch (\Exception $e) {
             DB::rollBack();
-            
-            Log::error('========== updateBusAssignment エラー ==========');
-            Log::error('エラーメッセージ: ' . $e->getMessage());
-            Log::error('ファイル: ' . $e->getFile() . ' 行: ' . $e->getLine());
-            Log::error('スタックトレース: ' . $e->getTraceAsString());
             
             return response()->json([
                 'success' => false,

@@ -13,7 +13,6 @@ class GroupInfo extends Model
     
     protected $fillable = [
         'group_name',
-        'key_uuid',
         'agency',
         'agency_contact_name',
         'agency_country',
@@ -41,6 +40,7 @@ class GroupInfo extends Model
         'guide',
         'vehicle_branch',
         'guide_count',
+        'guide_id',
         'copy_new_start_date',
         'agt_tour_code',
         'agt_tour_id',
@@ -68,16 +68,6 @@ class GroupInfo extends Model
     
     public function dailyItineraries()
     {
-        return $this->hasMany(DailyItinerary::class, 'key_uuid', 'key_uuid');
-    }
-    
-    public function getUuidAttribute()
-    {
-        return $this->key_uuid;
-    }
-    
-    public function setUuidAttribute($value)
-    {
-        $this->attributes['key_uuid'] = $value;
+        return $this->hasMany(DailyItinerary::class, 'group_info_id', 'id');
     }
 }

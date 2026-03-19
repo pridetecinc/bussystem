@@ -18,9 +18,9 @@
                 <div class="d-flex align-items-center mx-3">
                     <label for="yoyaku" class="label-text mr-2">予約状況</label>
                     <select id="yoyaku" class="form-input-small" name="reservation_status">
+                        <option value="予約" style="background-color: #ccf5ff; color: black;" {{ old('reservation_status') == '予約' ? 'selected' : '' }} selected>予約</option>
                         <option value="仮押さえ" style="background-color: #ffff99; color: black;" {{ old('reservation_status') == '仮押さえ' ? 'selected' : '' }}>仮押さえ</option>
                         <option value="見積" style="background-color: #ccffcc; color: black;" {{ old('reservation_status') == '見積' ? 'selected' : '' }}>見積</option>
-                        <option value="予約" style="background-color: #ccf5ff; color: black;" {{ old('reservation_status') == '予約' ? 'selected' : '' }} selected>予約</option>
                         <option value="危ない" style="background-color: #ffcccc; color: black;" {{ old('reservation_status') == '危ない' ? 'selected' : '' }}>危ない</option>
                         <option value="確定待ち" style="background-color: #ffd9b3; color: black;" {{ old('reservation_status') == '確定待ち' ? 'selected' : '' }}>確定待ち</option>
                         <option value="確定" style="background-color: #cbb87c; color: black;" {{ old('reservation_status') == '確定' ? 'selected' : '' }}>確定</option>
@@ -65,12 +65,12 @@
             <div class="d-flex mb-1">
                 <div class="label-width text-gray">開始日</div>
                 <div class="d-flex align-items-center" style="flex: 1;">
-                    <input type="date" name="start_date" value="" class="form-input-small input-width-date" id="start_date" style="flex: 1; min-width: 0;">
+                    <input type="text" name="start_date" value="" class="form-input-small input-width-date datepicker-3months" id="start_date" style="flex: 1; min-width: 0;" placeholder="YYYY-MM-DD" readonly>
                     <span class="mx-2">
                         <input type="time" name="start_time" value="{{ old('start_time', '08:00') }}" class="form-input-small input-width-time" step="60" style="width: 90px;">
                     </span>
                     <span class="label-text mx-2" style="margin-left:0 !important;">~</span>
-                    <input type="date" name="end_date" value="" class="form-input-small input-width-date" id="end_date" style="flex: 1; min-width: 0;">
+                    <input type="text" name="end_date" value="" class="form-input-small input-width-date datepicker-3months" id="end_date" style="flex: 1; min-width: 0;" placeholder="YYYY-MM-DD" readonly>
                     <span class="ms-2">
                         <input type="time" name="end_time" value="{{ old('end_time', '18:00') }}" class="form-input-small input-width-time" step="60" style="width: 90px;">
                     </span>
@@ -259,6 +259,32 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    flatpickr('.datepicker-3months', {
+        locale: 'ja',
+        dateFormat: 'Y-m-d',
+        showMonths: 3,
+        allowInput: true,
+        clickOpens: true,
+        mode: 'single',
+        disableMobile: true,
+        wrap: false,
+        onOpen: function(selectedDates, dateStr, instance) {
+            instance.calendarContainer.style.zIndex = '9999';
+        },
+        onReady: function(selectedDates, dateStr, instance) {
+            const daysContainer = instance.daysContainer;
+            if (daysContainer) {
+                const dayContainers = daysContainer.querySelectorAll('.dayContainer');
+                dayContainers.forEach(function(dayContainer) {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'month-wrapper';
+                    dayContainer.parentNode.insertBefore(wrapper, dayContainer);
+                    wrapper.appendChild(dayContainer);
+                });
+            }
+        }
+    });
+
     const isInIframe = window.self !== window.top;
     if (isInIframe) {
         document.getElementById('isIframe').value = '1';
@@ -319,8 +345,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function validateDateRange() {
-        const startDate = document.querySelector('input[name="start_date"]').value;
-        const endDate = document.querySelector('input[name="end_date"]').value;
+        const startDate = document.getElementById('start_date').value;
+        const endDate = document.getElementById('end_date').value;
         
         if (!startDate || !endDate) {
             return true;
@@ -340,51 +366,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const guides = @json($guides ?? []);
     const drivers = @json($drivers ?? []);
     const agencies = @json($agencies ?? []);
-
-    setupSearch('vehicle', vehicles, (item) => {
-        return {
-            display: `${item.registration_number} ${item.vehicle_model?.model_name ? '(' + item.vehicle_model.model_name + ')' : ''}`,
-            id: item.id,
-            registration: item.registration_number,
-            type: item.vehicleType?.type_name || item.vehicle_type?.type_name || '',
-            model: item.vehicleModel?.model_name || item.vehicle_model?.model_name || '',
-            branch: item.branch?.branch_name || '',
-            seating: item.seating_capacity || ''
-        };
-    }, true);
-
-    setupSearch('guide', guides, (item) => {
-        return {
-            display: `${item.name} ${item.guide_code ? '(' + item.guide_code + ')' : ''}`,
-            id: item.id,
-            code: item.guide_code,
-            phone: item.phone_number,
-            branch: item.branch?.branch_name || '',
-            employment_type: item.employment_type
-        };
-    });
-
-    setupSearch('driver', drivers, (item) => {
-        return {
-            display: `${item.name} ${item.driver_code ? '(' + item.driver_code + ')' : ''}`,
-            id: item.id,
-            code: item.driver_code,
-            phone: item.phone_number
-        };
-    });
-
-    setupSearch('agency', agencies, (item) => {
-        return {
-            display: `${item.agency_name} ${item.branch_name ? '(' + item.branch_name + ')' : ''}`,
-            id: item.id,
-            agency_code: item.agency_code,
-            branch_name: item.branch_name,
-            phone: item.phone_number,
-            manager: item.manager_name,
-            country: item.country,
-            email: item.email
-        };
-    });
 
     function setupSearch(type, items, formatter, autoFillVehicleNumber = true) {
         const searchInput = document.getElementById(`${type}_search`);
@@ -474,6 +455,51 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    setupSearch('vehicle', vehicles, (item) => {
+        return {
+            display: `${item.registration_number} ${item.vehicle_model?.model_name ? '(' + item.vehicle_model.model_name + ')' : ''}`,
+            id: item.id,
+            registration: item.registration_number,
+            type: item.vehicleType?.type_name || item.vehicle_type?.type_name || '',
+            model: item.vehicleModel?.model_name || item.vehicle_model?.model_name || '',
+            branch: item.branch?.branch_name || '',
+            seating: item.seating_capacity || ''
+        };
+    }, true);
+
+    setupSearch('guide', guides, (item) => {
+        return {
+            display: `${item.name} ${item.guide_code ? '(' + item.guide_code + ')' : ''}`,
+            id: item.id,
+            code: item.guide_code,
+            phone: item.phone_number,
+            branch: item.branch?.branch_name || '',
+            employment_type: item.employment_type
+        };
+    });
+
+    setupSearch('driver', drivers, (item) => {
+        return {
+            display: `${item.name} ${item.driver_code ? '(' + item.driver_code + ')' : ''}`,
+            id: item.id,
+            code: item.driver_code,
+            phone: item.phone_number
+        };
+    });
+
+    setupSearch('agency', agencies, (item) => {
+        return {
+            display: `${item.agency_name} ${item.branch_name ? '(' + item.branch_name + ')' : ''}`,
+            id: item.id,
+            agency_code: item.agency_code,
+            branch_name: item.branch_name,
+            phone: item.phone_number,
+            manager: item.manager_name,
+            country: item.country,
+            email: item.email
+        };
+    });
 
     function checkSeatingCapacity() {
         const adultCount = parseInt(document.getElementById('adult_count')?.value) || 0;
@@ -715,6 +741,216 @@ document.addEventListener('DOMContentLoaded', function() {
     
     .vehicle-selected { border-color: #2563eb; background-color: #f0f7ff; }
     .warning-message { color: #f59e0b; font-size: 10px; margin-top: 2px; animation: fadeIn 0.3s ease; }
+
+
+
+
+    /* Flatpickr 日历美化样式 - 紧凑版 */
+    .flatpickr-calendar {
+        border: 1px solid #ddd !important;
+        border-radius: 6px !important;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12) !important;
+        font-family: inherit !important;
+        font-size: 11px !important;
+        overflow: hidden !important;
+    }
+
+    .flatpickr-calendar.multiMonth {
+        width: 516px !important;
+        max-width: 95vw !important;
+    }
+
+    .flatpickr-calendar.multiMonth .flatpickr-innerContainer {
+        width: 100% !important;
+    }
+
+    .flatpickr-calendar.multiMonth .flatpickr-months {
+        display: flex !important;
+    }
+
+    .flatpickr-calendar.multiMonth .flatpickr-month {
+        flex: 1 !important;
+    }
+
+    .flatpickr-calendar.multiMonth .flatpickr-month:not(:last-child) {
+        border-right: 1px solid #e9ecef !important;
+    }
+
+    .flatpickr-months {
+        background: linear-gradient(135deg, #1f3241 0%, #2d4a5e 100%) !important;
+        border-radius: 6px 6px 0 0 !important;
+        display: flex !important;
+    }
+
+    .flatpickr-month {
+        height: 28px !important;
+        padding-right: 0 !important;
+    }
+
+    .flatpickr-current-month {
+        padding: 3px 0 0 0 !important;
+    }
+
+    .flatpickr-current-month .flatpickr-monthDropdown-months {
+        font-weight: 600 !important;
+        color: #fff !important;
+        font-size: 11px !important;
+    }
+
+    .flatpickr-current-month .numInputWrapper span {
+        color: #fff !important;
+    }
+
+    .flatpickr-current-month input.cur-year {
+        color: #fff !important;
+        font-weight: 600 !important;
+        font-size: 11px !important;
+    }
+
+    .flatpickr-months .flatpickr-month,
+    .flatpickr-months .flatpickr-next-month,
+    .flatpickr-months .flatpickr-prev-month {
+        color: #fff !important;
+        fill: #fff !important;
+    }
+
+    .flatpickr-months .flatpickr-next-month:hover svg,
+    .flatpickr-months .flatpickr-prev-month:hover svg {
+        fill: #ffc107 !important;
+    }
+
+    .flatpickr-months .flatpickr-next-month,
+    .flatpickr-months .flatpickr-prev-month {
+        width: 20px !important;
+        height: 20px !important;
+        padding: 2px !important;
+    }
+
+    .flatpickr-weekdays {
+        background: #f8f9fa !important;
+        border-bottom: 1px solid #e9ecef !important;
+        margin: 0 !important;
+    }
+
+    .flatpickr-weekday {
+        color: #495057 !important;
+        font-weight: 600 !important;
+        font-size: 10px !important;
+        padding: 1px 0 !important;
+    }
+
+    .flatpickr-days {
+        border: none !important;
+        padding: 0 !important;
+    }
+
+    .flatpickr-day {
+        color: #374151 !important;
+        border-radius: 2px !important;
+        margin: 0 !important;
+        border: 1px solid transparent !important;
+        max-width: 24px !important;
+        width: 24px !important;
+        height: 22px !important;
+        line-height: 20px !important;
+        font-size: 10px !important;
+    }
+
+    .flatpickr-day:hover {
+        background: #e0f2fe !important;
+        border-color: #2563eb !important;
+        color: #2563eb !important;
+    }
+
+    .flatpickr-day.selected {
+        background: #2563eb !important;
+        border-color: #2563eb !important;
+        color: #fff !important;
+        font-weight: 600 !important;
+    }
+
+    .flatpickr-day.selected:hover {
+        background: #1d4ed8 !important;
+    }
+
+    .flatpickr-day.startRange,
+    .flatpickr-day.endRange {
+        background: #2563eb !important;
+        border-color: #2563eb !important;
+        color: #fff !important;
+    }
+
+    .flatpickr-day.inRange {
+        background: #dbeafe !important;
+        border-color: transparent !important;
+        color: #1e40af !important;
+    }
+
+    .flatpickr-day.today {
+        border-color: #ffc107 !important;
+        background: #fffbeb !important;
+        color: #374151 !important;
+    }
+
+    .flatpickr-day.today:hover {
+        background: #fef3c7 !important;
+        border-color: #f59e0b !important;
+        color: #374151 !important;
+    }
+
+    .flatpickr-months .flatpickr-month {
+        background: transparent !important;
+    }
+
+    span.flatpickr-weekday {
+        background: #f8f9fa !important;
+    }
+
+    .flatpickr-calendar.showTimeInput.hasTime .flatpickr-time {
+        border-top: 1px solid #e9ecef !important;
+    }
+
+    /* 确保3个月完整显示 */
+    .flatpickr-calendar.multiMonth .dayContainer {
+        width: 168px !important;
+        min-width: 168px !important;
+        max-width: 168px !important;
+        position: relative !important;
+    }
+
+    /* 外层包装器 - 用于显示竖线 */
+    .month-wrapper {
+        flex: 1 !important;
+        position: relative !important;
+        padding: 2px !important;
+        height: 135px !important;
+    }
+
+    .month-wrapper:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        width: 1px;
+        background-color: #e9ecef;
+    }
+
+    /* 确保月份之间竖线显示到底部 - 使用 flex 让所有月份高度一致 */
+    .flatpickr-calendar.multiMonth .flatpickr-days {
+        display: flex !important;
+        position: relative;
+        width: 514px !important;
+    }
+
+    /* 去除右边空白，确保竖线整齐 */
+    .flatpickr-calendar.multiMonth .flatpickr-days .dayContainer {
+        padding: 0 !important;
+    }
+
+    .flatpickr-calendar.multiMonth .flatpickr-rContainer {
+        width: 514px !important;
+    }
     
     @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
     

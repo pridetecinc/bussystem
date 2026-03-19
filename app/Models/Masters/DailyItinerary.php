@@ -9,9 +9,8 @@ class DailyItinerary extends Model
     protected $table = 'daily_itinerary';
     
     protected $fillable = [
-        'group_id',
-        'key_uuid',
-        'yoyaku_uuid',
+        'group_info_id',
+        'bus_assignment_id',
         'date',
         'time_start',
         'time_end',
@@ -49,13 +48,18 @@ class DailyItinerary extends Model
         return $this->belongsTo(Driver::class, 'driver_id');
     }
     
-    public function groupInfo()
+    public function guide()
     {
-        return $this->belongsTo(GroupInfo::class, 'key_uuid', 'key_uuid');
+        return $this->belongsTo(Guide::class, 'guide_id');
     }
     
-    public function busAssignments()
+    public function groupInfo()
     {
-    return $this->hasMany(BusAssignment::class, 'daily_itinerary_id', 'id');
+        return $this->belongsTo(GroupInfo::class, 'group_info_id', 'id');
+    }
+
+    public function busAssignment()
+    {
+        return $this->belongsTo(BusAssignment::class, 'bus_assignment_id', 'id');
     }
 }
