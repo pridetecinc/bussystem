@@ -95,7 +95,7 @@
                                 <div class="d-flex gap-2">
                                     <div class="d-flex align-items-center" style="flex: 1;">
                                         <span class="span-label" style="white-space: nowrap;">行程名</span>
-                                        <input type="text" class="form-control form-control-sm border" name="group_name" value="{{ old('group_name', $groupInfo->group_name ?? '') }}" style="flex: 1;">
+                                        <input type="text" class="form-control form-control-sm border" name="itinerary_name" value="{{ old('itinerary_name', $groupInfo->itinerary_name ?? '') }}" style="flex: 1;">
                                     </div>
                                     
                                     <div class="d-flex align-items-center" style="flex: 1;">

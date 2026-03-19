@@ -220,6 +220,43 @@ class GroupInfoController extends Controller
         }
     }
 
+    private function recalculateGroupTotals($groupId)
+    {
+        $allItineraries = DailyItinerary::where('group_info_id', $groupId)->get();
+        
+        $totalAdult = 0;
+        $totalChild = 0;
+        $totalOther = 0;
+        $totalLuggage = 0;
+        
+        foreach ($allItineraries as $itinerary) {
+            $busAssignment = BusAssignment::find($itinerary->bus_assignment_id);
+            if ($busAssignment) {
+                $totalAdult += $busAssignment->adult_count ?? 0;
+                $totalChild += $busAssignment->child_count ?? 0;
+                $totalOther += $busAssignment->other_count ?? 0;
+                $totalLuggage += $busAssignment->luggage_count ?? 0;
+            }
+        }
+        
+        $groupInfo = GroupInfo::find($groupId);
+        if ($groupInfo) {
+            $groupInfo->update([
+                'adult_count' => $totalAdult,
+                'child_count' => $totalChild,
+                'other_count' => $totalOther,
+                'luggage_count' => $totalLuggage,
+            ]);
+        }
+        
+        return [
+            'adult_count' => $totalAdult,
+            'child_count' => $totalChild,
+            'other_count' => $totalOther,
+            'luggage_count' => $totalLuggage,
+        ];
+    }
+
     public function store(Request $request)
     {
         $rules = [
@@ -237,6 +274,8 @@ class GroupInfoController extends Controller
             'agency_code' => 'nullable|string|max:50',
             'agency_branch' => 'nullable|string|max:100',
             'agency_phone' => 'nullable|string|max:20',
+            'group_name' => 'nullable|string|max:200',
+            'itinerary_name' => 'nullable|string|max:200',
             'vehicle' => 'nullable|string|max:200',
             'vehicle_number' => 'nullable|string|max:50',
             'start_date' => 'required|date',
@@ -338,6 +377,8 @@ class GroupInfoController extends Controller
                 'vehicle_id' => $request->vehicle_id,
                 'driver_id' => $request->driver_id,
                 'guide_id' => $request->guide_id,
+                'group_name' => $validated['group_name'] ?? null,
+                'itinerary_name' => $validated['itinerary_name'] ?? null,
                 'agency' => $validated['agency_name_input'] ?? $validated['agency'] ?? null,
                 'agency_code' => $validated['agency_code'] ?? ($agencyInfo->agency_code ?? null),
                 'agency_branch' => $validated['agency_branch'] ?? ($agencyInfo->branch_name ?? null),
@@ -510,6 +551,8 @@ class GroupInfoController extends Controller
                 $busAssignment->update(['daily_itinerary_id' => $firstItinerary->id]);
             }
 
+            $this->recalculateGroupTotals($groupInfo->id);
+
             DB::commit();
     
             if ($request->input('iframe') == '1') {
@@ -669,6 +712,8 @@ class GroupInfoController extends Controller
             'agency_code' => 'nullable|string|max:50',
             'agency_branch' => 'nullable|string|max:100',
             'agency_phone' => 'nullable|string|max:20',
+            'group_name' => 'nullable|string|max:200',
+            'itinerary_name' => 'nullable|string|max:200',
             'vehicle' => 'nullable|string|max:200',
             'vehicle_number' => 'nullable|string|max:50',
             'start_date' => 'required|date',
@@ -1497,6 +1542,8 @@ class GroupInfoController extends Controller
                 }
             }
 
+            $this->recalculateGroupTotals($groupInfo->id);
+
             $guideIdForGroup = $guideId;
             $guideNameForGroup = $guideName;
             
@@ -1513,6 +1560,8 @@ class GroupInfoController extends Controller
                 'agency_phone' => $validated['agency_phone'] ?? ($agencyInfo->phone_number ?? $groupInfo->agency_phone),
                 'agency_contact_name' => $validated['agency_contact_name'] ?? ($agencyInfo->manager_name ?? $groupInfo->agency_contact_name),
                 'agency_country' => $validated['agency_country'] ?? ($agencyInfo->country ?? $groupInfo->agency_country),
+                'group_name' => $validated['group_name'] ?? $groupInfo->group_name,
+                'itinerary_name' => $validated['itinerary_name'] ?? $groupInfo->itinerary_name,
                 'reservation_status' => $validated['reservation_status'] ?? '',
                 'start_date' => $minStartDate ?? $validated['start_date'],
                 'start_time' => $minStartTime,
@@ -1720,6 +1769,8 @@ class GroupInfoController extends Controller
                 ]);
             }
 
+            $this->recalculateGroupTotals($groupInfo->id);
+
             DB::commit();
 
             return response()->json([
@@ -1777,6 +1828,9 @@ class GroupInfoController extends Controller
                 $newItinerary->updated_at = now();
                 $newItinerary->save();
             }
+
+            $this->recalculateGroupTotals($groupInfo->id);
+            $this->recalculateGroupTotals($sourceGroup->id);
 
             DB::commit();
 
@@ -1874,6 +1928,8 @@ class GroupInfoController extends Controller
             }
             
             $sourceBus->delete();
+
+            $this->recalculateGroupTotals($groupInfo->id);
             
             DB::commit();
             
@@ -2229,6 +2285,8 @@ class GroupInfoController extends Controller
                     'guide' => $guideNameForUpdate,
                 ]);
             }
+
+            $this->recalculateGroupTotals($groupInfo->id);
             
             DB::commit();
             
