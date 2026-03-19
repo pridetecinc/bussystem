@@ -123,7 +123,7 @@
                     
                     <!-- 操作按钮区域 -->
                     <div class="mt-4 pt-3 border-top">
-                        <div class="d-flex gap-2">
+                        <div class="d-flex gap-1">
                             <a href="{{ route('masters.currencies.edit', $currency) }}" class="btn btn-primary">
                                 <i class="bi bi-pencil"></i> 編集する
                             </a>

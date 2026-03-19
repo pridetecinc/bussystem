@@ -24,6 +24,10 @@ class ProductController extends Controller
             });
         }
 
+        if ($request->has('language') && $request->language != '') {
+            $query->where('language', $request->language);
+        }
+
         $perPage = 20; // 默认值
         $allowedPerPages = [20, 30, 50]; // 允许的选项
         
@@ -34,7 +38,7 @@ class ProductController extends Controller
         // 分页并按创建时间倒序
         $lists = $query->orderBy('created_at', 'desc')->paginate($perPage);
         
-        $lists->only(['search', 'per_page']);
+        $lists->only(['search', 'per_page','language']);
         
         return view('masters.products.index', compact('lists'));
     }

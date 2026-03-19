@@ -36,7 +36,7 @@
                     <div class="col-md-4">
                         <label class="form-label small text-muted mb-1">検索キーワード</label>
                         <input type="text" name="search" class="form-control" 
-                               placeholder="通貨名称、コード、記号"
+                               placeholder="通貨名称"
                                value="{{ request('search') }}">
                     </div>
                     

@@ -180,15 +180,6 @@
 </div>
 @endsection
 
-@push('styles')
-<style>
-.required::after {
-    content: " *";
-    color: #dc3545;
-}
-</style>
-@endpush
-
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {

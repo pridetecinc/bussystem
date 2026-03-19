@@ -68,8 +68,8 @@
                                 <label for="language" class="form-label required">言語</label>
                                 <select class="form-select @error('language') is-invalid @enderror"
                                         id="language" name="language" required>
-                                    <option value="1" {{ old('language', '1') == '1' ? 'selected' : '' }}>日语</option>
-                                    <option value="2" {{ old('language', '1') == '2' ? 'selected' : '' }}>英语</option>
+                                    <option value="1" {{ old('language', '1') == '1' ? 'selected' : '' }}>日本語</option>
+                                    <option value="2" {{ old('language', '1') == '2' ? 'selected' : '' }}>英語</option>
                                 </select>
                                 @error('language')
                                     <div class="invalid-feedback">{{ $message }}</div>

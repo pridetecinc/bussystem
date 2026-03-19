@@ -638,8 +638,13 @@ public function store(Request $request)
 
         // 1. 检查文件是否存在 (防御性编程)
         if (!$path || !Storage::disk('public')->exists($path)) {
-            abort(404, 'PDF 文件未找到或路径为空');
+            return redirect()->back()->with([
+                'error' => 'PDF はバックグラウンドで生成中です。完了まで 5〜10 秒ほどかかる見込みですので、しばらくしてから再度開いてください。',
+                'alert-type' => 'danger'
+            ]);
         }
+
+        
 
         // 2. 直接下载
         // 第二个参数可以自定义下载时的文件名，如果不传则使用原文件名

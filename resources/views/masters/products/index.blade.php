@@ -32,18 +32,31 @@
         <div class="card shadow-sm">
             <div class="card-body">
                 <form method="GET" action="{{ route('masters.products.index') }}" class="row g-3 align-items-end">
+                    
+                    <!-- 1. 搜索关键词 (品名) -->
                     <div class="col-md-4">
                         <label class="form-label small text-muted mb-1">検索キーワード</label>
                         <input type="text" name="search" class="form-control" 
-                               placeholder="品名または言語"
+                               placeholder="品名"
                                value="{{ request('search') }}">
                     </div>
                     
+                    <!-- 2. 语言筛选 (新增) -->
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted mb-1">言語</label>
+                        <select name="language" class="form-select">
+                            <option value="">-- すべて --</option>
+                            <option value="1" {{ request('language') == '1' ? 'selected' : '' }}>日本語</option>
+                            <option value="2" {{ request('language') == '2' ? 'selected' : '' }}>英語</option>
+                        </select>
+                    </div>
+                    
+                    <!-- 3. 按钮区域 -->
                     <div class="col-md-auto d-flex align-items-end gap-2">
                         <button type="submit" class="btn btn-outline-primary">
                             <i class="bi bi-search"></i> 検索
                         </button>
-                        @if(request('search'))
+                        @if(request('search') || request('language'))
                             <a href="{{ route('masters.products.index') }}" class="btn btn-outline-secondary">
                                 <i class="bi bi-x-circle"></i> クリア
                             </a>
@@ -53,13 +66,20 @@
             </div>
         </div>
     </div>
+    <!-- 【修改结束】 -->
     
-    <!-- 搜索结果提示 -->
-    @if(request('search'))
+    <!-- 搜索结果提示 (更新以显示语言条件) -->
+    @if(request('search') || request('language'))
         <div class="alert alert-info mb-3 d-flex align-items-center">
             <i class="bi bi-info-circle me-2 fs-5"></i>
             <div>
-                検索条件: "<strong>{{ request('search') }}</strong>" 
+                検索条件: 
+                @if(request('search'))"<strong>{{ request('search') }}</strong>" @endif
+                @if(request('search') && request('language')) / @endif
+                @if(request('language'))
+                    言語: <strong>{{ request('language') == '1' ? '日本語' : '英語' }}</strong>
+                @endif
+                
                 @if($lists->count() > 0)
                     - {{ $lists->total() }}件の結果が見つかりました
                 @else
@@ -91,7 +111,7 @@
                             <span class="fw-bold text-dark">{{ $product->name }}</span>
                         </td>
                         <td class="text-center">
-                            <span class="badge bg-info text-dark">{{ $product->language }}</span>
+                            <span class="badge bg-info text-dark">{{ $product->language == 1 ? "日本語" : "英語" }}</span>
                         </td>
                         <td class="text-center small text-muted">
                             {{ \Carbon\Carbon::parse($product->created_at)->format('Y/m/d H:i') }}

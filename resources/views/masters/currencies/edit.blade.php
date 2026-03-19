@@ -192,18 +192,6 @@
 </div>
 @endsection
 
-@push('styles')
-<style>
-.required::after {
-    content: " *";
-    color: #dc3545;
-}
-.card.border-danger {
-    border-width: 2px;
-}
-</style>
-@endpush
-
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {

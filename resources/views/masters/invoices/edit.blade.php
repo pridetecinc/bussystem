@@ -352,8 +352,15 @@
                         <button type="submit" class="btn btn-primary">
                             <i class="bi bi-check-circle"></i> 更新する
                         </button>
-                        <a target="_blank"  href="/storage/{{  $invoice->pdf_file_path }}" class="btn btn-secondary">
-                            <i class="bi"></i> PDF表示
+                        @php
+                            $hasPdf = !empty($invoice->pdf_file_path);
+                            $pdfUrl = $hasPdf ? '/storage/' . $invoice->pdf_file_path : '';
+                        @endphp
+
+                        <a href="javascript:void(0)" 
+                        onclick="if({{ $hasPdf ? 'true' : 'false' }}) { window.open('{{ $pdfUrl }}', '_blank'); } else { alert('PDF はバックグラウンドで生成中です。完了まで 5〜10 秒ほどかかる見込みですので、しばらくしてから再度開いてください'); }" 
+                        class="btn btn-secondary">
+                            <i class="bi bi-file-earmark-pdf"></i> PDF表示
                         </a>
                         <a href="{{ route('masters.invoices.index', ['group_id' => $groupId]) }}" class="btn btn-secondary">
                             <i class="bi bi-x-circle"></i> キャンセル
