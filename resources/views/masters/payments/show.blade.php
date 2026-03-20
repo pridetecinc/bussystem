@@ -61,10 +61,6 @@
                     </h6>
                     <div class="row mb-4">
                         <div class="col-md-3 mb-3">
-                            <label class="form-label text-muted small">取引先</label>
-                            <div class="fw-bold fs-6">{{ $payment->customer->name ?? '不明' }}</div>
-                        </div>
-                        <div class="col-md-3 mb-3">
                             <label class="form-label text-muted small">入金日</label>
                             <div class="fs-6">{{ \Carbon\Carbon::parse($payment->payment_date)->format('Y/m/d') }}</div>
                         </div>
@@ -126,7 +122,7 @@
                                 <tr>
                                     <th class="text-center" style="width: 60px;">No.</th>
                                     <th class="text-center" style="width: 150px;">請求書番号</th>
-                                    <th class="text-center" style="width: 200px;">取引先</th>
+                                    <th class="text-center" style="width: 200px;">請求先</th>
                                     <th class="text-center" style="width: 120px;">請求日</th>
                                     <th class="text-end" style="width: 120px;">請求金額</th>
                                     <th class="text-end" style="width: 120px;">消込金額</th>
@@ -159,7 +155,7 @@
                                             {{ $invoice->invoice_number ?? 'N/A' }}
                                         </td>
                                         <td class="small">
-                                            {{ $invoice->customer->name ?? '不明' }}
+                                            {{ $invoice->agency->agency_name ?? '' }}
                                         </td>
                                         <td class="text-center small">
                                             {{ $invoice->invoice_date ? \Carbon\Carbon::parse($invoice->invoice_date)->format('Y/m/d') : '-' }}

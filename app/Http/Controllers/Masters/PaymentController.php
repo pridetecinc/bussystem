@@ -61,7 +61,7 @@ public function store(Request $request)
         'items' => 'required|array|min:1',
         
         // 明细项验证
-        'items.*.invoice_id'     => 'required|integer|exists:invoices,id',
+        'items.*.invoice_id'     => 'required|integer',
         'items.*.payment_amount' => 'required|numeric|min:0.01', 
         // 注意：这里只能校验格式，"不能超过余额"的逻辑需要在循环中手动校验
     ];
@@ -172,7 +172,6 @@ public function store(Request $request)
             'group_id'       => $groupId,
             'bank_id'        => $bank_id,
             'batch_token'    => $batchToken,
-            'customer_id'    => $firstInvoice->customer_id, // 动态获取第一个发票的客户
             'payment_date'   => $paymentDate,
             'total_amount'   => $totalAmount,
             'remark'         => $remark,
@@ -242,19 +241,7 @@ public function store(Request $request)
     public function show(Request $request, $id)
     {
         $payment = PaymentHeader::findOrFail($id);
-        // 2. 加载关联数据 (Customer, Details, Invoice)
-        // 使用 with  eager loading 优化查询
-        $payment->load([
-            'customer', 
-            'details' => function($query) {
-                $query->where('is_deleted', 0)
-                      ->with(['invoice' => function($q) {
-                          $q->with('customer');
-                      }]);
-            }
-        ]);
 
-        // 3. 如果已删除，提示错误或禁止访问 (可选)
         if ($payment->is_deleted) {
             return redirect()->route('masters.payments.index')
                 ->with('error', 'この入金記録はすでに取消されています。');
@@ -269,19 +256,6 @@ public function store(Request $request)
     public function edit(Request $request, $id)
     {
         $payment = PaymentHeader::findOrFail($id);
-        // 2. 加载关联数据 (Customer, Details, Invoice)
-        // 使用 with  eager loading 优化查询
-        $payment->load([
-            'customer', 
-            'details' => function($query) {
-                $query->where('is_deleted', 0)
-                      ->with(['invoice' => function($q) {
-                          $q->with('customer');
-                      }]);
-            }
-        ]);
-
-        // 3. 如果已删除，提示错误或禁止访问 (可选)
         if ($payment->is_deleted) {
             return redirect()->route('masters.payments.index')
                 ->with('error', 'この入金記録はすでに取消されています。');

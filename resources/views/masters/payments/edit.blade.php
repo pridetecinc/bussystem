@@ -51,11 +51,6 @@
                             <i class="bi bi-info-circle"></i> 基本情報
                         </h6>
                         <div class="row mb-4">
-                            <div class="col-md-3 mb-3">
-                                <label class="form-label text-muted small">請求先</label>
-                                <div class="fw-bold fs-6 text-dark">{{ $payment->customer->customer_name ?? '' }}</div>
-                                <input type="hidden" name="customer_id" value="{{ $payment->customer_id }}">
-                            </div>
                             
                             <!-- 【可编辑】入金日 -->
                             <div class="col-md-3 mb-3">
@@ -216,8 +211,8 @@
                                             <td class="text-center font-monospace fw-bold text-primary">
                                                 {{ $invoice->invoice_number ?? '' }}
                                             </td>
-                                            <td class="small">
-                                                {{ $invoice->customer->customer_name ?? '' }}
+                                            <td class="text-center">
+                                                {{ $invoice->agency->agency_name ?? '' }}
                                             </td>
                                             <td class="text-center small">
                                                 {{ $invoice->invoice_date ? \Carbon\Carbon::parse($invoice->invoice_date)->format('Y/m/d') : '-' }}
