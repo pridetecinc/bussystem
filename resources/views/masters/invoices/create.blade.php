@@ -195,11 +195,12 @@
                                 <thead class="table-light">
                                     <tr>
                                         <th style="width: 50px;">No.</th>
-                                        <th style="width: 200px;">内容</th>
-                                        <th style="width: 150px;">単価</th>
+                                        <th style="width: 500px;">内容</th>
+                                        <th style="width: 100px;">単価</th>
                                         <th style="width: 100px;">数量</th>
-                                        <th style="width: 120px;">税率 (%)</th>
-                                        <th style="width: 180px;">操作</th>
+                                        <th style="width: 100px;">税率 (%)</th>
+                                        <th style="width: 120px;">小計</th> 
+                                        <th style="width: 100px;">操作</th>
                                     </tr>
                                 </thead>
                                 <tbody id="itemsBody">
@@ -217,15 +218,20 @@
                                         <tr data-index="{{ $index }}">
                                             <td class="text-center align-middle display-order">{{ $orderNumber }}</td>
                                             <td>
-                                                <select class="form-select form-select-sm description" name="items[{{ $index }}][description]">
-                                                    <option value="">-- 選択してください --</option>
+                                                <!-- 1. 可见的输入框：支持输入和下拉提示 -->
+                                                <input type="text" 
+                                                    class="form-control form-control-sm description" 
+                                                    name="items[{{ $index }}][description]" 
+                                                    list="product-list-{{ $index }}" 
+                                                    value="{{ $item['description'] ?? old('items.'.$index.'.description') }}" 
+                                                    placeholder="入力または選択">
+
+                                                <!-- 2. 数据列表：定义下拉选项 (每个行需要一个唯一的 ID) -->
+                                                <datalist id="product-list-{{ $index }}">
                                                     @foreach($products as $product)
-                                                        <option value="{{ $product->name }}" 
-                                                                {{ (isset($item['description']) && $item['description'] == $product->name) ? 'selected' : '' }}>
-                                                            {{ $product->name }}
-                                                        </option>
+                                                        <option value="{{ $product->name }}">
                                                     @endforeach
-                                                </select>
+                                                </datalist>
                                             </td>
                                             <td>
                                                 <input type="number" class="form-control form-control-sm unit-price"
@@ -241,23 +247,32 @@
                                                 <select class="form-control form-control-sm tax-rate" name="items[{{ $index }}][tax_rate]">
                                                     <option value="10" {{ (isset($item['tax_rate']) && $item['tax_rate'] == 10) ? 'selected' : '' }}>10</option>
                                                     <option value="8"  {{ (isset($item['tax_rate']) && $item['tax_rate'] == 8)  ? 'selected' : '' }}>8</option>
-                                                    <option value="0"  {{ (isset($item['tax_rate']) && $item['tax_rate'] == 0)  ? 'selected' : '' }}>0</option>
+                                                    <option value="-1"  {{ (isset($item['tax_rate']) && $item['tax_rate'] == -1)  ? 'selected' : '' }}>免税</option>
+                                                    <option value="-2"  {{ (isset($item['tax_rate']) && $item['tax_rate'] == -2)  ? 'selected' : '' }}>非課税</option>
                                                 </select>
                                             </td>
+                                            <td class="align-middle">
+                                                <input type="text" tabindex="-1"
+                                                    class="form-control form-control-sm line-total-input" 
+                                                    value="0.00" 
+                                                    readonly 
+                                                    style="background-color: #f8f9fa; text-align: left;">
+                                            </td>
+
                                             <td class="text-center align-middle">
                                                 <div class="d-flex justify-content-center gap-1">
-                                                    <button type="button" class="btn btn-outline-secondary btn-sm move-up-btn" title="上へ移動">
-                                                        <i class="bi bi-arrow-up"></i>
-                                                    </button>
-                                                    <button type="button" class="btn btn-outline-secondary btn-sm move-down-btn" title="下へ移動">
-                                                        <i class="bi bi-arrow-down"></i>
-                                                    </button>
-                                                    <button type="button" class="btn btn-outline-success btn-sm add-row-btn" title="行を追加">
-                                                        <i class="bi bi-plus-lg"></i>
-                                                    </button>
-                                                    <button type="button" class="btn btn-outline-danger btn-sm delete-row-btn" title="行を削除">
-                                                        <i class="bi bi-dash-lg"></i>
-                                                    </button>
+                                                <button type="button" class="btn btn-outline-secondary btn-sm move-up-btn" title="上へ移動" tabindex="-1">
+                                                    <i class="bi bi-arrow-up"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-outline-secondary btn-sm move-down-btn" title="下へ移動" tabindex="-1">
+                                                    <i class="bi bi-arrow-down"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-outline-success btn-sm add-row-btn" title="行を追加" tabindex="-1">
+                                                    <i class="bi bi-plus-lg"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-outline-danger btn-sm delete-row-btn" title="行を削除" tabindex="-1">
+                                                    <i class="bi bi-dash-lg"></i>
+                                                </button>
                                                 </div>
                                                 <input type="hidden" name="items[{{ $index }}][display_order]" value="{{ $orderNumber }}">
                                             </td>
@@ -274,12 +289,18 @@
                     <tr>
                         <td class="text-center align-middle display-order"></td>
                         <td>
-                            <select class="form-select form-select-sm description" name="items[__index__][description]">
-                                <option value="">-- 選択してください --</option>
+                            <input type="text" 
+                                class="form-control form-control-sm description" 
+                                name="items[__index__][description]" 
+                                list="product-list-__index__" 
+                                value="" 
+                                placeholder="入力または選択">
+
+                            <datalist id="product-list-__index__">
                                 @foreach($products as $product)
-                                    <option value="{{ $product->name }}">{{ $product->name }}</option>
+                                    <option value="{{ $product->name }}">
                                 @endforeach
-                            </select>
+                            </datalist>
                         </td>
                         <td>
                             <input type="number" class="form-control form-control-sm unit-price"
@@ -293,23 +314,31 @@
                             <select class="form-control form-control-sm tax-rate" name="items[__index__][tax_rate]">
                                 <option value="10" selected>10</option>
                                 <option value="8">8</option>
-                                <option value="0">0</option>
+                                <option value="-1">免税</option>
+                                <option value="-2">非課税</option>
                             </select>
+                        </td>
+                        <td class="align-middle">
+                            <input type="text"   tabindex="-1"
+                                class="form-control form-control-sm line-total-input" 
+                                value="0.00" 
+                                readonly 
+                                style="background-color: #f8f9fa; text-align: left;">
                         </td>
                         <td class="text-center align-middle">
                             <div class="d-flex justify-content-center gap-1">
-                                <button type="button" class="btn btn-outline-secondary btn-sm move-up-btn" title="上へ移動">
-                                    <i class="bi bi-arrow-up"></i>
-                                </button>
-                                <button type="button" class="btn btn-outline-secondary btn-sm move-down-btn" title="下へ移動">
-                                    <i class="bi bi-arrow-down"></i>
-                                </button>
-                                <button type="button" class="btn btn-outline-success btn-sm add-row-btn" title="行を追加">
-                                    <i class="bi bi-plus-lg"></i>
-                                </button>
-                                <button type="button" class="btn btn-outline-danger btn-sm delete-row-btn" title="行を削除">
-                                    <i class="bi bi-dash-lg"></i>
-                                </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm move-up-btn" title="上へ移動"  tabindex="-1">
+                                <i class="bi bi-arrow-up"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm move-down-btn" title="下へ移動"  tabindex="-1">
+                                <i class="bi bi-arrow-down"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-success btn-sm add-row-btn" title="行を追加"  tabindex="-1">
+                                <i class="bi bi-plus-lg"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-danger btn-sm delete-row-btn" title="行を削除"  tabindex="-1">
+                                 <i class="bi bi-dash-lg"></i>
+                            </button>
                             </div>
                             <input type="hidden" name="items[__index__][display_order]" value="">
                         </td>
@@ -418,6 +447,35 @@
 
     // 初始化顺序
     updateDisplayOrder();
+
+    function calculateRowTotal(row) {
+        const unitPriceInput = row.querySelector('.unit-price');
+        const quantityInput = row.querySelector('.quantity');
+        // 👇 选择器改为查找 input.line-total-input
+        const totalInput = row.querySelector('.line-total-input'); 
+
+        if (!unitPriceInput || !quantityInput || !totalInput) return;
+
+        const price = parseFloat(unitPriceInput.value) || 0;
+        const qty = parseFloat(quantityInput.value) || 0;
+        
+        const total = price * qty;
+        totalInput.value = total.toLocaleString('ja-JP', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    // 👇 新增：监听所有输入框的变化
+    document.getElementById('itemsBody').addEventListener('input', function (e) {
+        if (e.target.classList.contains('unit-price') || e.target.classList.contains('quantity')) {
+            const row = e.target.closest('tr');
+            calculateRowTotal(row);
+        }
+    });
+
+    // 👇 初始化：页面加载时计算所有现有行的小计
+    document.querySelectorAll('#itemsBody tr[data-index]').forEach(row => {
+        calculateRowTotal(row);
+    });
+
 })();
 </script>
 

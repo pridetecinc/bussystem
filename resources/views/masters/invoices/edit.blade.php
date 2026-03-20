@@ -195,11 +195,12 @@
                                 <thead class="table-light">
                                     <tr>
                                         <th style="width: 50px;">No.</th>
-                                        <th style="width: 200px;">内容</th>
-                                        <th style="width: 150px;">単価</th>
+                                        <th style="width: 500px;">内容</th>
+                                        <th style="width: 100px;">単価</th>
                                         <th style="width: 100px;">数量</th>
-                                        <th style="width: 120px;">税率 (%)</th>
-                                        <th style="width: 180px;">操作</th>
+                                        <th style="width: 100px;">税率 (%)</th>
+                                        <th style="width: 120px;">小計</th>
+                                        <th style="width: 100px;">操作</th>
                                     </tr>
                                 </thead>
                                 <tbody id="itemsBody">
@@ -228,15 +229,18 @@
                                             <tr data-index="{{ $index }}">
                                                 <td class="text-center align-middle display-order">{{ $orderNumber }}</td>
                                                 <td>
-                                                    <select class="form-select form-select-sm description" name="items[{{ $index }}][description]">
-                                                        <option value="">-- 選択してください --</option>
+                                                    <input type="text" 
+                                                        class="form-control form-control-sm description" 
+                                                        name="items[{{ $index }}][description]" 
+                                                        list="product-list-{{ $index }}" 
+                                                        value="{{ $oldItem['description'] ?? '' }}" 
+                                                        placeholder="入力または選択">
+
+                                                    <datalist id="product-list-{{ $index }}">
                                                         @foreach($products as $product)
-                                                            <option value="{{ $product->name }}" 
-                                                                    {{ (isset($oldItem['description']) && $oldItem['description'] == $product->name) ? 'selected' : '' }}>
-                                                                {{ $product->name }}
-                                                            </option>
+                                                            <option value="{{ $product->name }}">
                                                         @endforeach
-                                                    </select>
+                                                    </datalist>
                                                 </td>
                                                 <td>
                                                     <input type="number" class="form-control form-control-sm unit-price"
@@ -252,21 +256,33 @@
                                                     <select class="form-control form-control-sm tax-rate" name="items[{{ $index }}][tax_rate]">
                                                         <option value="10" {{ (isset($oldItem['tax_rate']) && $oldItem['tax_rate'] == 10) ? 'selected' : '' }}>10</option>
                                                         <option value="8"  {{ (isset($oldItem['tax_rate']) && $oldItem['tax_rate'] == 8)  ? 'selected' : '' }}>8</option>
-                                                        <option value="0"  {{ (isset($oldItem['tax_rate']) && $oldItem['tax_rate'] == 0)  ? 'selected' : '' }}>0</option>
+                                                        <option value="-1"  {{ (isset($oldItem['tax_rate']) && $oldItem['tax_rate'] == -1)  ? 'selected' : '' }}>免税</option>
+                                                        <option value="-2"  {{ (isset($oldItem['tax_rate']) && $oldItem['tax_rate'] == -2)  ? 'selected' : '' }}>非課税</option>
                                                     </select>
+                                                </td>
+                                                <td class="align-middle">
+                                                    <input type="text" tabindex="-1"
+                                                        class="form-control form-control-sm line-total-input" 
+                                                        value="{{ number_format(($oldItem['unit_price'] ?? 0) * ($oldItem['quantity'] ?? 0), 2) }}" 
+                                                        readonly 
+                                                        style="background-color: #f8f9fa; text-align: left;">
+                                                    <input type="hidden" 
+                                                        name="items[{{ $index }}][line_total]" 
+                                                        class="line-total-hidden" 
+                                                        value="{{ ($oldItem['unit_price'] ?? 0) * ($oldItem['quantity'] ?? 0) }}">
                                                 </td>
                                                 <td class="text-center align-middle">
                                                     <div class="d-flex justify-content-center gap-1">
-                                                        <button type="button" class="btn btn-outline-secondary btn-sm move-up-btn" title="上へ移動">
+                                                        <button type="button" class="btn btn-outline-secondary btn-sm move-up-btn" title="上へ移動" tabindex="-1">
                                                             <i class="bi bi-arrow-up"></i>
                                                         </button>
-                                                        <button type="button" class="btn btn-outline-secondary btn-sm move-down-btn" title="下へ移動">
+                                                        <button type="button" class="btn btn-outline-secondary btn-sm move-down-btn" title="下へ移動" tabindex="-1">
                                                             <i class="bi bi-arrow-down"></i>
                                                         </button>
-                                                        <button type="button" class="btn btn-outline-success btn-sm add-row-btn" title="行を追加">
+                                                        <button type="button" class="btn btn-outline-success btn-sm add-row-btn" title="行を追加" tabindex="-1">
                                                             <i class="bi bi-plus-lg"></i>
                                                         </button>
-                                                        <button type="button" class="btn btn-outline-danger btn-sm delete-row-btn" title="行を削除">
+                                                        <button type="button" class="btn btn-outline-danger btn-sm delete-row-btn" title="行を削除" tabindex="-1">
                                                             <i class="bi bi-dash-lg"></i>
                                                         </button>
                                                     </div>
@@ -278,22 +294,47 @@
                                         {{-- fallback: 至少一行 --}}
                                         <tr data-index="0">
                                             <td class="text-center align-middle display-order">1</td>
-                                            <td><input type="text" class="form-control form-control-sm description" name="items[0][description]" placeholder=""></td>
+                                            <td>
+                                                <input type="text" 
+                                                    class="form-control form-control-sm description" 
+                                                    name="items[0][description]" 
+                                                    list="product-list-0" 
+                                                    value="{{ old('items.0.description') ?? ($item['description'] ?? '') }}" 
+                                                    placeholder="入力または選択">
+
+                                                <datalist id="product-list-0">
+                                                    @foreach($products as $product)
+                                                        <option value="{{ $product->name }}">
+                                                    @endforeach
+                                                </datalist>
+                                            </td>
                                             <td><input type="number" class="form-control form-control-sm unit-price" name="items[0][unit_price]" value="" min="0" step="0.01"></td>
                                             <td><input type="number" class="form-control form-control-sm quantity" name="items[0][quantity]" value="" min="1" step="1"></td>
                                             <td>
                                                 <select class="form-control form-control-sm tax-rate" name="items[0][tax_rate]">
                                                     <option value="10" selected>10</option>
                                                     <option value="8">8</option>
-                                                    <option value="0">0</option>
+                                                    <option value="-1">免税</option>
+                                                    <option value="-2">非課税</option>
                                                 </select>
+                                            </td>
+                                            <td class="align-middle">
+                                                <input type="text"  tabindex="-1"
+                                                    class="form-control form-control-sm line-total-input" 
+                                                    value="0.00" 
+                                                    readonly 
+                                                    style="background-color: #f8f9fa; text-align: left;">
+                                                <input type="hidden" 
+                                                    name="items[0][line_total]" 
+                                                    class="line-total-hidden" 
+                                                    value="0">
                                             </td>
                                             <td class="text-center align-middle">
                                                 <div class="d-flex justify-content-center gap-1">
-                                                    <button type="button" class="btn btn-outline-secondary btn-sm move-up-btn" title="上へ移動"><i class="bi bi-arrow-up"></i></button>
-                                                    <button type="button" class="btn btn-outline-secondary btn-sm move-down-btn" title="下へ移動"><i class="bi bi-arrow-down"></i></button>
-                                                    <button type="button" class="btn btn-outline-success btn-sm add-row-btn" title="行を追加"><i class="bi bi-plus-lg"></i></button>
-                                                    <button type="button" class="btn btn-outline-danger btn-sm delete-row-btn" title="行を削除"><i class="bi bi-dash-lg"></i></button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm move-up-btn" title="上へ移動" tabindex="-1"><i class="bi bi-arrow-up"></i></button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm move-down-btn" title="下へ移動" tabindex="-1"><i class="bi bi-arrow-down"></i></button>
+                                                    <button type="button" class="btn btn-outline-success btn-sm add-row-btn" title="行を追加" tabindex="-1"><i class="bi bi-plus-lg"></i></button>
+                                                    <button type="button" class="btn btn-outline-danger btn-sm delete-row-btn" title="行を削除" tabindex="-1"><i class="bi bi-dash-lg"></i></button>
                                                 </div>
                                                 <input type="hidden" name="items[0][display_order]" value="1">
                                             </td>
@@ -310,12 +351,18 @@
                     <tr>
                         <td class="text-center align-middle display-order"></td>
                         <td>
-                            <select class="form-select form-select-sm description" name="items[__index__][description]">
-                                <option value="">-- 選択してください --</option>
+                            <input type="text" 
+                                class="form-control form-control-sm description" 
+                                name="items[__index__][description]" 
+                                list="product-list-__index__" 
+                                value="" 
+                                placeholder="入力または選択">
+
+                            <datalist id="product-list-__index__">
                                 @foreach($products as $product)
-                                    <option value="{{ $product->name }}">{{ $product->name }}</option>
+                                    <option value="{{ $product->name }}">
                                 @endforeach
-                            </select>
+                            </datalist>
                         </td>
                         <td>
                             <input type="number" class="form-control form-control-sm unit-price"
@@ -329,21 +376,33 @@
                             <select class="form-control form-control-sm tax-rate" name="items[__index__][tax_rate]">
                                 <option value="10" selected>10</option>
                                 <option value="8">8</option>
-                                <option value="0">0</option>
+                                <option value="-1">免税</option>
+                                <option value="-2">非課税</option>
                             </select>
+                        </td>
+                        <td class="align-middle">
+                            <input type="text"  tabindex="-1"
+                                class="form-control form-control-sm line-total-input" 
+                                value="0.00" 
+                                readonly 
+                                style="background-color: #f8f9fa; text-align: left;">
+                            <input type="hidden" 
+                                name="items[__index__][line_total]" 
+                                class="line-total-hidden" 
+                                value="0">
                         </td>
                         <td class="text-center align-middle">
                             <div class="d-flex justify-content-center gap-1">
-                                <button type="button" class="btn btn-outline-secondary btn-sm move-up-btn" title="上へ移動">
+                                <button type="button" class="btn btn-outline-secondary btn-sm move-up-btn" title="上へ移動" tabindex="-1">
                                     <i class="bi bi-arrow-up"></i>
                                 </button>
-                                <button type="button" class="btn btn-outline-secondary btn-sm move-down-btn" title="下へ移動">
+                                <button type="button" class="btn btn-outline-secondary btn-sm move-down-btn" title="下へ移動" tabindex="-1">
                                     <i class="bi bi-arrow-down"></i>
                                 </button>
-                                <button type="button" class="btn btn-outline-success btn-sm add-row-btn" title="行を追加">
+                                <button type="button" class="btn btn-outline-success btn-sm add-row-btn" title="行を追加" tabindex="-1">
                                     <i class="bi bi-plus-lg"></i>
                                 </button>
-                                <button type="button" class="btn btn-outline-danger btn-sm delete-row-btn" title="行を削除">
+                                <button type="button" class="btn btn-outline-danger btn-sm delete-row-btn" title="行を削除" tabindex="-1">
                                     <i class="bi bi-dash-lg"></i>
                                 </button>
                             </div>
@@ -419,6 +478,7 @@
             tbody.appendChild(newRow);
         }
         updateDisplayOrder();
+        calculateRowTotal(newRow);
     }
 
     document.getElementById('addItemRowBtn').addEventListener('click', () => addNewRow());
@@ -465,48 +525,32 @@
 
     const pollingTimers = {}; 
 
-    // 工具函数：显示状态提示
     function showStatusMessage(message, type = 'info') {
-        // 1. 【关键修复】先获取元素，并检查是否存在
         const alertBox = document.getElementById('pdf-status-alert');
-        
-        if (!alertBox) {
-            console.error('❌ 错误：找不到 ID 为 "pdf-status-alert" 的元素！请检查 HTML 是否已加载。');
-            // 如果找不到元素，可以选择降级使用 alert 提示用户，或者直接返回
-            // alert(message); 
-            return; 
-        }
+        if (!alertBox) return; 
 
-        // 2. 关闭页面上其他所有 alert (安全操作)
         const existingAlerts = document.querySelectorAll('.alert-dismissible');
         existingAlerts.forEach(alert => {
-            // 确保不要关闭自己（虽然关闭再打开也没事，但为了性能跳过自己）
             if (alert === alertBox) return; 
-            
             const bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
             if(bsAlert) bsAlert.close();
         });
 
-        // 3. 现在可以安全地修改 className 了
         alertBox.className = `alert alert-${type} alert-dismissible fade show`;
         
-        // 4. 设置图标
         let iconClass = 'bi-info-circle-fill';
         if (type === 'success') iconClass = 'bi-check-circle-fill';
         if (type === 'warning') iconClass = 'bi-hourglass-split';
         if (type === 'danger') iconClass = 'bi-exclamation-triangle-fill';
         
-        // 5. 更新内容
         alertBox.innerHTML = `
             <i class="bi ${iconClass}"></i> 
             <span>${message}</span>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         `;
         
-        // 6. 显示出来
         alertBox.style.display = 'block';
         
-        // 7. 成功消息自动消失逻辑
         if (type === 'success') {
             setTimeout(() => {
                 if(alertBox && alertBox.style.display !== 'none') {
@@ -517,30 +561,33 @@
         }
     }
 
+    // ✅ 核心修改：点击处理逻辑
     function handlePdfClick(btn) {
         const invoiceId = btn.dataset.invoiceId;
         const hasPdf = btn.dataset.hasPdf === '1';
         const pdfUrl = btn.dataset.pdfUrl;
 
-        if (hasPdf) {
+        // 情况 1: PDF 已存在 -> 直接打开，不做任何提示
+        if (hasPdf && pdfUrl) {
             window.open(pdfUrl, '_blank');
             return;
         }
 
+        // 情况 2: 正在轮询生成中 -> 提示用户等待，不要重复触发
         if (pollingTimers[invoiceId]) {
-            // 如果已经在轮询，提示用户正在后台处理
-            showStatusMessage('PDF はバックグラウンドで生成中です。しばらくお待ちください。', 'warning');
+            showStatusMessage('PDF はバックグラウンドで生成中です。完了すると自動的に開きます。', 'warning');
             return;
         }
 
+        // 情况 3: 还没有 PDF -> 开始生成流程
         startPolling(invoiceId, btn);
     }
 
     function startPolling(invoiceId, btn) {
-        // 1. UI 变为“生成中”
         setBtnLoadingState(btn, true);
         showStatusMessage('PDF を生成中です。完了まで数秒かかります...', 'info');
 
+        // 立即检查一次
         checkStatus(invoiceId, btn);
         
         pollingTimers[invoiceId] = setInterval(() => {
@@ -552,69 +599,99 @@
         fetch(`/masters/invoices/${invoiceId}/pdf-status`)
             .then(response => response.json())
             .then(data => {
-                // 兼容字符串 "true"
                 const isReady = (data.ready === true || data.ready === 'true');
 
                 if (isReady) {
-                    // ✅ 成功了！
+                    // ✅ 生成成功！
                     clearInterval(pollingTimers[invoiceId]);
                     delete pollingTimers[invoiceId];
 
-                    // 更新按钮状态
+                    // 更新按钮数据属性，以便下次点击直接打开
                     btn.dataset.hasPdf = '1';
                     btn.dataset.pdfUrl = data.url;
+                    
                     setBtnLoadingState(btn, false);
                     
-                    // 🎉 关键修改：在这里显示成功提示，而不是 alert
-                    showStatusMessage('PDF の準備ができました！ボタンを再度クリックして表示してください。', 'success');
+                    // 🚀 关键修改：成功后直接打开 PDF，不再提示让用户点第二次
+                    showStatusMessage('PDF の準備ができました！表示しています...', 'success');
+                    window.open(data.url, '_blank');
                     
-                    // 可选：自动把按钮变绿，提示用户可以点了
+                    // 可选：更新按钮文字提示已就绪
+                    btn.querySelector('.btn-text').textContent = 'PDF を開く';
                     btn.classList.remove('btn-secondary');
                     btn.classList.add('btn-success');
-                    btn.querySelector('.btn-text').textContent = 'PDF を開く';
                 }
             })
             .catch(err => {
                 console.error('轮询失败', err);
-                // 出错时也可以提示用户
-                // showStatusMessage('PDF 生成中にエラーが発生しました。', 'danger');
+                // 可以选择在多次失败后停止轮询并提示错误
             });
     }
 
     function setBtnLoadingState(btn, isLoading) {
-        const originalText = 'PDF 表示';
-        const loadingText = '生成中...';
         const textSpan = btn.querySelector('.btn-text');
+        const originalText = 'PDF 表示'; // 或者根据语言动态获取
         
         if (isLoading) {
-            btn.classList.add('disabled'); // 禁用点击
+            btn.classList.add('disabled');
             btn.classList.remove('btn-success');
             btn.classList.add('btn-secondary');
             
-            // 添加 Spinner
             if (!btn.querySelector('.spinner-border')) {
                 const spinner = document.createElement('span');
                 spinner.className = 'spinner-border spinner-border-sm me-2';
                 spinner.role = 'status';
                 btn.insertBefore(spinner, textSpan);
             }
-            textSpan.textContent = loadingText;
+            textSpan.textContent = '生成中...';
         } else {
             btn.classList.remove('disabled', 'btn-secondary');
-            btn.classList.add('btn-success'); // 变绿
+            btn.classList.add('btn-success'); 
             
-            // 移除 Spinner
             const spinner = btn.querySelector('.spinner-border');
             if (spinner) spinner.remove();
             
-            textSpan.textContent = 'PDF を開く'; // 或者恢复原文本
+            textSpan.textContent = 'PDF を開く'; 
         }
     }
 
-    // 页面关闭时清理所有定时器（防止内存泄漏）
     window.addEventListener('beforeunload', () => {
-        Object.keys(pollingTimers).forEach(id => stopPolling(id));
+        Object.keys(pollingTimers).forEach(id => {
+            clearInterval(pollingTimers[id]);
+            delete pollingTimers[id];
+        });
     });
+
+    function calculateRowTotal(row) {
+        const priceInput = row.querySelector('.unit-price');
+        const qtyInput = row.querySelector('.quantity');
+        const displayInput = row.querySelector('.line-total-input');
+        const hiddenInput = row.querySelector('.line-total-hidden');
+
+        if (!priceInput || !qtyInput || !displayInput) return;
+
+        const price = parseFloat(priceInput.value) || 0;
+        const qty = parseFloat(qtyInput.value) || 0;
+        const total = price * qty;
+
+        // 更新显示框 (带千分位逗号)
+        displayInput.value = total.toLocaleString('ja-JP', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        
+        // 更新隐藏框 (纯数字用于提交)
+        if (hiddenInput) {
+            hiddenInput.value = total.toFixed(2);
+        }
+    }
+
+    // 监听输入变化自动计算
+    document.getElementById('itemsBody').addEventListener('input', function(e) {
+        if (e.target.classList.contains('unit-price') || e.target.classList.contains('quantity')) {
+            calculateRowTotal(e.target.closest('tr'));
+        }
+    });
+
+    // 页面加载时初始化所有行的小计
+    document.querySelectorAll('#itemsBody tr').forEach(row => calculateRowTotal(row));
 </script>
 
 <style>

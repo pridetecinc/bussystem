@@ -103,11 +103,11 @@ public function store(Request $request)
         'items.*.description' => 'nullable|string|max:300', 
         'items.*.quantity' => 'nullable|numeric|min:0', // 允许空，稍后逻辑处理
         'items.*.unit_price' => 'nullable|numeric|min:0',
-        'items.*.tax_rate' => 'nullable|numeric|in:0,8,10',
+        'items.*.tax_rate' => 'nullable|numeric|in:-1,-2,8,10',
         'items.*.display_order' => 'nullable|integer',
     ], [
         'due_date.after_or_equal' => '支払期日は請求日以降にしてください。',
-        'items.*.tax_rate.in' => '税率は 0（非課税）、8、10 のいずれかにしてください。',
+        'items.*.tax_rate.in' => '税率は 免税、非課税、8、10 のいずれかにしてください。',
         // 自定义错误：如果最终有效行为 0，我们会手动抛出这个异常
     ]);
 
@@ -284,6 +284,10 @@ public function store(Request $request)
         // === 第五步：插入 invoice_items（仅存原始输入，不参与税务计算）===
         $itemsToInsert = [];
         foreach ($validated['items'] as $index => $item) {
+            Product::firstOrCreate(
+                ['name' => $item['description']], 
+                ['language' => $validated['language']] 
+            );
             $itemsToInsert[] = [
                 'invoice_id' => $invoiceId,
                 'line_number' => $index + 1,
@@ -409,12 +413,11 @@ public function store(Request $request)
             'items.*.description' => 'required|string|max:300',
             'items.*.quantity' => 'required|numeric|min:0.01',
             'items.*.unit_price' => 'required|numeric|min:0',
-            'items.*.tax_rate' => 'required|numeric|in:0,8,10',
+            'items.*.tax_rate' => 'required|numeric|in:-1,-2,8,10',
             'items.*.display_order' => 'required|integer|min:1',
         ], [
             'items.required' => '明細は最低1行必要です。',
             'due_date.after_or_equal' => '支払期日は請求日以降にしてください。',
-            'items.*.tax_rate.in' => '税率は 0（非課税）、8、10 のいずれかにしてください。',
         ]);
 
         $validated['items'] = array_values($validated['items']); // 重置索引
@@ -549,6 +552,10 @@ public function store(Request $request)
             // === 8. 插入新的 invoice_items（仅原始输入）===
             $itemsToInsert = [];
             foreach ($validated['items'] as $index => $item) {
+                Product::firstOrCreate(
+                    ['name' => $item['description']], 
+                    ['language' => $validated['language']] 
+                );
                 $itemsToInsert[] = [
                     'invoice_id' => $id,
                     'line_number' => $index + 1,

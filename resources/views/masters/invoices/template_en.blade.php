@@ -161,11 +161,11 @@
             <col style="width: 11%;">  <!-- Desc Part 1 -->
             <col style="width: 17%;">  <!-- Desc Part 2 -->
             <col style="width: 15%;">  <!-- Desc Part 3 -->
-            <col style="width: 17%;">  <!-- Desc Part 4 -->
+            <col style="width: 15%;">  <!-- Desc Part 4 -->
             <col style="width: 6%;">   <!-- Qty -->
             <col style="width: 10%;">  <!-- Unit Price -->
             <col style="width: 12%;">  <!-- Amount -->
-            <col style="width: 7%;">   <!-- Tax Rate -->
+            <col style="width: 9%;">   <!-- Tax Rate -->
         </colgroup>
 
         <thead>
@@ -191,10 +191,16 @@
                     @endif
                 </td>
                 <td>{{ $item->quantity }}</td>
-                <td class="text-right">{{ number_format($item->unit_price) }}</td>
-                <td class="text-right">{{ number_format($item->amount) }}</td>
+                <td class="text-center">{{ number_format($item->unit_price) }}</td>
+                <td class="text-center">{{ number_format($item->amount) }}</td>
                 <td>
-                    @if ($item->tax_rate > 0){{ $item->tax_rate }}%@endif
+                    @if ($item->tax_rate == -1)
+                        Tax Exempt
+                    @elseif ($item->tax_rate == -2)
+                        Non-Taxable
+                    @else
+                        {{ number_format($item->tax_rate) }}%
+                    @endif
                 </td>
             </tr>
             @endforeach

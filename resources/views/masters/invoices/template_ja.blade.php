@@ -98,11 +98,11 @@
             <col style="width: 11%;">  <!-- c2: 摘要 part 1 -->
             <col style="width: 17%;">  <!-- c3: 摘要 part 2 -->
             <col style="width: 15%;">  <!-- c4: 摘要 part 3 -->
-            <col style="width: 17%;">  <!-- c5: 摘要 part 4 -->
+            <col style="width: 15%;">  <!-- c5: 摘要 part 4 -->
             <col style="width: 6%;">   <!-- c6: 数量 -->
             <col style="width: 10%;">  <!-- c7: 单价 -->
             <col style="width: 12%;">  <!-- c8: 金额 -->
-            <col style="width: 7%;">   <!-- c9: 税率 -->
+            <col style="width: 9%;">   <!-- c9: 税率 -->
         </colgroup>
 
         <thead>
@@ -128,10 +128,16 @@
                     @endif
                 </td>
                 <td class="c6">{{ $item->quantity }}</td>
-                <td class="c7 text-right">{{ number_format($item->unit_price) }}</td>
-                <td class="c8 text-right">{{ number_format($item->amount) }}</td>
+                <td class="c7">{{ number_format($item->unit_price) }}</td>
+                <td class="c8">{{ number_format($item->amount) }}</td>
                 <td class="c9">
-                    @if ($item->tax_rate == 0)&nbsp;@else{{ number_format($item->tax_rate) }}%@endif
+                    @if ($item->tax_rate == -1)
+                    免税
+                    @elseif ($item->tax_rate == -2)
+                    非課税
+                    @else
+                    {{ number_format($item->tax_rate) }}%
+                    @endif
                 </td>
             </tr>
             @endforeach
