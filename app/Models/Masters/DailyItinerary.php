@@ -62,4 +62,9 @@ class DailyItinerary extends Model
     {
         return $this->belongsTo(BusAssignment::class, 'bus_assignment_id', 'id');
     }
+    
+    public function busAssignments()
+    {
+        return $this->hasMany(BusAssignment::class, 'id', 'bus_assignment_id');
+    }
 }

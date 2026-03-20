@@ -4,32 +4,23 @@
 
 @section('content')
 <div class="container-fluid px-4 py-0">
-    {{-- ヘッダー --}}
     <div class="d-flex justify-content-between align-items-center mb-2">
         <h5 class="mb-0" style="color: #374151; font-size: 1.25rem;">運行一覧</h5>
-        <a href="{{ route('masters.bus-assignments.create') }}" class="btn btn-primary btn-sm px-3 py-1"
-           style="background-color: #2563eb; border-color: #2563eb; font-size: 0.875rem;">
-            新規作成
-        </a>
     </div>
 
-    {{-- 検索部分（コンパクト版） --}}
     <div class="bg-light p-2 mb-2 rounded" style="background-color: #F3F4F6 !important; border: 1px solid #E5E7EB;">
         <form method="GET" action="{{ route('masters.bus-assignments.index') }}" class="row g-1">
-            {{-- 1行目：すべての検索条件を横並びに --}}
             <div class="col-12">
                 <div class="d-flex flex-wrap align-items-center gap-2">
-                    {{-- 運行日 --}}
                     <div class="d-flex align-items-center">
                         <span class="me-1" style="font-size: 0.8rem; font-weight: 500; min-width: 45px;">運行日</span>
-                        <input type="date" name="start_date" value="{{ request('start_date', $startDate) }}"
-                               class="form-control form-control-sm" style="width: 120px; border-color: #E5E7EB;">
+                        <input type="text" name="start_date" value="{{ request('start_date', \Carbon\Carbon::today()->format('Y-m-d')) }}"
+                               class="form-control form-control-sm datepicker-3months" style="width: 120px; border-color: #E5E7EB;" placeholder="YYYY-MM-DD" readonly>
                         <span class="mx-1">~</span>
-                        <input type="date" name="end_date" value="{{ request('end_date', $endDate) }}"
-                               class="form-control form-control-sm" style="width: 120px; border-color: #E5E7EB;">
+                        <input type="text" name="end_date" value="{{ request('end_date', \Carbon\Carbon::today()->format('Y-m-d')) }}"
+                               class="form-control form-control-sm datepicker-3months" style="width: 120px; border-color: #E5E7EB;" placeholder="YYYY-MM-DD" readonly>
                     </div>
 
-                    {{-- 当日/同日ラジオ --}}
                     <div class="d-flex align-items-center">
                         <div class="form-check form-check-inline me-1">
                             <input class="form-check-input" type="radio" name="date_type" id="date_type_today" value="today" {{ request('date_type') == 'today' ? 'checked' : '' }} style="transform: scale(0.8);">
@@ -41,21 +32,18 @@
                         </div>
                     </div>
 
-                    {{-- 予約ID --}}
                     <div class="d-flex align-items-center">
                         <span class="me-1" style="font-size: 0.8rem; font-weight: 500; min-width: 45px;">予約ID</span>
                         <input type="text" name="reservation_id" value="{{ request('reservation_id') }}"
                                class="form-control form-control-sm" style="width: 90px; border-color: #E5E7EB;">
                     </div>
 
-                    {{-- 運行ID --}}
                     <div class="d-flex align-items-center">
                         <span class="me-1" style="font-size: 0.8rem; font-weight: 500; min-width: 45px;">運行ID</span>
                         <input type="text" name="operation_id" value="{{ request('operation_id') }}"
                                class="form-control form-control-sm" style="width: 90px; border-color: #E5E7EB;">
                     </div>
 
-                    {{-- 営業所 --}}
                     <div class="d-flex align-items-center">
                         <span class="me-1" style="font-size: 0.8rem; font-weight: 500; min-width: 45px;">営業所</span>
                         <select name="branch_id" class="form-select form-select-sm" style="width: 100px; border-color: #E5E7EB;">
@@ -68,7 +56,6 @@
                         </select>
                     </div>
 
-                    {{-- 車種 --}}
                     <div class="d-flex align-items-center">
                         <span class="me-1" style="font-size: 0.8rem; font-weight: 500; min-width: 30px;">車種</span>
                         <select name="vehicle_type_id" class="form-select form-select-sm" style="width: 90px; border-color: #E5E7EB;">
@@ -81,7 +68,6 @@
                         </select>
                     </div>
 
-                    {{-- 車両名（下拉框） --}}
                     <div class="d-flex align-items-center">
                         <span class="me-1" style="font-size: 0.8rem; font-weight: 500; min-width: 45px;">車両名</span>
                         <select name="vehicle_id" class="form-select form-select-sm" style="width: 120px; border-color: #E5E7EB;">
@@ -97,14 +83,12 @@
                         </select>
                     </div>
 
-                    {{-- 団体名 --}}
                     <div class="d-flex align-items-center">
                         <span class="me-1" style="font-size: 0.8rem; font-weight: 500; min-width: 45px;">団体名</span>
                         <input type="text" name="group_name" value="{{ request('group_name') }}"
                                class="form-control form-control-sm" style="width: 120px; border-color: #E5E7EB;" placeholder="団体名">
                     </div>
 
-                    {{-- ボタン --}}
                     <div class="d-flex gap-1">
                         <button type="submit" class="btn btn-sm px-2"
                                 style="background-color: #2563eb; color: white; border-color: #2563eb; font-size: 0.8rem;">
@@ -120,7 +104,6 @@
         </form>
     </div>
 
-    {{-- 運行一覧テーブル --}}
     <div class="table-responsive">
         <table class="table table-sm table-bordered mb-0" style="border-color: #E5E7EB; font-size: 0.75rem;">
             <thead>
@@ -140,7 +123,7 @@
                     <th class="text-center px-1 py-1" style="vertical-align: middle; background-color: #F3F4F6; color: #374151; font-weight: 500; width: 50px;">立替</th>
                     <th class="text-center px-1 py-1" style="vertical-align: middle; background-color: #F3F4F6; color: #374151; font-weight: 500; width: 70px;">操作</th>
                 </tr>
-            </thead>
+             </thead>
             <tbody>
                 @forelse($assignments as $index => $assignment)
                 <tr>
@@ -156,7 +139,7 @@
                         @endif
                     </td>
                     <td class="px-1 py-1 align-middle text-center">
-                        <span style="color: #2563eb;">{{ $assignment->group_info_id ?? '---' }}</span><br>
+                        <a href="{{ route('masters.group-infos.edit', $assignment->groupInfo?->id) }}" class="text-decoration-none">{{ $assignment->group_info_id ?? '---' }}</a><br>
                         {{ $assignment->id }}
                     </td>
                     <td class="px-1 py-1 align-middle">{!! nl2br(e($assignment->start_info)) !!}</td>
@@ -197,8 +180,7 @@
                     <td class="text-center px-1 py-1 align-middle">
                         <div class="d-flex flex-column gap-1">
                             <a href="{{ route('masters.bus-assignments.show', $assignment->id) }}" style="color: #2563eb; text-decoration: none; font-size: 0.7rem;">詳細</a>
-                            <a href="{{ route('masters.bus-assignments.edit', $assignment->id) }}" style="color: #2563eb; text-decoration: none; font-size: 0.7rem;">編集</a>
-                            <a href="javascript:void(0);" onclick="confirmDelete('{{ $assignment->id }}', '{{ $assignment->groupInfo?->group_name ?? 'この割当' }}')" style="color: #dc3545; text-decoration: none; font-size: 0.7rem;">削除</a>
+                            <a href="{{ route('masters.group-infos.edit', $assignment->groupInfo?->id) }}" style="color: #2563eb; text-decoration: none; font-size: 0.7rem;">編集</a>
                         </div>
                     </td>
                 </tr>
@@ -206,10 +188,9 @@
                 <tr><td colspan="14" class="text-center py-3" style="color: #9ca3af;">運行データがありません</td></tr>
                 @endforelse
             </tbody>
-        </table>
+         </table>
     </div>
 
-    {{-- ページネーション --}}
     <div class="d-flex justify-content-between align-items-center mt-2">
         <div style="color: #6b7280; font-size: 0.875rem;">
             全 {{ $assignments->total() }} 件中 {{ $assignments->firstItem() ?? 0 }} - {{ $assignments->lastItem() ?? 0 }} 件表示
@@ -218,7 +199,6 @@
     </div>
 </div>
 
-{{-- 削除フォーム --}}
 <form id="deleteForm" method="POST" action="">
     @csrf
     @method('DELETE')
@@ -232,10 +212,240 @@ function confirmDelete(id, name) {
         form.submit();
     }
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    flatpickr('.datepicker-3months', {
+        locale: 'ja',
+        dateFormat: 'Y-m-d',
+        showMonths: 3,
+        allowInput: true,
+        clickOpens: true,
+        mode: 'single',
+        disableMobile: true,
+        wrap: false,
+        onOpen: function(selectedDates, dateStr, instance) {
+            instance.calendarContainer.style.zIndex = '9999';
+        },
+        onReady: function(selectedDates, dateStr, instance) {
+            const daysContainer = instance.daysContainer;
+            if (daysContainer) {
+                const dayContainers = daysContainer.querySelectorAll('.dayContainer');
+                dayContainers.forEach(function(dayContainer) {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'month-wrapper';
+                    dayContainer.parentNode.insertBefore(wrapper, dayContainer);
+                    wrapper.appendChild(dayContainer);
+                });
+            }
+        }
+    });
+});
 </script>
 
 <style>
 .table td { vertical-align: middle; line-height: 1.3; }
 .table hr { margin: 2px 0; opacity: 0.3; }
+
+.flatpickr-calendar {
+    border: 1px solid #ddd !important;
+    border-radius: 6px !important;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12) !important;
+    font-family: inherit !important;
+    font-size: 11px !important;
+    overflow: hidden !important;
+}
+
+.flatpickr-calendar.multiMonth {
+    width: 516px !important;
+    max-width: 95vw !important;
+}
+
+.flatpickr-calendar.multiMonth .flatpickr-innerContainer {
+    width: 100% !important;
+}
+
+.flatpickr-calendar.multiMonth .flatpickr-months {
+    display: flex !important;
+}
+
+.flatpickr-calendar.multiMonth .flatpickr-month {
+    flex: 1 !important;
+}
+
+.flatpickr-calendar.multiMonth .flatpickr-month:not(:last-child) {
+    border-right: 1px solid #e9ecef !important;
+}
+
+.flatpickr-months {
+    background: linear-gradient(135deg, #1f3241 0%, #2d4a5e 100%) !important;
+    border-radius: 6px 6px 0 0 !important;
+    display: flex !important;
+}
+
+.flatpickr-month {
+    height: 28px !important;
+    padding-right: 0 !important;
+}
+
+.flatpickr-current-month {
+    padding: 3px 0 0 0 !important;
+}
+
+.flatpickr-current-month .flatpickr-monthDropdown-months {
+    font-weight: 600 !important;
+    color: #fff !important;
+    font-size: 11px !important;
+}
+
+.flatpickr-current-month .numInputWrapper span {
+    color: #fff !important;
+}
+
+.flatpickr-current-month input.cur-year {
+    color: #fff !important;
+    font-weight: 600 !important;
+    font-size: 11px !important;
+}
+
+.flatpickr-months .flatpickr-month,
+.flatpickr-months .flatpickr-next-month,
+.flatpickr-months .flatpickr-prev-month {
+    color: #fff !important;
+    fill: #fff !important;
+}
+
+.flatpickr-months .flatpickr-next-month:hover svg,
+.flatpickr-months .flatpickr-prev-month:hover svg {
+    fill: #ffc107 !important;
+}
+
+.flatpickr-months .flatpickr-next-month,
+.flatpickr-months .flatpickr-prev-month {
+    width: 20px !important;
+    height: 20px !important;
+    padding: 2px !important;
+}
+
+.flatpickr-weekdays {
+    background: #f8f9fa !important;
+    border-bottom: 1px solid #e9ecef !important;
+    margin: 0 !important;
+}
+
+.flatpickr-weekday {
+    color: #495057 !important;
+    font-weight: 600 !important;
+    font-size: 10px !important;
+    padding: 1px 0 !important;
+}
+
+.flatpickr-days {
+    border: none !important;
+    padding: 0 !important;
+}
+
+.flatpickr-day {
+    color: #374151 !important;
+    border-radius: 2px !important;
+    margin: 0 !important;
+    border: 1px solid transparent !important;
+    max-width: 24px !important;
+    width: 24px !important;
+    height: 22px !important;
+    line-height: 20px !important;
+    font-size: 10px !important;
+}
+
+.flatpickr-day:hover {
+    background: #e0f2fe !important;
+    border-color: #2563eb !important;
+    color: #2563eb !important;
+}
+
+.flatpickr-day.selected {
+    background: #2563eb !important;
+    border-color: #2563eb !important;
+    color: #fff !important;
+    font-weight: 600 !important;
+}
+
+.flatpickr-day.selected:hover {
+    background: #1d4ed8 !important;
+}
+
+.flatpickr-day.startRange,
+.flatpickr-day.endRange {
+    background: #2563eb !important;
+    border-color: #2563eb !important;
+    color: #fff !important;
+}
+
+.flatpickr-day.inRange {
+    background: #dbeafe !important;
+    border-color: transparent !important;
+    color: #1e40af !important;
+}
+
+.flatpickr-day.today {
+    border-color: #ffc107 !important;
+    background: #fffbeb !important;
+    color: #374151 !important;
+}
+
+.flatpickr-day.today:hover {
+    background: #fef3c7 !important;
+    border-color: #f59e0b !important;
+    color: #374151 !important;
+}
+
+.flatpickr-months .flatpickr-month {
+    background: transparent !important;
+}
+
+span.flatpickr-weekday {
+    background: #f8f9fa !important;
+}
+
+.flatpickr-calendar.showTimeInput.hasTime .flatpickr-time {
+    border-top: 1px solid #e9ecef !important;
+}
+
+.flatpickr-calendar.multiMonth .dayContainer {
+    width: 168px !important;
+    min-width: 168px !important;
+    max-width: 168px !important;
+    position: relative !important;
+}
+
+.month-wrapper {
+    flex: 1 !important;
+    position: relative !important;
+    padding: 2px !important;
+    height: 135px !important;
+}
+
+.month-wrapper:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background-color: #e9ecef;
+}
+
+.flatpickr-calendar.multiMonth .flatpickr-days {
+    display: flex !important;
+    position: relative;
+    width: 514px !important;
+}
+
+.flatpickr-calendar.multiMonth .flatpickr-days .dayContainer {
+    padding: 0 !important;
+}
+
+.flatpickr-calendar.multiMonth .flatpickr-rContainer {
+    width: 514px !important;
+}
 </style>
 @endsection

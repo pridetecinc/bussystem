@@ -195,10 +195,11 @@ class BusAssignmentController extends Controller
                          ->with('success', '運行割当を作成しました。');
     }
 
-    public function show(BusAssignment $busAssignment)
+    public function show($id)
     {
-        $busAssignment->load(['groupInfo', 'vehicle', 'driver', 'guide', 'dailyItineraries']);
-
+        $busAssignment = BusAssignment::with(['groupInfo', 'vehicle', 'driver', 'guide', 'dailyItineraries'])
+            ->findOrFail($id);
+        
         return view('masters.bus-assignments.show', compact('busAssignment'));
     }
 

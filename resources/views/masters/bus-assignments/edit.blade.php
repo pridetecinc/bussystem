@@ -4,7 +4,6 @@
 
 @section('content')
 <div class="container-fluid px-4 py-0">
-    {{-- ヘッダー --}}
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="mb-0 page-title">運行割当編集</h5>
         <a href="{{ route('masters.bus-assignments.index') }}" class="btn btn-outline-secondary btn-sm px-3">
@@ -12,7 +11,6 @@
         </a>
     </div>
 
-    {{-- 通知エリア --}}
     @if(session('success'))
     <div class="alert alert-success alert-dismissible fade show py-2 mb-3 success-alert" role="alert">
         <i class="bi bi-check-circle"></i> {{ session('success') }}
@@ -34,22 +32,18 @@
     </div>
     @endif
 
-    {{-- メインフォーム --}}
     <form method="POST" action="{{ route('masters.bus-assignments.update', $busAssignment->id) }}" id="editForm">
         @csrf
         @method('PUT')
 
-        {{-- 運行詳細カード --}}
         <div id="operation-details-container">
             @php $index = 1; @endphp
-            {{-- メインの運行割当カード --}}
             <div class="card shadow-sm mb-1 vehicle-detail-card" data-vehicle-index="{{ $index }}" data-bus-id="{{ $busAssignment->id }}">
                 <div class="card-header py-1 px-3 d-flex align-items-center" style="background-color: #141c28; border-bottom: 1px solid #aaa;">
                     <h6 class="mb-0 me-3" style="color: #fff; font-size: 0.875rem; font-weight: 500;">
                         運行詳細-{{ sprintf('%02d', $index) }}
                     </h6>
                     <div class="d-flex align-items-center ms-auto" style="gap: 15px;">
-                        {{-- 操作ロック --}}
                         <div class="form-check d-flex align-items-center">
                             <label class="form-check-label me-2" for="lock_arrangement" style="font-size: 0.8rem; color: #fff;">操作ロック</label>
                             <input type="checkbox" class="form-check-input" id="lock_arrangement" name="lock_arrangement" value="1" {{ $busAssignment->lock_arrangement ? 'checked' : '' }} style="margin: 0;">
@@ -60,11 +54,9 @@
                     
                 <div class="row" style="margin-right: -5px; margin-left: -5px;">
                     <div class="col-md-6" style="width:60%; padding-right: 5px; padding-left: 5px;">
-                        {{-- 隠しフィールド --}}
                         <input type="hidden" name="id" value="{{ $busAssignment->id }}">
                         <input type="hidden" name="vehicle_index" value="{{ $index }}">
     
-                        {{-- 1行目: 運行ID、号車、最終確認、送信 --}}
                         <div class="row mb-1">
                             <div class="col-md-12">
                                 <div class="d-flex align-items-center w-100" style="gap: 8px; justify-content: space-between;">
@@ -93,7 +85,6 @@
                             </div>
                         </div>
                         
-                        {{-- 2行目: ステップカー、人数 --}}
                         <div class="row mb-1">
                             <div class="col-md-12">
                                 <div class="d-flex align-items-center w-100" style="gap: 15px;">
@@ -113,7 +104,6 @@
                             </div>
                         </div>
     
-                        {{-- 3行目: 車両、車種指定、荷物 --}}
                         <div class="row mb-1">
                             <div class="col-md-12">
                                 <div class="d-flex align-items-center w-100" style="gap: 10px;">
@@ -145,7 +135,6 @@
                             </div>
                         </div>
     
-                        {{-- 4行目: 運転手、仮、添乗、代表 --}}
                         <div class="row mb-1">
                             <div class="col-md-12">
                                 <div class="d-flex align-items-center w-100" style="gap: 8px;">
@@ -196,7 +185,6 @@
                     </div>
                     
                     <div class="col-md-6" style="width:40%; padding-right: 5px; padding-left: 5px;">
-                        {{-- 右側のタブエリア (基本/DOC/履歴) --}}
                         <div class="row mt-2" style="margin-right: -5px; margin-left: -5px;">
                             <div class="col-md-12" style="padding-right: 5px; padding-left: 5px;">
                                 <div class="tab-container-{{ $index }}">
@@ -244,129 +232,122 @@
                     </div>
                 </div>
                     
-                    
+                <div class="row mt-2">
+                    <div class="col-md-12">
+                        <table class="table table-bordered table-sm" style="font-size: 0.8rem; background-color: white;" data-vehicle-table="{{ $index }}">
+                            <thead style="background-color: #f3f4f6; text-align: center;">
+                                <tr>
+                                    <th style="width: 10%; text-align: center; background-color: #f3f4f6;">運行日</th>
+                                    <th style="width: 10%; text-align: center; background-color: #f3f4f6;">開始時刻/場所</th>
+                                    <th style="width: 10%; text-align: center; background-color: #f3f4f6;">終了時刻/場所</th>
+                                    <th style="text-align: center; background-color: #f3f4f6;">行程</th>
+                                    <th style="width: 5%; text-align: center; background-color: #f3f4f6;">選択</th>
+                                    <th style="width: 180px; text-align: center; background-color: #f3f4f6;">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($busAssignment->dailyItineraries ?? [] as $itineraryIndex => $itinerary)
+                                @php
+                                    $globalIndex = ($index - 1) * 100 + $itineraryIndex;
+                                @endphp
+                                <tr class="itinerary-row" data-vehicle="{{ $index }}" data-index="{{ $globalIndex }}" data-bus-id="{{ $busAssignment->id }}" data-itinerary-id="{{ $itinerary->id }}">
+                                    <td style="vertical-align: middle; text-align: center; background-color: #f9f9f9; position: relative;">
+                                        <span class="row-number" style="position: absolute; top: 2px; left: 2px; color: #2563eb; font-size: 10px; font-weight: bold;">{{ $itineraryIndex + 1 }}</span>
+                                        <input type="hidden" name="daily_itineraries[{{ $globalIndex }}][id]" value="{{ $itinerary->id }}">
+                                        <input type="hidden" name="daily_itineraries[{{ $globalIndex }}][display_order]" value="{{ $globalIndex + 1 }}">
+                                        <input type="hidden" name="daily_itineraries[{{ $globalIndex }}][bus_assignment_id]" value="{{ $busAssignment->id }}" class="itinerary-bus-id">
+                                        <input type="hidden" name="daily_itineraries[{{ $globalIndex }}][vehicle_id]" value="{{ $busAssignment->vehicle_id }}" class="itinerary-vehicle-id">
+                                        <input type="hidden" name="daily_itineraries[{{ $globalIndex }}][driver_id]" value="{{ $busAssignment->driver_id }}" class="itinerary-driver-id">
+                                        <input type="hidden" name="daily_itineraries[{{ $globalIndex }}][guide_id]" value="{{ $busAssignment->guide_id }}" class="itinerary-guide-id">
+                                        <input type="text" class="form-control form-control-sm border datepicker-3months" name="daily_itineraries[{{ $globalIndex }}][date]" value="{{ $itinerary->date ? \Carbon\Carbon::parse($itinerary->date)->format('Y-m-d') : '' }}" style="width: 100%; text-align: center;" placeholder="YYYY-MM-DD">
+                                        <input type="hidden" name="daily_itineraries[{{ $globalIndex }}][vehicle_group]" value="{{ $index }}">
+                                    </td>
+                                    <td style="padding: 2px;">
+                                        <div class="d-flex flex-column" style="gap: 2px;">
+                                            <input type="time" class="form-control form-control-sm border"
+                                                   name="daily_itineraries[{{ $globalIndex }}][time_start]"
+                                                   value="{{ $itinerary->time_start ? \Carbon\Carbon::parse($itinerary->time_start)->format('H:i') : '08:00' }}"
+                                                   style="width: 100%;" step="60">
+                                            <input type="text" class="form-control form-control-sm border"
+                                                   name="daily_itineraries[{{ $globalIndex }}][start_location]"
+                                                   value="{{ $itinerary->start_location ?? '' }}"
+                                                   placeholder="開始場所" style="width: 100%;">
+                                        </div>
+                                    </td>
+                                    <td style="padding: 2px;">
+                                        <div class="d-flex flex-column" style="gap: 2px;">
+                                            <input type="time" class="form-control form-control-sm border"
+                                                   name="daily_itineraries[{{ $globalIndex }}][time_end]"
+                                                   value="{{ $itinerary->time_end ? \Carbon\Carbon::parse($itinerary->time_end)->format('H:i') : '18:00' }}"
+                                                   style="width: 100%;" step="60">
+                                            <input type="text" class="form-control form-control-sm border"
+                                                   name="daily_itineraries[{{ $globalIndex }}][end_location]"
+                                                   value="{{ $itinerary->end_location ?? '' }}"
+                                                   placeholder="終了場所" style="width: 100%;">
+                                        </div>
+                                    </td>
+                                    <td style="vertical-align: middle; padding: 2px;">
+                                        <textarea name="daily_itineraries[{{ $globalIndex }}][itinerary]" rows="2"
+                                                  class="form-control form-control-sm border"
+                                                  style="width: 100%; height: 100%; min-height: 60px;">{{ $itinerary->itinerary ?? '' }}</textarea>
+                                    </td>
+                                    <td style="padding: 2px; text-align: center; vertical-align: middle;">
+                                        <div style="display: flex; justify-content: center; align-items: center; height: 100%;">
+                                            <input type="checkbox" class="form-check-input itinerary-select"
+                                                   id="select_itinerary_{{ $globalIndex }}"
+                                                   style="margin: 0; width: 18px; height: 18px; cursor: pointer;">
+                                        </div>
+                                    </td>
+                                    <td style="padding: 2px; text-align: center; vertical-align: middle;">
+                                        <div class="d-flex justify-content-center gap-1">
+                                            <button type="button" class="btn btn-outline-secondary btn-sm move-up-btn" title="上へ移動">
+                                                <i class="bi bi-arrow-up"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary btn-sm move-down-btn" title="下へ移動">
+                                                <i class="bi bi-arrow-down"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-success btn-sm add-row-btn" title="行を追加">
+                                                <i class="bi bi-plus-lg"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-danger btn-sm delete-row-btn" title="行を削除">
+                                                <i class="bi bi-dash-lg"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr class="no-data-row">
+                                    <td colspan="6" class="text-center py-4" style="color: #6c757d; background-color: #f9f9f9;">
+                                        <i class="bi bi-info-circle me-1"></i> 旅程データがありません。「+」ボタンを押して追加してください。
+                                    </td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
 
+                <div class="row mt-2" style="margin-right: -5px; margin-left: -5px;">
+                    <div class="col-md-6" style="width:60%; padding-right: 5px; padding-left: 5px;">
+                        <div class="d-flex w-100 mb-1">
+                            <span class="span-label" style="min-width: 30px;">注意</span>
+                            <input type="text" name="attention" class="form-control form-control-sm border" value="{{ $busAssignment->attention ?? '' }}">
+                        </div>
 
-
-                    {{-- 行程テーブル --}}
-                    <div class="row mt-2">
-                        <div class="col-md-12">
-                            <table class="table table-bordered table-sm" style="font-size: 0.8rem; background-color: white;" data-vehicle-table="{{ $index }}">
-                                <thead style="background-color: #f3f4f6; text-align: center;">
-                                    <tr>
-                                        <th style="width: 10%; text-align: center; background-color: #f3f4f6;">運行日</th>
-                                        <th style="width: 10%; text-align: center; background-color: #f3f4f6;">開始時刻/場所</th>
-                                        <th style="width: 10%; text-align: center; background-color: #f3f4f6;">終了時刻/場所</th>
-                                        <th style="text-align: center; background-color: #f3f4f6;">行程</th>
-                                        <th style="width: 5%; text-align: center; background-color: #f3f4f6;">選択</th>
-                                        <th style="width: 180px; text-align: center; background-color: #f3f4f6;">操作</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse($busAssignment->dailyItineraries ?? [] as $itineraryIndex => $itinerary)
-                                    @php
-                                        $globalIndex = ($index - 1) * 100 + $itineraryIndex;
-                                    @endphp
-                                    <tr class="itinerary-row" data-vehicle="{{ $index }}" data-index="{{ $globalIndex }}" data-bus-id="{{ $busAssignment->id }}" data-itinerary-id="{{ $itinerary->id }}">
-                                        <td style="vertical-align: middle; text-align: center; background-color: #f9f9f9; position: relative;">
-                                            <span class="row-number" style="position: absolute; top: 2px; left: 2px; color: #2563eb; font-size: 10px; font-weight: bold;">{{ $itineraryIndex + 1 }}</span>
-                                            <input type="hidden" name="daily_itineraries[{{ $globalIndex }}][id]" value="{{ $itinerary->id }}">
-                                            <input type="hidden" name="daily_itineraries[{{ $globalIndex }}][display_order]" value="{{ $globalIndex + 1 }}">
-                                            <input type="hidden" name="daily_itineraries[{{ $globalIndex }}][bus_assignment_id]" value="{{ $busAssignment->id }}" class="itinerary-bus-id">
-                                            <input type="hidden" name="daily_itineraries[{{ $globalIndex }}][vehicle_id]" value="{{ $busAssignment->vehicle_id }}" class="itinerary-vehicle-id">
-                                            <input type="hidden" name="daily_itineraries[{{ $globalIndex }}][driver_id]" value="{{ $busAssignment->driver_id }}" class="itinerary-driver-id">
-                                            <input type="hidden" name="daily_itineraries[{{ $globalIndex }}][guide_id]" value="{{ $busAssignment->guide_id }}" class="itinerary-guide-id">
-                                            <input type="text" class="form-control form-control-sm border datepicker-3months" name="daily_itineraries[{{ $globalIndex }}][date]" value="{{ $itinerary->date ? \Carbon\Carbon::parse($itinerary->date)->format('Y-m-d') : '' }}" style="width: 100%; text-align: center;" placeholder="YYYY-MM-DD">
-                                            <input type="hidden" name="daily_itineraries[{{ $globalIndex }}][vehicle_group]" value="{{ $index }}">
-                                        </td>
-                                        <td style="padding: 2px;">
-                                            <div class="d-flex flex-column" style="gap: 2px;">
-                                                <input type="time" class="form-control form-control-sm border"
-                                                       name="daily_itineraries[{{ $globalIndex }}][time_start]"
-                                                       value="{{ $itinerary->time_start ? \Carbon\Carbon::parse($itinerary->time_start)->format('H:i') : '08:00' }}"
-                                                       style="width: 100%;" step="60">
-                                                <input type="text" class="form-control form-control-sm border"
-                                                       name="daily_itineraries[{{ $globalIndex }}][start_location]"
-                                                       value="{{ $itinerary->start_location ?? '' }}"
-                                                       placeholder="開始場所" style="width: 100%;">
-                                            </div>
-                                        </td>
-                                        <td style="padding: 2px;">
-                                            <div class="d-flex flex-column" style="gap: 2px;">
-                                                <input type="time" class="form-control form-control-sm border"
-                                                       name="daily_itineraries[{{ $globalIndex }}][time_end]"
-                                                       value="{{ $itinerary->time_end ? \Carbon\Carbon::parse($itinerary->time_end)->format('H:i') : '18:00' }}"
-                                                       style="width: 100%;" step="60">
-                                                <input type="text" class="form-control form-control-sm border"
-                                                       name="daily_itineraries[{{ $globalIndex }}][end_location]"
-                                                       value="{{ $itinerary->end_location ?? '' }}"
-                                                       placeholder="終了場所" style="width: 100%;">
-                                            </div>
-                                        </td>
-                                        <td style="vertical-align: middle; padding: 2px;">
-                                            <textarea name="daily_itineraries[{{ $globalIndex }}][itinerary]" rows="2"
-                                                      class="form-control form-control-sm border"
-                                                      style="width: 100%; height: 100%; min-height: 60px;">{{ $itinerary->itinerary ?? '' }}</textarea>
-                                        </td>
-                                        <td style="padding: 2px; text-align: center; vertical-align: middle;">
-                                            <div style="display: flex; justify-content: center; align-items: center; height: 100%;">
-                                                <input type="checkbox" class="form-check-input itinerary-select"
-                                                       id="select_itinerary_{{ $globalIndex }}"
-                                                       style="margin: 0; width: 18px; height: 18px; cursor: pointer;">
-                                            </div>
-                                        </td>
-                                        <td style="padding: 2px; text-align: center; vertical-align: middle;">
-                                            <div class="d-flex justify-content-center gap-1">
-                                                <button type="button" class="btn btn-outline-secondary btn-sm move-up-btn" title="上へ移動">
-                                                    <i class="bi bi-arrow-up"></i>
-                                                </button>
-                                                <button type="button" class="btn btn-outline-secondary btn-sm move-down-btn" title="下へ移動">
-                                                    <i class="bi bi-arrow-down"></i>
-                                                </button>
-                                                <button type="button" class="btn btn-outline-success btn-sm add-row-btn" title="行を追加">
-                                                    <i class="bi bi-plus-lg"></i>
-                                                </button>
-                                                <button type="button" class="btn btn-outline-danger btn-sm delete-row-btn" title="行を削除">
-                                                    <i class="bi bi-dash-lg"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    @empty
-                                    <tr class="no-data-row">
-                                        <td colspan="6" class="text-center py-4" style="color: #6c757d; background-color: #f9f9f9;">
-                                            <i class="bi bi-info-circle me-1"></i> 旅程データがありません。「+」ボタンを押して追加してください。
-                                        </td>
-                                    </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
+                        <div class="d-flex w-100">
+                            <span class="span-label" style="min-width: 30px;">備考</span>
+                            <textarea name="operation_remarks" rows="1" class="form-control form-control-sm border" placeholder="指示書に表示">{{ $busAssignment->operation_remarks ?? '' }}</textarea>
                         </div>
                     </div>
 
-                    {{-- 下部：注意、備考、手配メモ --}}
-                    <div class="row mt-2" style="margin-right: -5px; margin-left: -5px;">
-                        <div class="col-md-6" style="width:60%; padding-right: 5px; padding-left: 5px;">
-                            <div class="d-flex w-100 mb-1">
-                                <span class="span-label" style="min-width: 30px;">注意</span>
-                                <input type="text" name="attention" class="form-control form-control-sm border" value="{{ $busAssignment->attention ?? '' }}">
-                            </div>
-
-                            <div class="d-flex w-100">
-                                <span class="span-label" style="min-width: 30px;">備考</span>
-                                <textarea name="operation_remarks" rows="1" class="form-control form-control-sm border" placeholder="指示書に表示">{{ $busAssignment->operation_remarks ?? '' }}</textarea>
-                            </div>
-                        </div>
-
-                        <div class="col-md-6" style="width:40%; padding-right: 5px; padding-left: 5px;">
-                            <textarea name="operation_memo" rows="2" class="form-control form-control-sm border" style="height: 62px;" placeholder="手配メモ一">{{ $busAssignment->operation_memo ?? '' }}</textarea>
-                        </div>
+                    <div class="col-md-6" style="width:40%; padding-right: 5px; padding-left: 5px;">
+                        <textarea name="operation_memo" rows="2" class="form-control form-control-sm border" style="height: 62px;" placeholder="手配メモ一">{{ $busAssignment->operation_memo ?? '' }}</textarea>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
 
-        {{-- 保存・キャンセル・削除ボタン --}}
         <div class="d-flex justify-content-between align-items-center mt-3">
             <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-primary btn-sm px-3" id="saveBtn">
@@ -385,7 +366,6 @@
         </div>
     </form>
 
-    {{-- 削除用フォーム --}}
     <form id="deleteForm" action="{{ route('masters.bus-assignments.destroy', $busAssignment->id) }}" method="POST" class="d-none">
         @csrf
         @method('DELETE')
@@ -393,7 +373,6 @@
 </div>
 
 <style>
-/* ここに既存のスタイルをそのまま維持 */
 .text-gray { color: #6b7280; font-size: 11px; }
 .form-input { width: 100%; border: 1px solid #aaa; border-radius: 4px; font-size: 11px; padding: 4px 6px; height: 28px; }
 .form-input-small { border: 1px solid #aaa; border-radius: 4px; padding: 4px; height: 28px; font-size: 11px; }
@@ -438,11 +417,212 @@
 .tab-button2.active { background-color: white !important; border-bottom-color: white !important; color: #374151 !important; font-weight: 500; }
 .tab-button2:not(.active) { background-color: #F3F4F6 !important; border-bottom-color: #aaa !important; color: #6B7280 !important; }
 .tab-content2 { border: 1px #E5E7EB solid; border-top: 0; background-color: #fff; padding: 10px; height: 140px; }
+
+.flatpickr-calendar {
+    border: 1px solid #ddd !important;
+    border-radius: 6px !important;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12) !important;
+    font-family: inherit !important;
+    font-size: 11px !important;
+    overflow: hidden !important;
+}
+
+.flatpickr-calendar.multiMonth {
+    width: 516px !important;
+    max-width: 95vw !important;
+}
+
+.flatpickr-calendar.multiMonth .flatpickr-innerContainer {
+    width: 100% !important;
+}
+
+.flatpickr-calendar.multiMonth .flatpickr-months {
+    display: flex !important;
+}
+
+.flatpickr-calendar.multiMonth .flatpickr-month {
+    flex: 1 !important;
+}
+
+.flatpickr-calendar.multiMonth .flatpickr-month:not(:last-child) {
+    border-right: 1px solid #e9ecef !important;
+}
+
+.flatpickr-months {
+    background: linear-gradient(135deg, #1f3241 0%, #2d4a5e 100%) !important;
+    border-radius: 6px 6px 0 0 !important;
+    display: flex !important;
+}
+
+.flatpickr-month {
+    height: 28px !important;
+    padding-right: 0 !important;
+}
+
+.flatpickr-current-month {
+    padding: 3px 0 0 0 !important;
+}
+
+.flatpickr-current-month .flatpickr-monthDropdown-months {
+    font-weight: 600 !important;
+    color: #fff !important;
+    font-size: 11px !important;
+}
+
+.flatpickr-current-month .numInputWrapper span {
+    color: #fff !important;
+}
+
+.flatpickr-current-month input.cur-year {
+    color: #fff !important;
+    font-weight: 600 !important;
+    font-size: 11px !important;
+}
+
+.flatpickr-months .flatpickr-month,
+.flatpickr-months .flatpickr-next-month,
+.flatpickr-months .flatpickr-prev-month {
+    color: #fff !important;
+    fill: #fff !important;
+}
+
+.flatpickr-months .flatpickr-next-month:hover svg,
+.flatpickr-months .flatpickr-prev-month:hover svg {
+    fill: #ffc107 !important;
+}
+
+.flatpickr-months .flatpickr-next-month,
+.flatpickr-months .flatpickr-prev-month {
+    width: 20px !important;
+    height: 20px !important;
+    padding: 2px !important;
+}
+
+.flatpickr-weekdays {
+    background: #f8f9fa !important;
+    border-bottom: 1px solid #e9ecef !important;
+    margin: 0 !important;
+}
+
+.flatpickr-weekday {
+    color: #495057 !important;
+    font-weight: 600 !important;
+    font-size: 10px !important;
+    padding: 1px 0 !important;
+}
+
+.flatpickr-days {
+    border: none !important;
+    padding: 0 !important;
+}
+
+.flatpickr-day {
+    color: #374151 !important;
+    border-radius: 2px !important;
+    margin: 0 !important;
+    border: 1px solid transparent !important;
+    max-width: 24px !important;
+    width: 24px !important;
+    height: 22px !important;
+    line-height: 20px !important;
+    font-size: 10px !important;
+}
+
+.flatpickr-day:hover {
+    background: #e0f2fe !important;
+    border-color: #2563eb !important;
+    color: #2563eb !important;
+}
+
+.flatpickr-day.selected {
+    background: #2563eb !important;
+    border-color: #2563eb !important;
+    color: #fff !important;
+    font-weight: 600 !important;
+}
+
+.flatpickr-day.selected:hover {
+    background: #1d4ed8 !important;
+}
+
+.flatpickr-day.startRange,
+.flatpickr-day.endRange {
+    background: #2563eb !important;
+    border-color: #2563eb !important;
+    color: #fff !important;
+}
+
+.flatpickr-day.inRange {
+    background: #dbeafe !important;
+    border-color: transparent !important;
+    color: #1e40af !important;
+}
+
+.flatpickr-day.today {
+    border-color: #ffc107 !important;
+    background: #fffbeb !important;
+    color: #374151 !important;
+}
+
+.flatpickr-day.today:hover {
+    background: #fef3c7 !important;
+    border-color: #f59e0b !important;
+    color: #374151 !important;
+}
+
+.flatpickr-months .flatpickr-month {
+    background: transparent !important;
+}
+
+span.flatpickr-weekday {
+    background: #f8f9fa !important;
+}
+
+.flatpickr-calendar.showTimeInput.hasTime .flatpickr-time {
+    border-top: 1px solid #e9ecef !important;
+}
+
+.flatpickr-calendar.multiMonth .dayContainer {
+    width: 168px !important;
+    min-width: 168px !important;
+    max-width: 168px !important;
+    position: relative !important;
+}
+
+.month-wrapper {
+    flex: 1 !important;
+    position: relative !important;
+    padding: 2px !important;
+    height: 135px !important;
+}
+
+.month-wrapper:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background-color: #e9ecef;
+}
+
+.flatpickr-calendar.multiMonth .flatpickr-days {
+    display: flex !important;
+    position: relative;
+    width: 514px !important;
+}
+
+.flatpickr-calendar.multiMonth .flatpickr-days .dayContainer {
+    padding: 0 !important;
+}
+
+.flatpickr-calendar.multiMonth .flatpickr-rContainer {
+    width: 514px !important;
+}
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // 日付ピッカー初期化
     flatpickr('.datepicker-3months', {
         locale: 'ja',
         dateFormat: 'Y-m-d',
@@ -469,7 +649,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // タブ切り替え（基本/DOC/履歴）
     document.querySelectorAll('.tab-button2').forEach(button => {
         button.addEventListener('click', function() {
             const container = this.getAttribute('data-container');
@@ -502,7 +681,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // 行追加ボタン
     document.querySelectorAll('.add-row-btn').forEach(btn => {
         btn.addEventListener('click', function(e) {
             e.preventDefault();
@@ -510,7 +688,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // 行削除ボタン
     document.querySelectorAll('.delete-row-btn').forEach(btn => {
         btn.addEventListener('click', function(e) {
             e.preventDefault();
@@ -518,7 +695,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // 上へ移動ボタン
     document.querySelectorAll('.move-up-btn').forEach(btn => {
         btn.addEventListener('click', function(e) {
             e.preventDefault();
@@ -526,7 +702,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // 下へ移動ボタン
     document.querySelectorAll('.move-down-btn').forEach(btn => {
         btn.addEventListener('click', function(e) {
             e.preventDefault();
@@ -534,7 +709,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // 行追加関数
     function addRowAfter(clickedButton) {
         const currentRow = clickedButton.closest('tr.itinerary-row');
         if (!currentRow) return;
@@ -607,7 +781,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // 新しい行作成関数
     function createNewRow(date, index, vehicleGroup = '1', busId = '', vehicleId = '', driverId = '', guideId = '') {
         const newRow = document.createElement('tr');
         newRow.className = 'itinerary-row';
@@ -681,7 +854,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return newRow;
     }
 
-    // 行削除関数
     function deleteRow(clickedButton) {
         if (!confirm('この行程を削除してもよろしいですか？')) {
             return;
@@ -710,7 +882,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // 上へ移動関数
     function moveUp(clickedButton) {
         const row = clickedButton.closest('tr.itinerary-row');
         const prevRow = row.previousElementSibling;
@@ -723,7 +894,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // 下へ移動関数
     function moveDown(clickedButton) {
         const row = clickedButton.closest('tr.itinerary-row');
         const nextRow = row.nextElementSibling;
@@ -736,7 +906,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // 行番号再インデックス関数
     function reindexRows(table) {
         const rows = table.querySelectorAll('tbody tr.itinerary-row:not(.no-data-row)');
         rows.forEach((row, idx) => {
@@ -767,7 +936,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 移動ボタン状態更新関数
     function updateMoveButtons(table) {
         const rows = table.querySelectorAll('tbody tr.itinerary-row:not(.no-data-row)');
         rows.forEach((row, index) => {
@@ -783,7 +951,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 初期テーブルの移動ボタン状態設定
     const tables = document.querySelectorAll('table');
     tables.forEach(table => {
         updateMoveButtons(table);
