@@ -33,6 +33,11 @@ use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\UserController;
 
+use App\Http\Controllers\Masters\CurrencyController;
+use App\Http\Controllers\Masters\InvoiceController;
+use App\Http\Controllers\Masters\PaymentController;
+use App\Http\Controllers\Masters\ProductController;
+
 Route::get('/', function() {
     return redirect('/masters');
 })->name('home');

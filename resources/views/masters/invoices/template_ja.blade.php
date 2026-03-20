@@ -36,6 +36,10 @@
             overflow: hidden;
             word-wrap: break-word;
         }
+        .main-table tr > th:last-child,
+        .main-table tr > td:last-child {
+            border-right: 2px double #333333 !important;
+        }
         .main-table thead th { 
             background-color: #3b5998; 
             color: #fff; 
