@@ -140,7 +140,7 @@ class GenerateRequestPdfJob implements ShouldQueue
         $symmary_8 = InvoiceTaxSummary::on($connectionName)->where('invoice_id', $invoice->id)->where('tax_rate', 8)->first();
         $non_taxable = InvoiceItem::on($connectionName)->where('invoice_id', $invoice->id)->where('tax_rate', 0)->sum('amount');
         $bank = Bank::on($connectionName)->where('id', $invoice->bank_id)->first();
-        $company_info = UserCompanyInfo::on($connectionName)->where('id', $this->tenantId)->first();
+        $company_info = UserCompanyInfo::on($connectionName)->where('user_company_id', $this->tenantId)->first();
 
         // 3. 准备数据
         $data = [
