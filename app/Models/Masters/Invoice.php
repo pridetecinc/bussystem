@@ -36,10 +36,23 @@ class Invoice extends Model
     ];
 
     // 关联：客户
-    public function customer()
+    public function agency()
     {
-        return $this->belongsTo(Customer::class, 'customer_id');
+        return $this->belongsTo(Agency::class, 'agency_id');
     }
+
+    // 关联：银行
+    public function bank()
+    {
+        return $this->belongsTo(Bank::class, 'bank_id');
+    }
+
+    // 关联：操作担当
+    public function staff()
+    {
+        return $this->belongsTo(Staff::class, 'staff_id');
+    }
+
 
     // 关联：明细项
     public function items()

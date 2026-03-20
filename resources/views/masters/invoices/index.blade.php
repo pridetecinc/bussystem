@@ -163,10 +163,10 @@
                             <input type="checkbox" class="form-check-input invoice-checkbox" 
                                 value="{{ $invoice->id }}"
                                 data-locked="{{ $invoice->is_locked ? 1 : 0 }}"
-                                data-customer-id="{{ $invoice->customer->name ?? '' }}"
+                                data-customer-id="{{ $invoice->agency_id }}"
                                 data-invoice-no="{{ $invoice->invoice_number }}"
                                 data-currency-code="{{ $invoice->currency_code }}"
-                                data-customer-name="{{ $invoice->customer->customer_name ?? '' }}"
+                                data-customer-name="{{ $invoice->agency->agency_name ?? ''}}"
                                 data-request-amount="{{ number_format($invoice->total_amount, 2, '.', '') }}" 
                                 data-balance-amount="{{ number_format($invoice->total_amount - $invoice->paid_amount, 2, '.', '') }}">
                         </td>
@@ -176,7 +176,7 @@
                         <td class="text-center text-muted small">{{ $invoice->id }}</td>
                         <td class="text-center fw-bold text-primary">{{ $invoice->billing_title }}</td>
                         <td class="text-center fw-bold text-primary">{{ $invoice->invoice_number }}</td>
-                        <td class="text-center">{{ $invoice->customer->customer_name ?? ''}}</td>
+                        <td class="text-center">{{ $invoice->agency->agency_name ?? ''}}</td>
                         <td class="text-center">{{ \Carbon\Carbon::parse($invoice->invoice_date)->format('Y/m/d') }}</td>
                         <td class="text-center">{{ \Carbon\Carbon::parse($invoice->due_date)->format('Y/m/d') }}</td>
                         <td class="text-center">{{ $invoice->currency_code }}</td>

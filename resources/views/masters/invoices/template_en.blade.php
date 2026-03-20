@@ -129,10 +129,9 @@
     <!-- 2. Client & Company -->
     <div class="top-section no-break">
         <div class="client-name">
-            <div>{{ $customer->name }}</div>
-            @if(isset($customer->attention))
-                <div style="font-size: 9pt;">Attn: {{ $customer->attention }}</div>
-            @endif
+            @foreach($customer as $customerLine)
+                <div class="bank-line">{{ $customerLine }}</div>
+            @endforeach
         </div>
         <div class="company-info">
             <div class="company-name">{{ $company->name }}</div>

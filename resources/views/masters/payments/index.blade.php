@@ -86,7 +86,7 @@
                     <tr>
                         <th class="text-center" style="width: 80px;">ID</th>
                         <th class="text-center" style="width: 160px;">バッチ番号</th>
-                        <th class="text-center" style="width: 150px;">請求先</th>
+                        <!-- <th class="text-center" style="width: 150px;">請求先</th> -->
                         <th class="text-center" style="width: 120px;">入金日</th>
                         <th class="text-center" style="width: 100px;">件数</th>
                         <th class="text-center" style="width: 140px;">合計金額</th>
@@ -99,9 +99,9 @@
                     <tr class="{{ $payment->is_deleted ? 'table-secondary text-muted' : '' }}">
                         <td class="text-center text-muted small">{{ $payment->id }}</td>
                         <td class="text-center font-monospace small">{{ $payment->batch_token }}</td>
-                        <td class="text-center fw-bold">
-                            {{ $payment->customer->customer_name ?? '' }}
-                        </td>
+                        <!-- <td class="text-center fw-bold">
+                            {{ $payment->invoice->agency->agency_name ?? '' }}
+                        </td> -->
                         <td class="text-center">
                             {{ \Carbon\Carbon::parse($payment->payment_date)->format('Y/m/d') }}
                         </td>

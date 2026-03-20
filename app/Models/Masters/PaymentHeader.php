@@ -21,7 +21,6 @@ class PaymentHeader extends Model
      */
     protected $fillable = [
         'group_id',
-        'customer_id',
         'currency_code',
         'total_amount',
         'bank_id',
@@ -39,7 +38,6 @@ class PaymentHeader extends Model
     protected $casts = [
         'id' => 'integer',
         'group_id' => 'integer',
-        'customer_id' => 'integer',
         'bank_id' => 'integer',
         'total_amount' => 'decimal:2',
         'payment_date' => 'date',
@@ -49,14 +47,11 @@ class PaymentHeader extends Model
         'updated_at' => 'datetime',
     ];
 
-    /**
-     * 关联：所属客户
-     * 注意：由于没有外键约束，这纯粹是逻辑关联，需确保数据一致性由代码保证
-     */
-    public function customer()
+
+    public function invocie()
     {
         // 请根据实际 Customer 模型的路径调整
-        return $this->belongsTo(Customer::class, 'customer_id');
+        return $this->belongsTo(Invoice::class, 'invoice_id');
     }
 
     public function Staff()
@@ -75,11 +70,7 @@ class PaymentHeader extends Model
         return $this->hasMany(PaymentDetail::class, 'payment_header_id', 'id');
     }
     
-    /**
-     * 作用域：仅查询未删除的数据
-     * SoftDeletes trait 会自动处理 deleted_at IS NULL
-     * 如果你的业务逻辑强依赖 is_deleted 字段，可以添加此 Scope
-     */
+
     public function scopeActive($query)
     {
         return $query->where('is_deleted', 0);

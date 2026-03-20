@@ -50,7 +50,6 @@
                 <!-- 【关键】顶层公共隐藏域 (提交时由 JS 填充) -->
                 <input type="hidden" name="payment_date" id="form-payment-date">
                 <input type="hidden" name="remark" id="form-remark">
-                <input type="hidden" name="customer_id" id="form-customer-id"> 
 
                 <div class="modal-body bg-light pb-1">
                     
@@ -326,7 +325,6 @@ document.addEventListener('DOMContentLoaded', function () {
             const ds = cb.dataset; 
             return {
                 id: cb.value,
-                customer_id: cb.dataset.customerId || '',
                 invoice_no: cb.dataset.invoiceNo || '',
                 customer_name: cb.dataset.customerName || '-',
                 currency_code: ds.currencyCode || '', 
@@ -334,11 +332,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 balance_amount: parseFloat(cb.dataset.balanceAmount) || 0
             };
         });
-
-        // 填充公共隐藏域
-        if (selectedInvoiceData.length > 0 && document.getElementById('form-customer-id')) {
-            document.getElementById('form-customer-id').value = selectedInvoiceData[0].customer_id;
-        }
 
         initialModal.show();
     });
@@ -379,7 +372,7 @@ document.addEventListener('DOMContentLoaded', function () {
             
             selectedInvoiceData.forEach((item, index) => {
                 const clone = document.importNode(detailTemplate.content, true);
-                
+
                 // 填充数据
                 clone.querySelector('.item-invoice-id').value = item.id;
                 clone.querySelector('.item-original-amount').value = item.request_amount;

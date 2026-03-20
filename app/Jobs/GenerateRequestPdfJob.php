@@ -16,6 +16,7 @@ use App\Models\Masters\Invoice;
 use App\Models\Masters\InvoiceItem;
 use App\Models\Masters\InvoiceTaxSummary;
 use App\Models\Masters\Bank;
+use App\Models\Masters\UserCompanyInfo;
 use Carbon\Carbon;
 use Throwable;
 use Exception;
@@ -139,6 +140,7 @@ class GenerateRequestPdfJob implements ShouldQueue
         $symmary_8 = InvoiceTaxSummary::on($connectionName)->where('invoice_id', $invoice->id)->where('tax_rate', 8)->first();
         $non_taxable = InvoiceItem::on($connectionName)->where('invoice_id', $invoice->id)->where('tax_rate', 0)->sum('amount');
         $bank = Bank::on($connectionName)->where('id', $invoice->bank_id)->first();
+        $company_info = UserCompanyInfo::on($connectionName)->where('id', $this->tenantId)->first();
 
         // 3. 准备数据
         $data = [
@@ -158,16 +160,14 @@ class GenerateRequestPdfJob implements ShouldQueue
             'summary_8' => $symmary_8,
             'items' => $items,
             'bank' => preg_split('/\r\n|\r|\n/', $bank->bank_info),
+            'customer'=> preg_split('/\r\n|\r|\n/', $invoice->agency_detail),
             'company' => (object)[
-                'name' => '株式会社〇〇〇',
-                'postal_code' => '123-4567',
-                'address' => '〇〇県〇〇市〇〇町1－2－3',
-                'phone' => '03-1234-5678',
-                'fax' => '09-1234-5679',
-                'contact' => '△△△△',
-            ],
-            'customer' => (object)[
-                'name' => $invoice->customer_name ?? '客户名称未知',
+                'name' => $company_info->company_name,
+                'postal_code' => $company_info->postal_code,
+                'address' => $company_info->address,
+                'phone' => $company_info->phone_number,
+                'fax' => $company_info->fax_number,
+                'contact' => $invoice->staff->name ?? '',
             ]
         ];
 

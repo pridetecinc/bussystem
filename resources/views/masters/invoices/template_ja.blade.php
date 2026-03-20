@@ -73,7 +73,11 @@
 
     <!-- 2. 客户与公司 -->
     <div class="top-section no-break">
-        <div class="client-name">{{ $customer->name }}</div>
+        <div class="client-name">
+            @foreach($customer as $customerLine)
+                <div class="bank-line">{{ $customerLine }}</div>
+            @endforeach
+        </div>
         <div class="company-info">
             <div class="company-name">{{ $company->name }}</div>
             <div>〒{{ $company->postal_code }}</div>
