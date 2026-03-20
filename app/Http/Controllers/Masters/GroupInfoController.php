@@ -220,6 +220,47 @@ class GroupInfoController extends Controller
         }
     }
 
+    private function checkSameGroupConflicts($groupId)
+    {
+        $busAssignments = BusAssignment::where('group_info_id', $groupId)->get();
+        
+        if ($busAssignments->count() < 2) {
+            return;
+        }
+
+        foreach ($busAssignments as $i => $bus1) {
+            foreach ($busAssignments as $j => $bus2) {
+                if ($i >= $j) continue;
+
+                if ($bus1->vehicle_id && $bus1->vehicle_id === $bus2->vehicle_id) {
+                    $start1 = Carbon::parse($bus1->start_date . ' ' . ($bus1->start_time ?? '00:00:00'));
+                    $end1 = Carbon::parse($bus1->end_date . ' ' . ($bus1->end_time ?? '23:59:59'));
+                    $start2 = Carbon::parse($bus2->start_date . ' ' . ($bus2->start_time ?? '00:00:00'));
+                    $end2 = Carbon::parse($bus2->end_date . ' ' . ($bus2->end_time ?? '23:59:59'));
+
+                    if ($start1->lt($end2) && $end1->gt($start2)) {
+                        $vehicle = Vehicle::find($bus1->vehicle_id);
+                        $vehicleName = $vehicle ? $vehicle->registration_number : '不明';
+                        throw new \Exception("同一グループ内で車両「{$vehicleName}」が運行ID {$bus1->id} と {$bus2->id} で重複しています。");
+                    }
+                }
+
+                if ($bus1->driver_id && $bus1->driver_id === $bus2->driver_id) {
+                    $start1 = Carbon::parse($bus1->start_date . ' ' . ($bus1->start_time ?? '00:00:00'));
+                    $end1 = Carbon::parse($bus1->end_date . ' ' . ($bus1->end_time ?? '23:59:59'));
+                    $start2 = Carbon::parse($bus2->start_date . ' ' . ($bus2->start_time ?? '00:00:00'));
+                    $end2 = Carbon::parse($bus2->end_date . ' ' . ($bus2->end_time ?? '23:59:59'));
+
+                    if ($start1->lt($end2) && $end1->gt($start2)) {
+                        $driver = Driver::find($bus1->driver_id);
+                        $driverName = $driver ? $driver->name : '不明';
+                        throw new \Exception("同一グループ内で運転手「{$driverName}」が運行ID {$bus1->id} と {$bus2->id} で重複しています。");
+                    }
+                }
+            }
+        }
+    }
+
     private function recalculateGroupTotals($groupId)
     {
         $allItineraries = DailyItinerary::where('group_info_id', $groupId)->get();
@@ -1542,6 +1583,10 @@ class GroupInfoController extends Controller
                 }
             }
 
+            if (!$groupInfo->ignore_operation) {
+                $this->checkSameGroupConflicts($groupInfo->id);
+            }
+
             $this->recalculateGroupTotals($groupInfo->id);
 
             $guideIdForGroup = $guideId;
@@ -1769,6 +1814,7 @@ class GroupInfoController extends Controller
                 ]);
             }
 
+            $this->checkSameGroupConflicts($groupInfo->id);
             $this->recalculateGroupTotals($groupInfo->id);
 
             DB::commit();
@@ -1829,6 +1875,7 @@ class GroupInfoController extends Controller
                 $newItinerary->save();
             }
 
+            $this->checkSameGroupConflicts($groupInfo->id);
             $this->recalculateGroupTotals($groupInfo->id);
             $this->recalculateGroupTotals($sourceGroup->id);
 
@@ -1929,6 +1976,7 @@ class GroupInfoController extends Controller
             
             $sourceBus->delete();
 
+            $this->checkSameGroupConflicts($groupInfo->id);
             $this->recalculateGroupTotals($groupInfo->id);
             
             DB::commit();
@@ -2204,6 +2252,38 @@ class GroupInfoController extends Controller
                 }
             }
             
+            $otherBusAssignments = BusAssignment::where('group_info_id', $groupInfo->id)
+                ->where('id', '!=', $busAssignment->id)
+                ->get();
+
+            foreach ($otherBusAssignments as $otherBus) {
+                if ($busAssignment->vehicle_id && $busAssignment->vehicle_id === $otherBus->vehicle_id) {
+                    $start1 = Carbon::parse($busAssignment->start_date . ' ' . ($busAssignment->start_time ?? '00:00:00'));
+                    $end1 = Carbon::parse($busAssignment->end_date . ' ' . ($busAssignment->end_time ?? '23:59:59'));
+                    $start2 = Carbon::parse($otherBus->start_date . ' ' . ($otherBus->start_time ?? '00:00:00'));
+                    $end2 = Carbon::parse($otherBus->end_date . ' ' . ($otherBus->end_time ?? '23:59:59'));
+
+                    if ($start1->lt($end2) && $end1->gt($start2)) {
+                        $vehicle = Vehicle::find($busAssignment->vehicle_id);
+                        $vehicleName = $vehicle ? $vehicle->registration_number : '不明';
+                        throw new \Exception("同一グループ内で車両「{$vehicleName}」が運行ID {$otherBus->id} と重複しています。");
+                    }
+                }
+
+                if ($busAssignment->driver_id && $busAssignment->driver_id === $otherBus->driver_id) {
+                    $start1 = Carbon::parse($busAssignment->start_date . ' ' . ($busAssignment->start_time ?? '00:00:00'));
+                    $end1 = Carbon::parse($busAssignment->end_date . ' ' . ($busAssignment->end_time ?? '23:59:59'));
+                    $start2 = Carbon::parse($otherBus->start_date . ' ' . ($otherBus->start_time ?? '00:00:00'));
+                    $end2 = Carbon::parse($otherBus->end_date . ' ' . ($otherBus->end_time ?? '23:59:59'));
+
+                    if ($start1->lt($end2) && $end1->gt($start2)) {
+                        $driver = Driver::find($busAssignment->driver_id);
+                        $driverName = $driver ? $driver->name : '不明';
+                        throw new \Exception("同一グループ内で運転手「{$driverName}」が運行ID {$otherBus->id} と重複しています。");
+                    }
+                }
+            }
+            
             $guideIdForUpdate = $request->guide_id ?? $busAssignment->guide_id;
             $guideNameForUpdate = '';
             if ($guideIdForUpdate) {
@@ -2286,6 +2366,7 @@ class GroupInfoController extends Controller
                 ]);
             }
 
+            $this->checkSameGroupConflicts($groupInfo->id);
             $this->recalculateGroupTotals($groupInfo->id);
             
             DB::commit();
