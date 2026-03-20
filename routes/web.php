@@ -113,6 +113,17 @@ Route::prefix('masters')->name('masters.')->group(function () {
             Route::put('/{id}', [BusAssignmentController::class, 'update'])->name('update');
             Route::delete('/{id}', [BusAssignmentController::class, 'destroy'])->name('destroy');
         });
+
+        Route::resource('currencies', CurrencyController::class)->names('currencies');
+        Route::resource('invoices', InvoiceController::class)->names('invoices');
+        Route::get('invoices/{invoice}/pdf', [InvoiceController::class, 'generatePdf'])->name('invoices.pdf');
+        Route::post('invoices/{invoice}/toggle-lock', [InvoiceController::class, 'toggleLock'])->name('invoices.toggle-lock');
+        Route::post('invoices/bulk-toggle-lock', [InvoiceController::class, 'bulkToggleLock'])->name('invoices.bulk-toggle-lock');
+        Route::post('invoices/bulk-pdf', [InvoiceController::class, 'bulkPdf'])->name('invoices.bulk-pdf');
+        Route::get('/invoices/{invoice}/pdf-status', [InvoiceController::class, 'checkPdfStatus']);
+        Route::post('reconcile/batch', [PaymentController::class, 'storeBatch'])->name('invoices.reconcile.batch.store');
+        Route::resource('payments', PaymentController::class)->names('payments');
+        Route::resource('products', ProductController::class)->names('products');
     });
 });
 
