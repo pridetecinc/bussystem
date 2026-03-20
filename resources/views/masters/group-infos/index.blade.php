@@ -15,12 +15,12 @@
     <div class="bg-light p-2 mb-2 rounded" style="background-color: #F3F4F6 !important; border: 1px solid #E5E7EB;">
         <form method="GET" action="{{ route('masters.group-infos.index') }}" class="row g-2">
             <div class="col-auto">
-                <input type="date" name="date_from" value="{{ request('date_from') }}" 
-                       class="form-control form-control-sm" style="width: 140px; border-color: #E5E7EB;" placeholder="開始日">
+                <input type="text" name="date_from" value="{{ request('date_from', \Carbon\Carbon::today()->format('Y-m-d')) }}" 
+                       class="form-control form-control-sm datepicker-3months" style="width: 140px; border-color: #E5E7EB;" placeholder="YYYY-MM-DD" readonly>
             </div>
             <div class="col-auto">
-                <input type="date" name="date_to" value="{{ request('date_to') }}" 
-                       class="form-control form-control-sm" style="width: 140px; border-color: #E5E7EB;" placeholder="終了日">
+                <input type="text" name="date_to" value="{{ request('date_to', \Carbon\Carbon::today()->format('Y-m-d')) }}" 
+                       class="form-control form-control-sm datepicker-3months" style="width: 140px; border-color: #E5E7EB;" placeholder="YYYY-MM-DD" readonly>
             </div>
             <div class="col">
                 <input type="text" name="search" value="{{ request('search') }}" 
@@ -57,13 +57,13 @@
                     <th class="text-center px-2 py-1" style="color: #374151; font-weight: 500;">備考</th>
                     <th class="text-center px-2 py-1" style="color: #374151; font-weight: 500; width: 100px;">操作</th>
                 </tr>
-            </thead>
+             </thead>
             <tbody>
                 @forelse($groupInfos as $index => $groupInfo)
                 <tr>
                     <td class="text-center px-2 py-1 align-middle">
                         {{ $groupInfos->firstItem() + $index }}
-                    </td>
+                     </td>
                     <td class="text-center px-2 py-1 align-middle">
                         @if($groupInfo->start_date)
                             {{ \Carbon\Carbon::parse($groupInfo->start_date)->format('Y/m/d') }}
@@ -71,7 +71,7 @@
                                 {{ substr($groupInfo->start_time, 0, 5) }}
                             @endif
                         @endif
-                    </td>
+                     </td>
                     <td class="text-center px-2 py-1 align-middle">
                         @if($groupInfo->end_date)
                             {{ \Carbon\Carbon::parse($groupInfo->end_date)->format('Y/m/d') }}
@@ -79,13 +79,13 @@
                                 {{ substr($groupInfo->end_time, 0, 5) }}
                             @endif
                         @endif
-                    </td>
+                     </td>
                     <td class="text-center px-2 py-1 align-middle">
                         {{ $groupInfo->agency ?? '' }}
-                    </td>
+                     </td>
                     <td class="text-center px-2 py-1 align-middle">
                         {{ $groupInfo->reservation_status ?? '不明' }}
-                    </td>
+                     </td>
                     <td class="text-center px-2 py-1 align-middle">
                         @php
                             $totalPax = ($groupInfo->adult_count ?? 0) + 
@@ -94,24 +94,24 @@
                                        ($groupInfo->other_count ?? 0);
                         @endphp
                         {{ $totalPax }}
-                    </td>
+                     </td>
                     <td class="text-center px-2 py-1 align-middle">
                         <a href="{{ route('masters.bus-assignments.show', $groupInfo->id) }}" 
                            style="color: #2563eb; text-decoration: none;">
                             詳細
                         </a>
-                    </td>
+                     </td>
                     <td class="text-center px-2 py-1 align-middle">
                         {{ $groupInfo->vehicle ?? '--' }}
-                    </td>
+                     </td>
                     <td class="text-center px-2 py-1 align-middle">
                         --
-                    </td>
+                     </td>
                     <td class="text-center px-2 py-1 align-middle" style="max-width: 150px;">
                         <span class="text-truncate d-inline-block" style="max-width: 120px;" title="{{ $groupInfo->remarks ?? '' }}">
                             {{ $groupInfo->remarks ?? '--' }}
                         </span>
-                    </td>
+                     </td>
                     <td class="text-center px-2 py-1 align-middle">
                         <a href="{{ route('masters.group-infos.edit', $groupInfo->id) }}" 
                            style="color: #2563eb; text-decoration: none; margin-right: 8px;">
@@ -121,17 +121,17 @@
                            style="color: #dc3545; text-decoration: none;">
                             削除
                         </a>
-                    </td>
-                </tr>
+                     </td>
+                 </tr>
                 @empty
                 <tr>
                     <td colspan="11" class="text-center py-3" style="color: #9ca3af;">
                         グループデータがありません
-                    </td>
-                </tr>
+                     </td>
+                 </tr>
                 @endforelse
             </tbody>
-        </table>
+         </table>
     </div>
 
     <div class="d-flex justify-content-between align-items-center mt-2">
@@ -260,6 +260,208 @@ small {
 .operation-links a:last-child {
     margin-right: 0;
 }
+
+.flatpickr-calendar {
+    border: 1px solid #ddd !important;
+    border-radius: 6px !important;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12) !important;
+    font-family: inherit !important;
+    font-size: 11px !important;
+    overflow: hidden !important;
+}
+
+.flatpickr-calendar.multiMonth {
+    width: 516px !important;
+    max-width: 95vw !important;
+}
+
+.flatpickr-calendar.multiMonth .flatpickr-innerContainer {
+    width: 100% !important;
+}
+
+.flatpickr-calendar.multiMonth .flatpickr-months {
+    display: flex !important;
+}
+
+.flatpickr-calendar.multiMonth .flatpickr-month {
+    flex: 1 !important;
+}
+
+.flatpickr-calendar.multiMonth .flatpickr-month:not(:last-child) {
+    border-right: 1px solid #e9ecef !important;
+}
+
+.flatpickr-months {
+    background: linear-gradient(135deg, #1f3241 0%, #2d4a5e 100%) !important;
+    border-radius: 6px 6px 0 0 !important;
+    display: flex !important;
+}
+
+.flatpickr-month {
+    height: 28px !important;
+    padding-right: 0 !important;
+}
+
+.flatpickr-current-month {
+    padding: 3px 0 0 0 !important;
+}
+
+.flatpickr-current-month .flatpickr-monthDropdown-months {
+    font-weight: 600 !important;
+    color: #fff !important;
+    font-size: 11px !important;
+}
+
+.flatpickr-current-month .numInputWrapper span {
+    color: #fff !important;
+}
+
+.flatpickr-current-month input.cur-year {
+    color: #fff !important;
+    font-weight: 600 !important;
+    font-size: 11px !important;
+}
+
+.flatpickr-months .flatpickr-month,
+.flatpickr-months .flatpickr-next-month,
+.flatpickr-months .flatpickr-prev-month {
+    color: #fff !important;
+    fill: #fff !important;
+}
+
+.flatpickr-months .flatpickr-next-month:hover svg,
+.flatpickr-months .flatpickr-prev-month:hover svg {
+    fill: #ffc107 !important;
+}
+
+.flatpickr-months .flatpickr-next-month,
+.flatpickr-months .flatpickr-prev-month {
+    width: 20px !important;
+    height: 20px !important;
+    padding: 2px !important;
+}
+
+.flatpickr-weekdays {
+    background: #f8f9fa !important;
+    border-bottom: 1px solid #e9ecef !important;
+    margin: 0 !important;
+}
+
+.flatpickr-weekday {
+    color: #495057 !important;
+    font-weight: 600 !important;
+    font-size: 10px !important;
+    padding: 1px 0 !important;
+}
+
+.flatpickr-days {
+    border: none !important;
+    padding: 0 !important;
+}
+
+.flatpickr-day {
+    color: #374151 !important;
+    border-radius: 2px !important;
+    margin: 0 !important;
+    border: 1px solid transparent !important;
+    max-width: 24px !important;
+    width: 24px !important;
+    height: 22px !important;
+    line-height: 20px !important;
+    font-size: 10px !important;
+}
+
+.flatpickr-day:hover {
+    background: #e0f2fe !important;
+    border-color: #2563eb !important;
+    color: #2563eb !important;
+}
+
+.flatpickr-day.selected {
+    background: #2563eb !important;
+    border-color: #2563eb !important;
+    color: #fff !important;
+    font-weight: 600 !important;
+}
+
+.flatpickr-day.selected:hover {
+    background: #1d4ed8 !important;
+}
+
+.flatpickr-day.startRange,
+.flatpickr-day.endRange {
+    background: #2563eb !important;
+    border-color: #2563eb !important;
+    color: #fff !important;
+}
+
+.flatpickr-day.inRange {
+    background: #dbeafe !important;
+    border-color: transparent !important;
+    color: #1e40af !important;
+}
+
+.flatpickr-day.today {
+    border-color: #ffc107 !important;
+    background: #fffbeb !important;
+    color: #374151 !important;
+}
+
+.flatpickr-day.today:hover {
+    background: #fef3c7 !important;
+    border-color: #f59e0b !important;
+    color: #374151 !important;
+}
+
+.flatpickr-months .flatpickr-month {
+    background: transparent !important;
+}
+
+span.flatpickr-weekday {
+    background: #f8f9fa !important;
+}
+
+.flatpickr-calendar.showTimeInput.hasTime .flatpickr-time {
+    border-top: 1px solid #e9ecef !important;
+}
+
+.flatpickr-calendar.multiMonth .dayContainer {
+    width: 168px !important;
+    min-width: 168px !important;
+    max-width: 168px !important;
+    position: relative !important;
+}
+
+.month-wrapper {
+    flex: 1 !important;
+    position: relative !important;
+    padding: 2px !important;
+    height: 135px !important;
+}
+
+.month-wrapper:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background-color: #e9ecef;
+}
+
+.flatpickr-calendar.multiMonth .flatpickr-days {
+    display: flex !important;
+    position: relative;
+    width: 514px !important;
+}
+
+.flatpickr-calendar.multiMonth .flatpickr-days .dayContainer {
+    padding: 0 !important;
+}
+
+.flatpickr-calendar.multiMonth .flatpickr-rContainer {
+    width: 514px !important;
+}
 </style>
 
 <script>
@@ -328,6 +530,34 @@ document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape' && document.getElementById('iframeModal').style.display === 'block') {
         closeIframeModal();
     }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    flatpickr('.datepicker-3months', {
+        locale: 'ja',
+        dateFormat: 'Y-m-d',
+        showMonths: 3,
+        allowInput: true,
+        clickOpens: true,
+        mode: 'single',
+        disableMobile: true,
+        wrap: false,
+        onOpen: function(selectedDates, dateStr, instance) {
+            instance.calendarContainer.style.zIndex = '9999';
+        },
+        onReady: function(selectedDates, dateStr, instance) {
+            const daysContainer = instance.daysContainer;
+            if (daysContainer) {
+                const dayContainers = daysContainer.querySelectorAll('.dayContainer');
+                dayContainers.forEach(function(dayContainer) {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'month-wrapper';
+                    dayContainer.parentNode.insertBefore(wrapper, dayContainer);
+                    wrapper.appendChild(dayContainer);
+                });
+            }
+        }
+    });
 });
 </script>
 @endsection

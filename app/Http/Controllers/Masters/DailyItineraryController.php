@@ -61,7 +61,7 @@ class DailyItineraryController extends Controller
 
     public function create()
     {
-        $groupInfos = GroupInfo::select(['id', 'key_uuid', 'agency', 'group_name', 'start_date'])
+        $groupInfos = GroupInfo::select(['id', 'group_name', 'agency', 'start_date'])
             ->orderBy('created_at', 'desc')
             ->get();
         
@@ -76,7 +76,7 @@ class DailyItineraryController extends Controller
     {
         try {
             $validated = $request->validate([
-                'key_uuid' => 'required|string|max:36|exists:group_info,key_uuid',
+                'group_info_id' => 'required|integer|exists:group_info,id',
                 'date' => 'required|date',
                 'time_start' => 'nullable|date_format:H:i',
                 'time_end' => 'nullable|date_format:H:i|after:time_start',
@@ -84,8 +84,6 @@ class DailyItineraryController extends Controller
                 'start_location' => 'nullable|string|max:200',
                 'end_location' => 'nullable|string|max:200',
                 'accommodation' => 'nullable|boolean',
-                'bus_ass_uuid' => 'nullable|string|max:36|exists:bus_assignment,key_uuid',
-                'yoyaku_uuid' => 'nullable|string|max:36',
                 'remarks' => 'nullable|string',
                 
                 'vehicles' => 'nullable|array',
@@ -112,7 +110,7 @@ class DailyItineraryController extends Controller
                 $validated['time_end'] = $validated['time_end'] . ':00';
             }
 
-            $groupInfo = GroupInfo::where('key_uuid', $validated['key_uuid'])->first();
+            $groupInfo = GroupInfo::find($validated['group_info_id']);
             $ignoreOperation = $groupInfo && $groupInfo->ignore_operation;
 
             if (!$ignoreOperation && !empty($validated['vehicles']) && is_array($validated['vehicles'])) {
@@ -201,32 +199,18 @@ class DailyItineraryController extends Controller
     {
         $dailyItinerary = DailyItinerary::with([
             'groupInfo',
-            'busAssignments.vehicle.vehicleType',
-            'busAssignments.vehicle.vehicleModel',
-            'busAssignments.vehicle.branch',
-            'busAssignments.driver'
+            'busAssignment.vehicle.vehicleType',
+            'busAssignment.vehicle.vehicleModel',
+            'busAssignment.vehicle.branch',
+            'busAssignment.driver'
         ])->findOrFail($id);
         
-    if ($dailyItinerary->busAssignments->count() > 0) {
-        foreach ($dailyItinerary->busAssignments as $assignment) {
-            \Log::info('车辆分配ID: ' . $assignment->id);
-            \Log::info('车辆ID: ' . $assignment->vehicle_id);
-            \Log::info('车辆是否存在: ' . ($assignment->vehicle ? '是' : '否'));
-            if ($assignment->vehicle) {
-                \Log::info('车牌号: ' . $assignment->vehicle->registration_number);
-                \Log::info('定员: ' . $assignment->vehicle->seating_capacity);
-            }
-        }
-    } else {
-        \Log::info('没有找到车辆分配数据');
-    }
-        
-        $groupItineraries = DailyItinerary::where('key_uuid', $dailyItinerary->key_uuid)
+        $groupItineraries = DailyItinerary::where('group_info_id', $dailyItinerary->group_info_id)
             ->orderBy('date')
             ->orderBy('time_start')
             ->get();
             
-        $groupInfos = GroupInfo::select(['id', 'key_uuid', 'group_name', 'agency'])
+        $groupInfos = GroupInfo::select(['id', 'group_name', 'agency'])
             ->orderBy('group_name')
             ->get();
         
@@ -276,8 +260,7 @@ class DailyItineraryController extends Controller
             }
             
             $rules = [
-                'key_uuid' => 'required|string|max:36',
-                'yoyaku_uuid' => 'nullable|string|max:36',
+                'group_info_id' => 'required|integer|exists:group_info,id',
                 'date' => 'required|date',
                 'time_start' => 'required|date_format:H:i',
                 'time_end' => 'required|date_format:H:i|after:time_start',
@@ -286,7 +269,6 @@ class DailyItineraryController extends Controller
                 'end_location' => 'nullable|string|max:200',
                 'accommodation' => 'nullable|boolean',
                 'remarks' => 'nullable|string',
-                'bus_ass_uuid' => 'nullable|string|max:36',
                 
                 'vehicles' => 'nullable|array',
                 'vehicles.*.id' => 'nullable|integer|exists:bus_assignment,id',
@@ -301,7 +283,7 @@ class DailyItineraryController extends Controller
             ];
             
             $messages = [
-                'key_uuid.required' => 'UUIDは必須です。',
+                'group_info_id.required' => '団体は必須です。',
                 'date.required' => '日付は必須です。',
                 'time_start.required' => '開始時刻は必須です。',
                 'time_start.date_format' => '開始時刻はHH:MM形式で入力してください。',
@@ -333,7 +315,7 @@ class DailyItineraryController extends Controller
                 $validated['time_end'] = $validated['time_end'] . ':00';
             }
 
-            $groupInfo = GroupInfo::where('key_uuid', $validated['key_uuid'])->first();
+            $groupInfo = GroupInfo::find($validated['group_info_id']);
             $ignoreOperation = $groupInfo && $groupInfo->ignore_operation;
 
             if (!$ignoreOperation && !empty($validated['vehicles']) && is_array($validated['vehicles'])) {
@@ -473,68 +455,67 @@ class DailyItineraryController extends Controller
             return ($a['display_order'] ?? 0) - ($b['display_order'] ?? 0);
         });
         
-        $existingAssignments = BusAssignment::where('daily_itinerary_id', $dailyItinerary->id)->get();
-        $existingIds = $existingAssignments->pluck('id')->toArray();
-        $processedIds = [];
+        $firstVehicle = $vehicles[0] ?? null;
         
-        foreach ($vehicles as $index => $vehicle) {
-            $existingAssignment = null;
-            if (isset($vehicle['id']) && $vehicle['id']) {
-                $existingAssignment = BusAssignment::find($vehicle['id']);
-            }
-            
-            $busAssignmentData = [
-                'daily_itinerary_id' => $dailyItinerary->id,
-                'yoyaku_uuid' => $dailyItinerary->yoyaku_uuid ?? $dailyItinerary->key_uuid,
-                'vehicle_id' => $vehicle['vehicle_id'] ?? null,
-                'driver_id' => $vehicle['driver_id'] ?? null,
-                'start_date' => $dailyItinerary->date,
-                'start_time' => $dailyItinerary->time_start,
-                'end_date' => $dailyItinerary->date,
-                'end_time' => $dailyItinerary->time_end,
-                'lock_arrangement' => 0,
-                'status_sent' => 0,
-                'status_finalized' => 0,
-                'count_daily' => 1,
-                'updated_by' => $userId,
-                'updated_at' => now(),
-            ];
-            
-            if ($existingAssignment) {
-                $busAssignmentData['key_uuid'] = $existingAssignment->key_uuid;
-                $existingAssignment->update($busAssignmentData);
-                $processedIds[] = $existingAssignment->id;
-                
-                if ($index === 0) {
-                    $dailyItinerary->update([
-                        'bus_ass_uuid' => $existingAssignment->key_uuid,
-                        'vehicle' => $vehicle['vehicle_name'] ?? null,
-                        'driver' => $vehicle['driver_name'] ?? null,
-                    ]);
-                }
-                
-            } else {
-                $busAssignmentUuid = (string) Str::uuid();
-                $busAssignmentData['key_uuid'] = $busAssignmentUuid;
-                $busAssignmentData['created_by'] = $userId;
-                
-                $newAssignment = BusAssignment::create($busAssignmentData);
-                $processedIds[] = $newAssignment->id;
-                
-                if ($index === 0) {
-                    $dailyItinerary->update([
-                        'bus_ass_uuid' => $busAssignmentUuid,
-                        'vehicle' => $vehicle['vehicle_name'] ?? null,
-                        'driver' => $vehicle['driver_name'] ?? null,
-                    ]);
-                }
-            }
+        if (!$firstVehicle) {
+            return;
         }
         
-        $idsToDelete = array_diff($existingIds, $processedIds);
-        if (!empty($idsToDelete)) {
-            BusAssignment::whereIn('id', $idsToDelete)->delete();
+        $existingAssignment = null;
+        if ($dailyItinerary->bus_assignment_id) {
+            $existingAssignment = BusAssignment::find($dailyItinerary->bus_assignment_id);
         }
+        
+        $busAssignmentData = [
+            'group_info_id' => $dailyItinerary->group_info_id,
+            'vehicle_id' => $firstVehicle['vehicle_id'] ?? null,
+            'driver_id' => $firstVehicle['driver_id'] ?? null,
+            'start_date' => $dailyItinerary->date,
+            'start_time' => $dailyItinerary->time_start,
+            'end_date' => $dailyItinerary->date,
+            'end_time' => $dailyItinerary->time_end,
+            'lock_arrangement' => 0,
+            'status_sent' => 0,
+            'status_finalized' => 0,
+            'count_daily' => 1,
+            'vehicle_number' => $firstVehicle['vehicle_number'] ?? null,
+            'step_car' => $firstVehicle['step_car'] ?? null,
+            'adult_count' => $firstVehicle['adult_count'] ?? 0,
+            'child_count' => $firstVehicle['child_count'] ?? 0,
+            'guide_count' => $firstVehicle['guide_count'] ?? 0,
+            'other_count' => $firstVehicle['other_count'] ?? 0,
+            'luggage_count' => $firstVehicle['luggage_count'] ?? 0,
+            'vehicle_type_spec_check' => $firstVehicle['vehicle_type_spec_check'] ?? false,
+            'temporary_driver' => $firstVehicle['temporary_driver'] ?? false,
+            'representative' => $firstVehicle['representative'] ?? null,
+            'representative_phone' => $firstVehicle['representative_phone'] ?? null,
+            'attention' => $firstVehicle['attention'] ?? null,
+            'operation_remarks' => $firstVehicle['operation_remarks'] ?? null,
+            'operation_memo' => $firstVehicle['operation_memo'] ?? null,
+            'operation_basic_remarks' => $firstVehicle['operation_basic_remarks'] ?? null,
+            'doc_remarks' => $firstVehicle['doc_remarks'] ?? null,
+            'history_remarks' => $firstVehicle['history_remarks'] ?? null,
+            'vehicle_index' => $firstVehicle['vehicle_index'] ?? 1,
+            'updated_by' => $userId,
+            'updated_at' => now(),
+        ];
+        
+        if ($existingAssignment) {
+            $existingAssignment->update($busAssignmentData);
+            $assignmentId = $existingAssignment->id;
+        } else {
+            $busAssignmentData['created_by'] = $userId;
+            $busAssignmentData['created_at'] = now();
+            
+            $newAssignment = BusAssignment::create($busAssignmentData);
+            $assignmentId = $newAssignment->id;
+        }
+        
+        $dailyItinerary->update([
+            'bus_assignment_id' => $assignmentId,
+            'vehicle' => $firstVehicle['vehicle_name'] ?? null,
+            'driver' => $firstVehicle['driver_name'] ?? null,
+        ]);
     }
 
     private function processVehicleData($vehicles)
@@ -573,16 +554,18 @@ class DailyItineraryController extends Controller
             DB::beginTransaction();
 
             $dailyItinerary = DailyItinerary::findOrFail($id);
-            $groupKeyUuid = $dailyItinerary->key_uuid;
+            $groupId = $dailyItinerary->group_info_id;
             
-            $itineraryCount = DailyItinerary::where('key_uuid', $groupKeyUuid)->count();
+            $itineraryCount = DailyItinerary::where('group_info_id', $groupId)->count();
             
-            BusAssignment::where('daily_itinerary_id', $dailyItinerary->id)->delete();
+            if ($dailyItinerary->bus_assignment_id) {
+                BusAssignment::where('id', $dailyItinerary->bus_assignment_id)->delete();
+            }
             
             $dailyItinerary->delete();
             
             if ($itineraryCount <= 1) {
-                GroupInfo::where('key_uuid', $groupKeyUuid)->delete();
+                GroupInfo::where('id', $groupId)->delete();
             }
 
             DB::commit();
@@ -604,11 +587,11 @@ class DailyItineraryController extends Controller
         }
     }
 
-    public function byGroup($keyUuid)
+    public function byGroup($id)
     {
-        $groupInfo = GroupInfo::where('key_uuid', $keyUuid)->firstOrFail();
+        $groupInfo = GroupInfo::findOrFail($id);
         
-        $dailyItineraries = DailyItinerary::where('key_uuid', $keyUuid)
+        $dailyItineraries = DailyItinerary::where('group_info_id', $id)
                                           ->orderBy('date', 'asc')
                                           ->orderBy('time_start', 'asc')
                                           ->get();

@@ -42,8 +42,7 @@
     <form method="POST" action="{{ route('masters.daily-itineraries.update', $dailyItinerary->id) }}" id="editForm">
         @csrf
         @method('PUT')
-        <input type="hidden" name="key_uuid" value="{{ $dailyItinerary->key_uuid }}">
-        <input type="hidden" name="yoyaku_uuid" value="{{ $dailyItinerary->yoyaku_uuid ?? '' }}">
+        <input type="hidden" name="group_info_id" value="{{ $dailyItinerary->group_info_id }}">
 
         <div class="card shadow-sm mb-3 itinerary-info-card">
             <div class="card-header py-2 px-3 card-header-bg">
