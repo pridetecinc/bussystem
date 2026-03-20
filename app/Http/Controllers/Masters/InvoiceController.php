@@ -9,6 +9,8 @@ use App\Models\Masters\Currency;
 use App\Models\Masters\InvoiceTaxSummary;
 use App\Models\Masters\Product;
 use App\Models\Masters\Bank;
+use App\Models\Masters\Agency;
+use App\Models\Masters\Staff;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -64,8 +66,9 @@ class InvoiceController extends Controller
         $invoices->appends($request->only(['search', 'billing_title', 'group_id', 'per_page']));
 
         $banks = Bank::where("is_active",1)->get();
+        $agencies = Agency::where("is_active",1)->get();
 
-        return view('masters.invoices.index', compact('invoices', 'groupId','banks'));
+        return view('masters.invoices.index', compact('invoices', 'groupId','banks','agencies'));
     }
 
     public function create(Request $request)
@@ -78,13 +81,21 @@ class InvoiceController extends Controller
         $products = Product::get();
         $banks = Bank::where("is_active",1)->get();
         $currencies = Currency::select('currency_code', 'id')->distinct()->orderBy('currency_code')->get(); 
-        return view('masters.invoices.create', compact('groupId','currencies','products','banks'));
+        $agencies = Agency::where("is_active",1)->get();
+        $staffs = Staff::where("is_active",1)->get();
+        return view('masters.invoices.create', compact('groupId','currencies','products','banks','agencies','staffs'));
     }
 
 public function store(Request $request)
 {
     $validated = $request->validate([
         'group_id' => 'nullable|integer',
+        'staff_id' => 'nullable|integer',
+        'reservation_id' => 'nullable|integer',
+        'is_locked' => 'nullable|integer',
+        'agency_id' => 'required|integer',
+        'agency_detail' => 'required|string|max:250',
+        'operation_date' => 'nullable|date',
         'bank_id' => 'required|integer',
         'billing_title' => 'nullable|string|max:200',
         'tax_mode' => 'required|in:1,2',
@@ -260,8 +271,8 @@ public function store(Request $request)
         $invoiceId = DB::table('invoices')->insertGetId([
             'group_id' => $validated['group_id'],
             'bank_id' => $validated['bank_id'],
+            'is_locked' => $validated['is_locked'],
             'invoice_number' => $this->generateInvoiceNumber(), // 确保该方法存在
-            'customer_id' => 1, // ⚠️ 请根据实际业务替换
             'invoice_date' => $validated['invoice_date'],
             'due_date' => $validated['due_date'],
             'billing_title' => $validated['billing_title'],
@@ -274,11 +285,15 @@ public function store(Request $request)
             'exchange_rate' => $currency->rate_to_jpy,
             'pdf_template_id' => null,
             'pdf_file_path' => null,
-            'is_locked' => 0,
             'type' => $validated['type'],
             'notes' => $validated['notes'],
             'created_at' => now(),
             'updated_at' => now(),
+
+            'agency_id' => $validated['agency_id'],
+            'agency_detail' => $validated['agency_detail'],
+            'operation_date' => $validated['operation_date'],
+            'reservation_id' => $validated['reservation_id'],
         ]);
 
         // === 第五步：插入 invoice_items（仅存原始输入，不参与税务计算）===
@@ -368,7 +383,9 @@ public function store(Request $request)
         $items = InvoiceItem::where('invoice_id', $invoice->id)->get();
         $taxSummary = DB::table('invoice_tax_summary')->where('invoice_id', $invoice->id)->get();
         $banks = Bank::where("is_active",1)->get();
-        return view('masters.invoices.show', compact('invoice', 'groupId','items','banks'));
+        $agencies = Agency::where("is_active",1)->get();
+        $staffs = Staff::where("is_active",1)->get();
+        return view('masters.invoices.show', compact('invoice', 'groupId','items','banks','agencies','staffs'));
     }
 
     public function edit(Request $request, $id)
@@ -376,15 +393,13 @@ public function store(Request $request)
         $groupId = $request->query('group_id');
 
         $invoice = Invoice::findOrFail($id);
-        if($invoice->is_locked){
-            return redirect()->route('masters.invoices.index', ['group_id' => $groupId])
-                ->with('error', 'この請求書は編集できません。');
-        }
         $items = InvoiceItem::where('invoice_id', $invoice->id)->get();
         $currencies = Currency::select('currency_code', 'id')->distinct()->orderBy('currency_code')->get();
         $products = Product::get();
         $banks = Bank::where("is_active",1)->get();
-        return view('masters.invoices.edit', compact('invoice', 'groupId','items','currencies','products','banks'));
+        $agencies = Agency::where("is_active",1)->get();
+        $staffs = Staff::where("is_active",1)->get();
+        return view('masters.invoices.edit', compact('invoice', 'groupId','items','currencies','products','banks','agencies','staffs'));
     }
 
     public function update(Request $request, int $id)
@@ -398,6 +413,12 @@ public function store(Request $request)
         
         // === 1. 验证输入（与 store 一致）===
         $validated = $request->validate([
+            'reservation_id' => 'nullable|integer',
+            'agency_id' => 'required|integer',
+            'staff_id' => 'nullable|integer',
+            'is_locked' => 'nullable|integer',
+            'agency_detail' => 'required|string|max:250',
+            'operation_date' => 'nullable|date',
             'group_id' => 'nullable|integer',
             'bank_id' => 'required|integer',
             
@@ -528,7 +549,7 @@ public function store(Request $request)
             DB::table('invoices')->where('id', $id)->update([
                 'group_id' => $validated['group_id'],
                 'bank_id' => $validated['bank_id'],
-                'customer_id' => 1, 
+                'is_locked' => $validated['is_locked'],
                 'type' => $validated['type'],
                 'invoice_date' => $validated['invoice_date'],
                 'due_date' => $validated['due_date'],
@@ -543,6 +564,11 @@ public function store(Request $request)
                 'pdf_file_path' => '',
                 'notes' => $validated['notes'],
                 'updated_at' => now(),
+                'reservation_id' => $validated['reservation_id'],
+                'agency_id' => $validated['agency_id'],
+                'agency_detail' => $validated['agency_detail'],
+                'operation_date' => $validated['operation_date'],
+                'staff_id' => $validated['staff_id'],
             ]);
 
             // === 7. 删除旧的明细和汇总 ===
