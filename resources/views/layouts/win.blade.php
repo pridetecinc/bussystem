@@ -14,7 +14,7 @@
     
     <script src="{{ asset('js/date-range-picker.js') }}"></script>
     <link rel="stylesheet" href="{{ asset('css/datepicker.css') }}">
-    
+
     <style>
     body {
         background-color: #F3F4F6 !important;
