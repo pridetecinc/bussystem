@@ -12,6 +12,10 @@
     </title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.0/font/bootstrap-icons.min.css">
+    
+    <script src="{{ asset('js/date-range-picker.js') }}"></script>
+    <link rel="stylesheet" href="{{ asset('css/datepicker.css') }}">
+    
     <style>
         .navbar {
             background-color: #212529;
@@ -165,11 +169,10 @@
                             <i class="bi bi-cash-stack me-1"></i>売上管理
                         </a>
                         <ul class="dropdown-menu shadow">
-                            @if($isAdmin || $isOperationsManager || $isManager)
-                            <li><a class="dropdown-item" href="{{ route('masters.products.index') }}">品名</a></li>
-                            <li><a class="dropdown-item" href="{{ route('masters.currencies.index') }}">货币汇率</a></li>
-                            <li><a class="dropdown-item" href="{{ route('masters.invoices.index', ['group_id' => 12]) }}">請求管理</a></li>
-                            <li><a class="dropdown-item" href="{{ route('masters.payments.index') }}">入金管理</a></li>
+                    @if($isAdmin || $isOperationsManager || $isManager)
+                            <li><a class="dropdown-item" href="{{ route('masters.fees.index') }}">請求管理</a></li>
+                            <li><a class="dropdown-item" href="{{ route('masters.fees.index') }}">請求詳細</a></li>
+                            <li><a class="dropdown-item" href="{{ route('masters.fees.index') }}">入金管理</a></li>
                             @endif
                         </ul>
                     </li>

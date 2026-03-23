@@ -33,11 +33,6 @@ use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\UserController;
 
-use App\Http\Controllers\Masters\CurrencyController;
-use App\Http\Controllers\Masters\InvoiceController;
-use App\Http\Controllers\Masters\PaymentController;
-use App\Http\Controllers\Masters\ProductController;
-
 Route::get('/', function() {
     return redirect('/masters');
 })->name('home');
@@ -90,6 +85,7 @@ Route::prefix('masters')->name('masters.')->group(function () {
         Route::post('group-infos/{id}/merge-by-id', [GroupInfoController::class, 'mergeItinerariesById'])->name('group-infos.merge-by-id');
         Route::post('group-infos/{id}/update-bus-assignment', [GroupInfoController::class, 'updateBusAssignment'])->name('group-infos.update-bus-assignment');
         Route::put('group-infos/{id}', [GroupInfoController::class, 'update'])->name('group-infos.update');
+        Route::post('group-infos/{id}/delete-itinerary', [GroupInfoController::class, 'deleteItinerary'])->name('group-infos.delete-itinerary');
         
         
         Route::prefix('daily-itineraries')->name('daily-itineraries.')->group(function () {
@@ -118,18 +114,6 @@ Route::prefix('masters')->name('masters.')->group(function () {
             Route::put('/{id}', [BusAssignmentController::class, 'update'])->name('update');
             Route::delete('/{id}', [BusAssignmentController::class, 'destroy'])->name('destroy');
         });
-
-        Route::resource('currencies', CurrencyController::class)->names('currencies');
-        Route::resource('invoices', InvoiceController::class)->names('invoices');
-        Route::get('invoices/{invoice}/pdf', [InvoiceController::class, 'generatePdf'])->name('invoices.pdf');
-        Route::post('invoices/{invoice}/toggle-lock', [InvoiceController::class, 'toggleLock'])->name('invoices.toggle-lock');
-        Route::post('invoices/bulk-toggle-lock', [InvoiceController::class, 'bulkToggleLock'])->name('invoices.bulk-toggle-lock');
-        Route::post('invoices/bulk-pdf', [InvoiceController::class, 'bulkPdf'])->name('invoices.bulk-pdf');
-        Route::get('/invoices/{invoice}/pdf-status', [InvoiceController::class, 'checkPdfStatus']);
-        Route::post('reconcile/batch', [PaymentController::class, 'storeBatch'])->name('invoices.reconcile.batch.store');
-        Route::get('invoices/{invoice}/duplicate', [InvoiceController::class, 'duplicate'])->name('invoices.duplicate');
-        Route::resource('payments', PaymentController::class)->names('payments');
-        Route::resource('products', ProductController::class)->names('products');
     });
 });
 
