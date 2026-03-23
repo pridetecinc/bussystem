@@ -289,6 +289,7 @@ public function store(Request $request)
             'notes' => $validated['notes'],
             'created_at' => now(),
             'updated_at' => now(),
+            'staff_id' => $validated['staff_id'],
 
             'agency_id' => $validated['agency_id'],
             'agency_detail' => $validated['agency_detail'],
@@ -1017,6 +1018,51 @@ public function store(Request $request)
         return response()->json([
             'ready' => false
         ]);
+    }
+
+    public function duplicate(Request $request, $id)
+    {
+        // 1. 执行事务，并将结果赋值给 $result 变量
+        $group_id=DB::transaction(function () use ($id, $request) {
+            // 获取原始数据
+            $originalInvoice = Invoice::findOrFail($id);
+            $originalItems = InvoiceItem::where('invoice_id', $originalInvoice->id)->get();
+            $originalTaxSummaries = InvoiceTaxSummary::where('invoice_id', $originalInvoice->id)->get();
+
+            // 复制主表
+            $newInvoice = $originalInvoice->replicate();
+            
+            // 修改字段
+            $newInvoice->invoice_number = $this->generateInvoiceNumber();
+            $newInvoice->paid_amount = 0;
+            $newInvoice->payment_status = 1; // 确认 1 代表你想要的状态（通常是未支付/部分支付）
+            
+            $newInvoice->save();
+
+            // 复制明细
+            foreach ($originalItems as $item) {
+                $newItem = $item->replicate();
+                $newItem->invoice_id = $newInvoice->id; 
+                $newItem->save();
+            }
+
+            // 复制税务汇总
+            foreach ($originalTaxSummaries as $tax) {
+                $newTax = $tax->replicate();
+                $newTax->invoice_id = $newInvoice->id; 
+                $newTax->save();
+            }
+            return $originalInvoice->group_id; 
+
+        });
+
+        // 2.由控制器方法返回事务的结果
+        return redirect()
+            ->route('masters.invoices.index', ['group_id' => $group_id])
+            ->with([
+                'success' => '請求書のコピーが完了し、新規データとして保存されました。',
+                'alert-type' => 'success'
+            ]);
     }
 
 }

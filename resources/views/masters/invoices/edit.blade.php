@@ -33,20 +33,19 @@
                     <!-- 3. 【修改后】入金 (记录付款) - 触发模态框 -->
                     @if($invoice->total_amount > $invoice->paid_amount)
                         <button type="button" 
-                                class="btn btn-primary btn-sm"
-                                data-bs-toggle="modal" 
-                                data-bs-target="#bulkReconcileModal" {{-- 注意：ID 必须是 bulkReconcileModal --}}
+                                id="btn-bulk-reconcile"  {{-- 1. 添加 ID，让组件脚本能找到它 --}}
+                                class="btn btn-primary btn-sm invoice-checkbox-simulator" {{-- 2. 添加辅助类 --}}
+                                {{-- 3. 移除 data-bs-toggle 和 data-bs-target，由 JS 控制 --}}
                                 
-                                {{-- 关键：属性名必须与 JS 中的 dataset.xxx 对应 (驼峰式) --}}
-                                data-invoice-id="{{ $invoice->id }}"
+                                {{-- 4. 将数据伪装成 checkbox 的 dataset，方便组件脚本读取 --}}
                                 value="{{ $invoice->id }}"
-                                data-locked="{{ $invoice->is_locked ? 1 : 0 }}"
-                                data-customer-id="{{ $invoice->agency_id }}"
                                 data-invoice-no="{{ $invoice->invoice_number }}"
-                                data-currency-code="{{ $invoice->currency_code }}"
                                 data-customer-name="{{ $invoice->agency->agency_name ?? ''}}"
+                                data-currency-code="{{ $invoice->currency_code }}"
                                 data-request-amount="{{ number_format($invoice->total_amount, 2, '.', '') }}" 
                                 data-balance-amount="{{ number_format($invoice->total_amount - $invoice->paid_amount, 2, '.', '') }}"
+                                data-locked="{{ $invoice->is_locked ? 1 : 0 }}"
+                                data-customer-id="{{ $invoice->agency_id }}"
                                 
                                 {{ $invoice->is_locked ? 'disabled' : '' }}>
                             <i class="bi bi-cash-coin"></i> 入金
@@ -644,148 +643,6 @@
         });
 
 
-    });
-
-    document.addEventListener('DOMContentLoaded', function () {
-        const modalEl = document.getElementById('bulkReconcileModal');
-        if (!modalEl) return;
-
-        // 监听模态框即将显示的事件
-        modalEl.addEventListener('show.bs.modal', function (event) {
-            const button = event.relatedTarget;
-            
-            // 1. 检查是否是从 Edit 页面的按钮触发的 (通过检查 data-invoice-id)
-            const invoiceId = button.getAttribute('data-invoice-id');
-            if (!invoiceId) {
-                // 如果没有 ID，说明可能是从其他逻辑触发的，或者是空的，直接返回
-                console.warn('未检测到发票 ID，跳过渲染。');
-                return;
-            }
-
-            console.log('🚀 Edit 页触发单条入金渲染，ID:', invoiceId);
-
-            // 2. 准备数据对象 (从按钮的 data 属性获取)
-            // 注意：确保 HTML 按钮上的属性名与这里一致 (data-invoice-no, data-balance-amount 等)
-            const singleData = {
-                id: invoiceId,
-                invoice_no: button.getAttribute('data-invoice-no') || 'No ID',
-                customer_name: button.getAttribute('data-customer-name') || '未知',
-                currency_code: button.getAttribute('data-currency-code') || 'JPY',
-                request_amount: parseFloat(button.getAttribute('data-request-amount')) || 0,
-                balance_amount: parseFloat(button.getAttribute('data-balance-amount')) || 0
-            };
-
-            // 3. 获取模态框内部的关键元素
-            const container = document.getElementById('reconcile-items-container');
-            const template = document.getElementById('invoice-item-template');
-            const initialModalEl = document.getElementById('initialActionModal');
-
-            if (!container || !template) {
-                console.error('❌ 找不到模态框容器或模板元素！');
-                return;
-            }
-
-            // 4. 【关键步骤】如果存在“第一步选择模态框”，立即关闭它
-            // 因为单条操作不需要问用户选“详细”还是“全额”，直接进入详情页
-            if (initialModalEl) {
-                const initialModalInstance = bootstrap.Modal.getInstance(initialModalEl);
-                if (initialModalInstance) {
-                    initialModalInstance.hide();
-                }
-                // 防止初始模态框的遮罩层残留
-                document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.remove());
-            }
-
-            // 5. 手动执行渲染逻辑 (复制自 bulk-reconcile-modal 的核心逻辑)
-            container.innerHTML = ''; // 清空旧内容
-            const index = 0; // 单条模式索引为 0
-            
-            const clone = document.importNode(template.content, true);
-
-            // --- 填充具体数据 ---
-            clone.querySelector('.item-invoice-id').value = singleData.id;
-            clone.querySelector('.item-original-amount').value = singleData.request_amount;
-            clone.querySelector('.item-invoice-no').textContent = singleData.invoice_no;
-            clone.querySelector('.item-invoice-no').title = singleData.invoice_no; // 设置 title 用于截断显示
-            clone.querySelector('.item-customer-name').textContent = singleData.customer_name;
-            clone.querySelector('.item-customer-name').title = singleData.customer_name;
-            clone.querySelector('.item-request-amount').textContent = singleData.request_amount.toLocaleString('ja-JP');
-
-            // 货币符号
-            const currencySpan = clone.querySelector('.item-currency-display');
-            if(currencySpan) currencySpan.textContent = singleData.currency_code;
-            
-            // 余额和输入框逻辑
-            const balanceEl = clone.querySelector('.item-balance-amount');
-            const amountInput = clone.querySelector('.item-payment-amount');
-            
-            if (singleData.balance_amount <= 0.005) {
-                // 已付清
-                balanceEl.textContent = "0";
-                balanceEl.className = 'fw-bold font-monospace text-secondary item-balance-amount';
-                amountInput.value = "0.00";
-                amountInput.disabled = true;
-                amountInput.classList.add('bg-light', 'text-muted');
-                amountInput.setAttribute('data-max-amount', "0");
-            } else {
-                // 有余额
-                balanceEl.textContent = singleData.balance_amount.toLocaleString('ja-JP');
-                // 默认填入余额
-                amountInput.value = singleData.balance_amount.toFixed(2); 
-                amountInput.disabled = false;
-                amountInput.setAttribute('data-max-amount', singleData.balance_amount);
-                
-                // 移除可能的错误样式
-                amountInput.classList.remove('is-invalid', 'bg-danger', 'text-white', 'bg-light', 'text-muted');
-                
-                // 绑定输入事件以更新底部统计 (如果全局函数存在)
-                amountInput.addEventListener('input', function() {
-                    const val = parseFloat(this.value) || 0;
-                    const max = parseFloat(this.getAttribute('data-max-amount')) || 0;
-                    this.classList.toggle('is-invalid', val > max + 0.001);
-                    if (typeof updateFooterStats === 'function') updateFooterStats();
-                });
-            }
-
-            // --- 修正表单 name 属性 (将 {index} 替换为 0) ---
-            clone.querySelectorAll('input, select').forEach(el => {
-                const name = el.getAttribute('name');
-                if(name) {
-                    el.setAttribute('name', name.replace('{index}', index));
-                }
-            });
-
-            // --- 绑定删除按钮 (单条模式下删除即关闭) ---
-            const closeBtn = clone.querySelector('.btn-close');
-            if(closeBtn) {
-                closeBtn.addEventListener('click', function() {
-                    const modalInstance = bootstrap.Modal.getInstance(modalEl);
-                    if(modalInstance) modalInstance.hide();
-                });
-            }
-
-            // 将渲染好的卡片加入容器
-            container.appendChild(clone);
-
-            // 6. 更新底部统计栏
-            if (typeof updateFooterStats === 'function') {
-                updateFooterStats();
-            } else {
-                // 兜底：如果全局函数还没加载，手动设置计数
-                document.getElementById('reconcile-count').textContent = '1';
-                document.getElementById('reconcile-count-footer').textContent = '1';
-                document.getElementById('footer-request-total').textContent = singleData.request_amount.toLocaleString('ja-JP');
-                document.getElementById('footer-balance-total').textContent = singleData.balance_amount.toLocaleString('ja-JP');
-                document.getElementById('footer-payment-total').textContent = singleData.balance_amount.toLocaleString('ja-JP');
-                document.getElementById('footer-currency-label').textContent = singleData.currency_code;
-            }
-        });
-        
-        // 监听模态框隐藏，清理可能残留的 backdrop (防止多层遮罩)
-        modalEl.addEventListener('hidden.bs.modal', function () {
-            // 可选：如果需要每次关闭都重置表单，可以在这里加 logic
-            // 但通常不需要，因为下次 show 时会重新 innerHTML = ''
-        });
     });
 
     window.addEventListener('beforeunload', () => {

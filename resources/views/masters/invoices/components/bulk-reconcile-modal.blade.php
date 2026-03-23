@@ -224,281 +224,294 @@
 <!-- 5. JavaScript 逻辑 (数据对象化版本) -->
 <!-- ========================================== -->
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    console.log('💰 批量销账脚本已加载 (数据对象版)');
+(function() {
+    'use strict';
 
-    // --- 1. 初始化变量 ---
-    const btnBulkReconcile = document.getElementById('btn-bulk-reconcile');
-    const initialModalEl = document.getElementById('initialActionModal');
-    const detailModalEl = document.getElementById('bulkReconcileModal');
-    
-    if (!initialModalEl || !window.bootstrap) {
-        console.error('❌ Bootstrap 未加载或模态框元素缺失');
-        return;
+    // 等待 DOM 完全加载后再执行，确保能获取到表格中的按钮
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initReconcileModal);
+    } else {
+        initReconcileModal();
     }
-    
-    const initialModal = new bootstrap.Modal(initialModalEl);
-    const detailModal = detailModalEl ? new bootstrap.Modal(detailModalEl) : null;
 
-    const detailContainer = document.getElementById('reconcile-items-container');
-    const detailTemplate = document.getElementById('invoice-item-template');
-    const fullPaymentFormInputs = document.getElementById('full-payment-inputs');
+    function initReconcileModal() {
+        const btnBulkReconcile = document.getElementById('btn-bulk-reconcile');
+        const initialModalEl = document.getElementById('initialActionModal');
+        const detailModalEl = document.getElementById('bulkReconcileModal');
+        
+        if (!initialModalEl || !window.bootstrap) return;
+        
+        const initialModal = new bootstrap.Modal(initialModalEl);
+        const detailModal = detailModalEl ? new bootstrap.Modal(detailModalEl) : null;
 
-    const commonDateInput = document.getElementById('common-payment-date');
-    const commonRemarkInput = document.getElementById('common-remark');
+        const detailContainer = document.getElementById('reconcile-items-container');
+        const detailTemplate = document.getElementById('invoice-item-template');
+        const fullPaymentFormInputs = document.getElementById('full-payment-inputs');
+        const commonDateInput = document.getElementById('common-payment-date');
+        const commonRemarkInput = document.getElementById('common-remark');
 
-    // ✅ 核心变量：存储纯净的数据对象数组
-    let selectedInvoiceData = []; 
+        let selectedInvoiceData = []; 
 
-    if (!btnBulkReconcile) return;
-
-    // --- 2. 工具函数：更新底部统计 ---
-    function updateFooterStats() {
-        let totalRequest = 0;
-        let totalBalance = 0;
-        let totalPayment = 0;
-        let count = 0;
-        let currentCurrency = 'JPY'; // 默认值
-
-        document.querySelectorAll('.invoice-item-card').forEach((card, index) => {
-            count++;
+        // --- 【全局函数】更新底部统计 ---
+        window.updateFooterStats = function() {
+            if (!detailContainer) return;
+            let totalRequest = 0, totalBalance = 0, totalPayment = 0, count = 0, currentCurrency = 'JPY';
             
-            // ✅ 获取第一行的货币作为基准（因为已知所有行货币一致）
-            if (index === 0) {
-                const firstCurrencySpan = card.querySelector('.item-currency-display');
-                if (firstCurrencySpan) {
-                    currentCurrency = firstCurrencySpan.textContent;
+            document.querySelectorAll('.invoice-item-card').forEach((card, index) => {
+                count++;
+                if (index === 0) {
+                    const firstCurrencySpan = card.querySelector('.item-currency-display');
+                    if (firstCurrencySpan && firstCurrencySpan.textContent) currentCurrency = firstCurrencySpan.textContent;
                 }
-            }
+                const requestVal = parseFloat(card.querySelector('.item-original-amount')?.value || '0');
+                totalRequest += requestVal;
+                
+                const balanceEl = card.querySelector('.item-balance-amount');
+                const balanceText = balanceEl ? balanceEl.textContent.replace(/,/g, '') : '0';
+                totalBalance += parseFloat(balanceText) || 0;
+                
+                const paymentInput = card.querySelector('.item-payment-amount');
+                if (paymentInput && !paymentInput.disabled) {
+                    const payVal = parseFloat(paymentInput.value) || 0;
+                    totalPayment += payVal;
+                    const max = parseFloat(paymentInput.getAttribute('data-max-amount')) || 0;
+                    if (max > 0 && payVal > max + 0.001) paymentInput.classList.add('is-invalid');
+                    else paymentInput.classList.remove('is-invalid');
+                }
+            });
 
-            // 计算逻辑...
-            const requestVal = parseFloat(card.querySelector('.item-original-amount')?.value || '0');
-            totalRequest += requestVal;
+            ['reconcile-count', 'reconcile-count-footer'].forEach(id => { 
+                const el = document.getElementById(id); 
+                if(el) el.textContent = count; 
+            });
 
-            const balanceText = card.querySelector('.item-balance-amount')?.textContent || '0';
-            const balanceVal = parseFloat(balanceText.replace(/,/g, '')) || 0;
-            totalBalance += balanceVal;
-
-            const paymentInput = card.querySelector('.item-payment-amount');
-            if (paymentInput && !paymentInput.disabled) {
-                totalPayment += (parseFloat(paymentInput.value) || 0);
-            }
-        });
-
-        // 更新数量显示
-        ['reconcile-count', 'reconcile-count-footer'].forEach(id => {
-            const el = document.getElementById(id);
-            if(el) el.textContent = count;
-        });
-
-        // 更新金额显示
-        const setTxt = (id, val) => {
-            const el = document.getElementById(id);
-            if(el) el.textContent = val.toLocaleString();
+            const fmt = (num) => num.toLocaleString('ja-JP');
+            const setTxt = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = fmt(val); };
+            
+            setTxt('footer-request-total', totalRequest);
+            setTxt('footer-balance-total', totalBalance);
+            setTxt('footer-payment-total', totalPayment);
+            
+            const footerCurrencyEl = document.getElementById('footer-currency-label');
+            if (footerCurrencyEl) footerCurrencyEl.textContent = currentCurrency;
+            
+            const submitBtn = document.getElementById('btn-submit-reconcile');
+            if (submitBtn) submitBtn.disabled = (count === 0);
         };
-        setTxt('footer-request-total', totalRequest);
-        setTxt('footer-balance-total', totalBalance);
-        setTxt('footer-payment-total', totalPayment);
 
-        // ✅ 新增：更新底部的货币单位文字
-        const footerCurrencyEl = document.getElementById('footer-currency-label');
-        if (footerCurrencyEl) {
-            footerCurrencyEl.textContent = currentCurrency;
-        }
-        
-        // 按钮状态逻辑...
-        const submitBtn = document.getElementById('btn-submit-reconcile');
-        if (submitBtn) {
-            submitBtn.disabled = (count === 0);
-        }
-    }
+        if (!btnBulkReconcile) return;
 
-    // --- 3. 步骤 1: 点击主按钮 -> 提取数据对象 ---
-    btnBulkReconcile.addEventListener('click', function () {
-        const checkedBoxes = document.querySelectorAll('.invoice-checkbox:checked');
-        if (checkedBoxes.length === 0) {
-            alert('対象の請求書を選択してください。');
-            return;
-        }
-        
-        selectedInvoiceData = Array.from(checkedBoxes).map(cb => {
-            const ds = cb.dataset; 
-            return {
-                id: cb.value,
-                invoice_no: cb.dataset.invoiceNo || '',
-                customer_name: cb.dataset.customerName || '-',
-                currency_code: ds.currencyCode || '', 
-                request_amount: parseFloat(cb.dataset.requestAmount) || 0,
-                balance_amount: parseFloat(cb.dataset.balanceAmount) || 0
-            };
-        });
-
-        initialModal.show();
-    });
-
-    // --- 4. 步骤 2A: 全额入金 (如需保留) ---
-    const btnFull = document.getElementById('btn-action-full');
-    if(btnFull) {
-        btnFull.addEventListener('click', function() {
-            if(selectedInvoiceData.length === 0) return;
+        // --- 1. 批量按钮点击 ---
+        btnBulkReconcile.addEventListener('click', function () {
+            // 场景 A: Index 页 (通过复选框选择)
+            const checkedBoxes = document.querySelectorAll('.invoice-checkbox:checked');
             
-            fullPaymentFormInputs.innerHTML = '';
-            document.getElementById('full-form-payment-date').value = commonDateInput.value;
-            document.getElementById('full-form-remark').value = commonRemarkInput.value || '';
+            let dataToProcess = [];
 
-            selectedInvoiceData.forEach((item, index) => {
-                const createInput = (name, val) => {
-                    const inp = document.createElement('input');
-                    inp.type = 'hidden'; inp.name = name; inp.value = val;
-                    fullPaymentFormInputs.appendChild(inp);
-                };
-                createInput(`items[${index}][invoice_id]`, item.id);
-                createInput(`items[${index}][payment_amount]`, item.balance_amount.toFixed(2));
-            });
-            
-            initialModal.hide();
-            document.getElementById('full-payment-form').submit();
-        });
-    }
-
-    // --- 5. 步骤 2B: 详细入金 -> 渲染列表 ---
-    const btnDetail = document.getElementById('btn-action-detail');
-    if(btnDetail && detailContainer && detailTemplate) {
-        btnDetail.addEventListener('click', function() {
-            if(selectedInvoiceData.length === 0) return;
-
-            initialModal.hide();
-            detailContainer.innerHTML = '';
-            
-            selectedInvoiceData.forEach((item, index) => {
-                const clone = document.importNode(detailTemplate.content, true);
-
-                // 填充数据
-                clone.querySelector('.item-invoice-id').value = item.id;
-                clone.querySelector('.item-original-amount').value = item.request_amount;
-                clone.querySelector('.item-invoice-no').textContent = item.invoice_no;
-                clone.querySelector('.item-customer-name').textContent = item.customer_name;
-                clone.querySelector('.item-request-amount').textContent = item.request_amount.toLocaleString();
-
-                const currencySpan = clone.querySelector('.item-currency-display');
-                if(currencySpan) {
-                    currencySpan.textContent = item.currency_code;
-                }
+            if (checkedBoxes.length > 0) {
+                // Index 页逻辑
+                dataToProcess = Array.from(checkedBoxes).map(cb => ({
+                    id: cb.value,
+                    invoice_no: cb.dataset.invoiceNo || '',
+                    customer_name: cb.dataset.customerName || '-',
+                    currency_code: cb.dataset.currencyCode || '', 
+                    request_amount: parseFloat(cb.dataset.requestAmount) || 0,
+                    balance_amount: parseFloat(cb.dataset.balanceAmount) || 0
+                }));
+            } else {
+                // 场景 B: Edit 页 (当前按钮本身就是数据源)
+                // 检查当前点击的按钮是否带有数据属性
+                const singleId = btnBulkReconcile.getAttribute('value') || btnBulkReconcile.dataset.invoiceId;
                 
-                const balanceEl = clone.querySelector('.item-balance-amount');
-                const amountInput = clone.querySelector('.item-payment-amount');
-                
-                // 逻辑判断
-                if (item.balance_amount < 0) {
-                    balanceEl.textContent = item.balance_amount.toLocaleString();
-                    amountInput.value = "0.00";
-                    amountInput.disabled = true;
-                    amountInput.classList.add('bg-danger', 'text-white');
-                    amountInput.setAttribute('data-max-amount', "0"); 
-                } else if (item.balance_amount > 0.005) {
-                    balanceEl.textContent = item.balance_amount.toLocaleString();
-                    amountInput.value = item.balance_amount.toFixed(2);
-                    amountInput.disabled = false;
-                    amountInput.setAttribute('data-max-amount', item.balance_amount);
-                    
-                    amountInput.addEventListener('input', function() {
-                        const val = parseFloat(this.value) || 0;
-                        const max = parseFloat(this.getAttribute('data-max-amount')) || 0;
-                        this.classList.toggle('is-invalid', val > max + 0.001);
-                        updateFooterStats(); 
-                    });
-                } else {
-                    balanceEl.textContent = "0";
-                    balanceEl.className = 'fw-bold font-monospace text-secondary item-balance-amount';
-                    amountInput.value = "0.00";
-                    amountInput.disabled = true;
-                    amountInput.classList.add('bg-light', 'text-muted');
-                    amountInput.setAttribute('data-max-amount', "0");
+                if (singleId) {
+                    dataToProcess = [{
+                        id: singleId,
+                        invoice_no: btnBulkReconcile.dataset.invoiceNo || '',
+                        customer_name: btnBulkReconcile.dataset.customerName || '-',
+                        currency_code: btnBulkReconcile.dataset.currencyCode || 'JPY',
+                        request_amount: parseFloat(btnBulkReconcile.dataset.requestAmount) || 0,
+                        balance_amount: parseFloat(btnBulkReconcile.dataset.balanceAmount) || 0
+                    }];
                 }
-
-                // 替换 name 中的 {index}
-                clone.querySelectorAll('input').forEach(el => {
-                    const name = el.getAttribute('name');
-                    if(name) el.setAttribute('name', name.replace('{index}', index));
-                });
-
-                // 绑定删除
-                clone.querySelector('.btn-close').addEventListener('click', function() {
-                    this.closest('.invoice-item-card').remove();
-                    updateFooterStats();
-                });
-
-                detailContainer.appendChild(clone);
-            });
-
-            updateFooterStats();
-            detailModal.show();
-        });
-    }
-
-    // --- 6. 提交校验 ---
-    const btnSubmit = document.getElementById('btn-submit-reconcile');
-    const detailForm = document.getElementById('detail-form');
-    
-    if (btnSubmit && detailForm) {
-        btnSubmit.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            // 同步公共字段
-            document.getElementById('form-payment-date').value = commonDateInput.value;
-            document.getElementById('form-remark').value = commonRemarkInput.value || '';
-
-            const paymentInputs = detailContainer.querySelectorAll('.item-payment-amount');
-            let hasError = false;
-            let firstErrorInput = null;
-            let errorMsg = '';
-
-            paymentInputs.forEach(input => {
-                const max = parseFloat(input.getAttribute('data-max-amount')) || 0;
-                const val = parseFloat(input.value) || 0;
-
-                if (max <= 0.005) {
-                    hasError = true; firstErrorInput = input; errorMsg = '残高 0 の項目が含まれています。';
-                } else if (val > max + 0.001) {
-                    hasError = true; if(!firstErrorInput) firstErrorInput = input; errorMsg = '入金額が残高を超えています。';
-                } else if (val < 0.005) {
-                    hasError = true; if(!firstErrorInput) firstErrorInput = input; errorMsg = '残高があるのに入力が 0 です。';
-                }
-
-                if(hasError && firstErrorInput) {
-                    firstErrorInput.classList.add('is-invalid', 'border-danger');
-                    firstErrorInput.style.borderColor = 'red';
-                } else {
-                    input.classList.remove('is-invalid', 'border-danger');
-                    input.style.borderColor = '';
-                }
-            });
-
-            if (hasError) {
-                firstErrorInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                firstErrorInput.focus();
-                alert('⚠️ エラー：\n' + errorMsg);
-                return;
             }
 
-            detailForm.submit();
+            if (dataToProcess.length === 0) { 
+                alert('対象の請求書を選択してください。'); 
+                return; 
+            }
+            
+            selectedInvoiceData = dataToProcess;
+            
+            // ✅ 关键：如果是单条模式 (Edit 页)，直接跳过“初始选择模态框”，进入“详细编辑模态框”
+            if (dataToProcess.length === 1 && btnBulkReconcile.classList.contains('invoice-checkbox-simulator')) {
+                // 模拟点击“详细入金”按钮的逻辑
+                if(btnDetail) btnDetail.click();
+            } else {
+                // 多条模式，显示初始选择框
+                initialModal.show();
+            }
         });
+
+        // --- 2. 全额入金 ---
+        const btnFull = document.getElementById('btn-action-full');
+        if(btnFull) {
+            btnFull.addEventListener('click', function() {
+                if(selectedInvoiceData.length === 0) return;
+                fullPaymentFormInputs.innerHTML = '';
+                if(commonDateInput) document.getElementById('full-form-payment-date').value = commonDateInput.value;
+                if(commonRemarkInput) document.getElementById('full-form-remark').value = commonRemarkInput.value || '';
+                
+                selectedInvoiceData.forEach((item, index) => {
+                    const createInput = (name, val) => { 
+                        const inp = document.createElement('input'); 
+                        inp.type = 'hidden'; inp.name = name; inp.value = val; 
+                        fullPaymentFormInputs.appendChild(inp); 
+                    };
+                    createInput(`items[${index}][invoice_id]`, item.id);
+                    createInput(`items[${index}][payment_amount]`, item.balance_amount.toFixed(2));
+                });
+                initialModal.hide();
+                document.getElementById('full-payment-form').submit();
+            });
+        }
+
+        // --- 3. 详细入金渲染 ---
+        const btnDetail = document.getElementById('btn-action-detail');
+        if(btnDetail && detailContainer && detailTemplate) {
+            btnDetail.addEventListener('click', function() {
+                if(selectedInvoiceData.length === 0) return;
+                initialModal.hide();
+                detailContainer.innerHTML = '';
+                
+                selectedInvoiceData.forEach((item, index) => {
+                    const clone = document.importNode(detailTemplate.content, true);
+                    clone.querySelector('.item-invoice-id').value = item.id;
+                    clone.querySelector('.item-original-amount').value = item.request_amount;
+                    clone.querySelector('.item-invoice-no').textContent = item.invoice_no;
+                    clone.querySelector('.item-customer-name').textContent = item.customer_name;
+                    clone.querySelector('.item-request-amount').textContent = item.request_amount.toLocaleString('ja-JP');
+                    
+                    const currencySpan = clone.querySelector('.item-currency-display');
+                    if(currencySpan) currencySpan.textContent = item.currency_code;
+                    
+                    const balanceEl = clone.querySelector('.item-balance-amount');
+                    const amountInput = clone.querySelector('.item-payment-amount');
+                    
+                    if (item.balance_amount < 0.005) {
+                        balanceEl.textContent = "0"; 
+                        balanceEl.className = 'fw-bold font-monospace text-secondary item-balance-amount';
+                        amountInput.value = "0.00"; amountInput.disabled = true; 
+                        amountInput.classList.add('bg-light', 'text-muted'); 
+                        amountInput.setAttribute('data-max-amount', "0"); 
+                    } else if (item.balance_amount > 0.005) {
+                        balanceEl.textContent = item.balance_amount.toLocaleString('ja-JP');
+                        amountInput.value = item.balance_amount.toFixed(2); 
+                        amountInput.disabled = false; 
+                        amountInput.setAttribute('data-max-amount', item.balance_amount);
+                        amountInput.addEventListener('input', function() { 
+                            if (typeof window.updateFooterStats === 'function') window.updateFooterStats(); 
+                        });
+                    } else {
+                        balanceEl.textContent = "0"; 
+                        balanceEl.className = 'fw-bold font-monospace text-secondary item-balance-amount';
+                        amountInput.value = "0.00"; amountInput.disabled = true; 
+                        amountInput.classList.add('bg-light', 'text-muted'); 
+                        amountInput.setAttribute('data-max-amount', "0");
+                    }
+                    
+                    clone.querySelectorAll('input').forEach(el => { 
+                        const name = el.getAttribute('name'); 
+                        if(name) el.setAttribute('name', name.replace('{index}', index)); 
+                    });
+                    
+                    clone.querySelector('.btn-close').addEventListener('click', function() { 
+                        this.closest('.invoice-item-card').remove(); 
+                        if (typeof window.updateFooterStats === 'function') window.updateFooterStats(); 
+                    });
+                    
+                    detailContainer.appendChild(clone);
+                });
+                
+                if (typeof window.updateFooterStats === 'function') window.updateFooterStats();
+                detailModal.show();
+            });
+        }
+
+        // --- 4. 提交校验 ---
+        const btnSubmit = document.getElementById('btn-submit-reconcile');
+        const detailForm = document.getElementById('detail-form');
+        if (btnSubmit && detailForm) {
+            btnSubmit.addEventListener('click', function(e) {
+                e.preventDefault();
+                if(commonDateInput) document.getElementById('form-payment-date').value = commonDateInput.value;
+                if(commonRemarkInput) document.getElementById('form-remark').value = commonRemarkInput.value || '';
+                
+                const paymentInputs = detailContainer.querySelectorAll('.item-payment-amount');
+                let hasError = false, firstErrorInput = null, errorMsg = '';
+                
+                paymentInputs.forEach(input => {
+                    if(input.disabled) return;
+                    const max = parseFloat(input.getAttribute('data-max-amount')) || 0;
+                    const val = parseFloat(input.value) || 0;
+                    
+                    if (max <= 0.005) { hasError = true; firstErrorInput = input; errorMsg = '残高 0 の項目が含まれています。'; } 
+                    else if (val > max + 0.001) { hasError = true; if(!firstErrorInput) firstErrorInput = input; errorMsg = '入金額が残高を超えています。'; } 
+                    else if (val < 0.005) { hasError = true; if(!firstErrorInput) firstErrorInput = input; errorMsg = '残高があるのに入力が 0 です。'; }
+                    
+                    if(hasError && firstErrorInput) { 
+                        firstErrorInput.classList.add('is-invalid', 'border-danger'); 
+                        firstErrorInput.style.borderColor = 'red'; 
+                    } else { 
+                        input.classList.remove('is-invalid', 'border-danger'); 
+                        input.style.borderColor = ''; 
+                    }
+                });
+                
+                if (hasError) {
+                    if(firstErrorInput) { 
+                        firstErrorInput.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
+                        firstErrorInput.focus(); 
+                    }
+                    alert('⚠️ エラー：\n' + errorMsg); 
+                    return;
+                }
+                detailForm.submit();
+            });
+        }
+
+        // --- 5. ✅ 单行销账兼容逻辑 (确保此时 DOM 已完全加载) ---
+        const singleButtons = document.querySelectorAll('.btn-single-reconcile');
+        if (singleButtons.length > 0) {
+            singleButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const targetId = this.dataset.id;
+                    let targetCheckbox = document.querySelector(`.invoice-checkbox[value="${targetId}"]`);
+                    
+                    if (!targetCheckbox) {
+                        // 容错：尝试遍历查找
+                        const allCheckboxes = document.querySelectorAll('.invoice-checkbox');
+                        for(let cb of allCheckboxes) {
+                            if(cb.value == targetId) { targetCheckbox = cb; break; }
+                        }
+                        if(!targetCheckbox) {
+                            alert('エラー：該当するチェックボックスが見つかりません。');
+                            return;
+                        }
+                    }
+
+                    // 清空其他选择
+                    document.querySelectorAll('.invoice-checkbox:checked').forEach(cb => cb.checked = false);
+                    targetCheckbox.checked = true;
+                    // 触发 change 事件以更新批量操作栏
+                    targetCheckbox.dispatchEvent(new Event('change'));
+
+                    // 延迟触发主按钮
+                    setTimeout(() => {
+                        if(btnBulkReconcile) btnBulkReconcile.click();
+                    }, 50);
+                });
+            });
+        }
     }
-});
-
-// --- 7. 单条销账兼容逻辑 ---
-document.querySelectorAll('.btn-single-reconcile').forEach(btn => {
-    btn.addEventListener('click', function() {
-        const targetId = this.dataset.id;
-        const targetCheckbox = document.querySelector(`.invoice-checkbox[value="${targetId}"]`);
-        if (!targetCheckbox) return;
-
-        document.querySelectorAll('.invoice-checkbox:checked').forEach(cb => cb.checked = false);
-        targetCheckbox.checked = true;
-        
-        setTimeout(() => {
-            document.getElementById('btn-bulk-reconcile')?.click();
-        }, 50);
-    });
-});
+})();
 </script>

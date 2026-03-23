@@ -391,51 +391,39 @@
 <!-- 【新增/修改】AJAX 脚本处理锁状态切换及批量操作 -->
 <script>
 function checkAndDelete(type, number) {
-    // 假设 2 代表 "临时" (臨時)，如果不是 2，则禁止删除
     if (type != 2) {
         alert('請求書タイプを臨時にしてから削除してください。');
-        return false; // 阻止表单提交
+        return false;
     }
-
-    // 如果是临时类型，弹出二次确认框
     const message = '本当に請求書「' + number + '」を削除しますか？\nこの操作は元に戻せません。';
-    return confirm(message); // 用户点"确定"返回 true，点"取消"返回 false
+    return confirm(message);
 }
+
 document.addEventListener('DOMContentLoaded', function () {
+    // 1. 分页行数切换逻辑
     const perPageSelect = document.getElementById('per_page_select');
     if (perPageSelect) {
         perPageSelect.addEventListener('change', function() {
             const newPerPage = this.value;
             const url = new URL(window.location.href);
-            
-            // 设置新的 per_page 参数
             url.searchParams.set('per_page', newPerPage);
-            
-            // 重置到第一页，避免页数超出新每页行数的范围
             url.searchParams.set('page', '1');
-            
-            // 跳转
             window.location.href = url.toString();
         });
     }
 
-    // 1. 获取元素并增加调试日志
+    // 2. 复选框联动与批量操作栏逻辑
     const selectAllCheckbox = document.getElementById('select-all');
     const rowCheckboxes = document.querySelectorAll('.invoice-checkbox');
     const bulkActionBar = document.getElementById('bulk-action-bar');
     const selectedCountBadge = document.getElementById('selected-count');
     
     if (!selectAllCheckbox) {
-        console.error('Error: "select-all" checkbox not found! Check the ID in the <th>.');
+        console.error('Error: "select-all" checkbox not found!');
         return;
     }
-    if (rowCheckboxes.length === 0) {
-        console.warn('Warning: No ".invoice-checkbox" found. Bulk actions will not work until data exists.');
-    }
 
-    console.log(`Found 1 header checkbox and ${rowCheckboxes.length} row checkboxes.`);
-
-    // 2. 定义更新函数
+    // 定义更新批量操作栏函数
     function updateBulkActionBar() {
         const checkedBoxes = document.querySelectorAll('.invoice-checkbox:checked');
         const count = checkedBoxes.length;
@@ -462,28 +450,22 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // 3. 绑定全选事件 (关键修复点)
+    // 绑定全选事件
     selectAllCheckbox.addEventListener('change', function() {
         const isChecked = this.checked;
-        console.log('Header checkbox changed to:', isChecked);
-        
         rowCheckboxes.forEach(cb => {
             cb.checked = isChecked;
-            // 手动触发 change 事件，确保其他监听器（如果有）也能响应
             cb.dispatchEvent(new Event('change')); 
         });
-        
         updateBulkActionBar();
     });
 
-    // 4. 绑定行复选框事件
+    // 绑定行复选框事件
     rowCheckboxes.forEach(cb => {
         cb.addEventListener('change', function() {
-            // 如果手动取消了一个，取消全选框
             if (!this.checked && selectAllCheckbox) {
                 selectAllCheckbox.checked = false;
             }
-            // 如果所有都选中了，勾选全选框
             if (selectAllCheckbox) {
                 const allChecked = Array.from(rowCheckboxes).every(c => c.checked);
                 selectAllCheckbox.checked = allChecked;
@@ -492,7 +474,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // 5. 绑定清除按钮
+    // 绑定清除按钮
     const btnClearSelection = document.getElementById('btn-clear-selection');
     if(btnClearSelection) {
         btnClearSelection.addEventListener('click', function() {
@@ -502,40 +484,17 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // --- 原有的批量操作和单行锁定逻辑保持不变 (此处省略以节省篇幅，请保留你原代码中的后续逻辑) ---
-    // 请确保将原本 script 标签中 updateBulkActionBar 之后的代码 (btnBulkLock 等逻辑) 粘贴在这里
-    // 为了简洁，我只展示了修复全选的核心部分。
-    
-    // [重要] 如果你之前的代码里有 btnBulkLock 等逻辑，请把它们粘贴在下方
-    // 这里为了演示完整性，我把核心逻辑补全：
-    
+    // 3. 批量锁定/解锁 AJAX 逻辑
     const btnBulkLock = document.getElementById('btn-bulk-lock');
     const btnBulkUnlock = document.getElementById('btn-bulk-unlock');
     const toastEl = document.getElementById('lockToast');
     let toast = null;
+    
     if(toastEl && window.bootstrap) {
         toast = new bootstrap.Toast(toastEl, { delay: 800 });
     }
 
-    if(btnBulkLock) {
-        btnBulkLock.addEventListener('click', async function() {
-            const ids = Array.from(document.querySelectorAll('.invoice-checkbox:checked')).map(cb => cb.value);
-            if(ids.length === 0) return;
-            if(!confirm(`選択した ${ids.length} 件をロックしますか？`)) return;
-            await processBulkAction(ids, true);
-        });
-    }
-    if(btnBulkUnlock) {
-        btnBulkUnlock.addEventListener('click', async function() {
-            const ids = Array.from(document.querySelectorAll('.invoice-checkbox:checked')).map(cb => cb.value);
-            if(ids.length === 0) return;
-            if(!confirm(`選択した ${ids.length} 件のロックを解除しますか？`)) return;
-            await processBulkAction(ids, false);
-        });
-    }
-
     async function processBulkAction(ids, lockState) {
-        // 禁用按钮防止重复点击
         if(btnBulkLock) btnBulkLock.disabled = true;
         if(btnBulkUnlock) btnBulkUnlock.disabled = true;
 
@@ -558,27 +517,45 @@ document.addEventListener('DOMContentLoaded', function () {
                 setTimeout(() => window.location.reload(), 500);
             } else {
                 alert('Error: ' + (data.message || 'Unknown error'));
-                if(btnBulkLock) btnBulkLock.disabled = false;
-                if(btnBulkUnlock) btnBulkUnlock.disabled = false;
+                resetButtons();
             }
         } catch(e) {
             console.error(e);
             alert('Network error');
+            resetButtons();
+        }
+
+        function resetButtons() {
             if(btnBulkLock) btnBulkLock.disabled = false;
             if(btnBulkUnlock) btnBulkUnlock.disabled = false;
         }
     }
+
+    if(btnBulkLock) {
+        btnBulkLock.addEventListener('click', async function() {
+            const ids = Array.from(document.querySelectorAll('.invoice-checkbox:checked')).map(cb => cb.value);
+            if(ids.length === 0) return;
+            if(!confirm(`選択した ${ids.length} 件をロックしますか？`)) return;
+            await processBulkAction(ids, true);
+        });
+    }
     
-    // 单行锁定逻辑 (保持原有逻辑，确保选择器正确)
+    if(btnBulkUnlock) {
+        btnBulkUnlock.addEventListener('click', async function() {
+            const ids = Array.from(document.querySelectorAll('.invoice-checkbox:checked')).map(cb => cb.value);
+            if(ids.length === 0) return;
+            if(!confirm(`選択した ${ids.length} 件のロックを解除しますか？`)) return;
+            await processBulkAction(ids, false);
+        });
+    }
+    
+    // 4. 单行锁定逻辑
     document.querySelectorAll('.toggle-lock-btn').forEach(btn => {
         btn.addEventListener('click', function() {
-            // ... (保留你原有的单行锁定代码) ...
-            // 为节省空间，此处不重复，请使用你原代码中的这部分
             const id = this.dataset.id;
             const current = parseInt(this.dataset.locked);
             if(!confirm('操作しますか？')) return;
             
-            // 简单模拟刷新，实际请用你原来的 fetch 逻辑
             fetch(`/masters/invoices/${id}/toggle-lock`, {
                 method: 'POST',
                 headers: {
@@ -589,9 +566,11 @@ document.addEventListener('DOMContentLoaded', function () {
             }).then(() => window.location.reload());
         });
     });
+
+    // 注意：单行销账按钮 (.btn-single-reconcile) 的逻辑已移至模态框组件内部，
+    // 此处无需再编写相关代码，只要 HTML 中存在该类名即可自动生效。
 });
 </script>
-
 <style>
 /* 紧凑表格样式 */
 .table-compact td,
