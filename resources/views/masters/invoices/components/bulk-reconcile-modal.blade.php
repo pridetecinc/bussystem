@@ -44,6 +44,7 @@
             
             <form action="{{ route('masters.payments.store') }}" method="POST" id="detail-form">
                 @csrf
+                <input type="hidden" name="return_url" id="form-return-url" value="">
                 <input type="hidden" name="group_id" value="{{ request('group_id') }}">
                 <input type="hidden" name="mode" value="detail">
                 
@@ -155,6 +156,7 @@
 <!-- ========================================== -->
 <form id="full-payment-form" action="{{ route('masters.payments.store') }}" method="POST" style="display:none;">
     @csrf
+    <input type="hidden" name="return_url" id="form-return-url" value="">
     <input type="hidden" name="group_id" value="{{ request('group_id') }}">
     <input type="hidden" name="mode" value="full">
     <input type="hidden" name="payment_date" id="full-form-payment-date">
@@ -303,6 +305,8 @@
 
         // --- 1. 批量按钮点击 ---
         btnBulkReconcile.addEventListener('click', function () {
+            const returnUrl = this.getAttribute('data-return-url') || '';
+            window.sourceReturnUrl = returnUrl; // 存入全局变量供后面使用
             // 场景 A: Index 页 (通过复选框选择)
             const checkedBoxes = document.querySelectorAll('.invoice-checkbox:checked');
             
@@ -433,6 +437,10 @@
                 });
                 
                 if (typeof window.updateFooterStats === 'function') window.updateFooterStats();
+                const returnUrlInput = document.getElementById('form-return-url');
+                if (returnUrlInput && window.sourceReturnUrl) {
+                    returnUrlInput.value = window.sourceReturnUrl;
+                }
                 detailModal.show();
             });
         }

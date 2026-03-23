@@ -21,6 +21,7 @@ use App\Jobs\GenerateRequestPdfJob;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Filesystem\FilesystemAdapter; 
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Illuminate\Support\Facades\Auth;
 use ZipArchive; 
 
 class InvoiceController extends Controller
@@ -407,7 +408,7 @@ public function store(Request $request)
     {
         $invoice = Invoice::findOrFail($id);
         if($invoice->is_locked){
-            return redirect()->route('masters.invoices.index', ['group_id' => $invoice->group_id])
+            return redirect()->route('masters.invoices.show', ['invoice' => $invoice, 'group_id' => request('group_id')])
                 ->with('error', 'この請求書は編集できません。');
         }
 
@@ -827,6 +828,8 @@ public function store(Request $request)
         $invoice = Invoice::findOrFail($id);
         // 切换状态
         $invoice->is_locked = !$invoice->is_locked;
+        $invoice->locked_user = session('staff_name', '未ログイン');
+        $invoice->locked_at = now();
         $invoice->save();
 
         return response()->json([
@@ -857,6 +860,8 @@ public function store(Request $request)
                 ->update([
                     'is_locked' => $lockState ? 1 : 0,
                     'updated_at' => now(),
+                    'locked_user_id' => session('staff_name', '未ログイン'),
+                    'locked_at' => now(),
                 ]);
 
             return response()->json([
@@ -1023,7 +1028,7 @@ public function store(Request $request)
     public function duplicate(Request $request, $id)
     {
         // 1. 执行事务，并将结果赋值给 $result 变量
-        $group_id=DB::transaction(function () use ($id, $request) {
+        $newInvoice=DB::transaction(function () use ($id, $request) {
             // 获取原始数据
             $originalInvoice = Invoice::findOrFail($id);
             $originalItems = InvoiceItem::where('invoice_id', $originalInvoice->id)->get();
@@ -1053,17 +1058,19 @@ public function store(Request $request)
                 $newTax->invoice_id = $newInvoice->id; 
                 $newTax->save();
             }
-            return $originalInvoice->group_id; 
+            return $newInvoice; 
 
         });
 
         // 2.由控制器方法返回事务的结果
-        return redirect()
-            ->route('masters.invoices.index', ['group_id' => $group_id])
-            ->with([
+        return redirect()->route('masters.invoices.edit', [
+                'invoice' => $newInvoice->id, // 假设你的路由参数名是 {invoice} 或 {id}
+                'group_id' => $newInvoice->group_id // 保留 group_id 参数，防止筛选条件丢失
+            ]) ->with([
                 'success' => '請求書のコピーが完了し、新規データとして保存されました。',
                 'alert-type' => 'success'
             ]);
+           
     }
 
 }

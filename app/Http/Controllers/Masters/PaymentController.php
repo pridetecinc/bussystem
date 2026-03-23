@@ -49,6 +49,7 @@ public function store(Request $request)
     // ==========================================
     $rules = [
         'group_id' => 'required|integer', 
+        'return_url' => 'required|string',
         'mode'     => 'required|in:full,detail',
         'bank_id'  => 'nullable|integer', 
         'staff_id'  => 'nullable|integer', 
@@ -100,6 +101,7 @@ public function store(Request $request)
     $bank_id       = $validated['bank_id'];
     $items      = $validated['items'];
     $batchToken = 'BATCH-' . date('YmdHis') . '-' . rand(1000, 9999);
+    $return_url = $validated['return_url'];
 
     // 计算总金额 (使用 bcmath 防止浮点误差)
     $totalAmount = '0';
@@ -215,8 +217,7 @@ public function store(Request $request)
 
         DB::commit();
 
-        return redirect()->route('masters.invoices.index', ['group_id' => $groupId])
-            ->with('success', '登録完了：' . $batchToken);
+        return redirect($return_url)->with('success', '登録完了：' . $batchToken);
 
     } catch (\Exception $e) {
         DB::rollBack();
