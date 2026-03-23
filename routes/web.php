@@ -127,6 +127,7 @@ Route::prefix('masters')->name('masters.')->group(function () {
         Route::post('invoices/bulk-pdf', [InvoiceController::class, 'bulkPdf'])->name('invoices.bulk-pdf');
         Route::get('/invoices/{invoice}/pdf-status', [InvoiceController::class, 'checkPdfStatus']);
         Route::post('reconcile/batch', [PaymentController::class, 'storeBatch'])->name('invoices.reconcile.batch.store');
+        Route::get('invoices/{invoice}/duplicate', [InvoiceController::class, 'duplicate'])->name('invoices.duplicate');
         Route::resource('payments', PaymentController::class)->names('payments');
         Route::resource('products', ProductController::class)->names('products');
     });

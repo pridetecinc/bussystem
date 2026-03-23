@@ -55,7 +55,7 @@
                                     </label>
                                     <!-- 下拉框：去掉 form-select-lg，增加 style 控制宽度 -->
                                     <select class="form-select form-select-sm" id="agency_id" name="agency_id" style="width: auto; min-width: 100px;">
-                                        <option value="">-- 代理店を選択してください --</option>
+                                        <option value="0">-- 代理店を選択してください --</option>
                                         @foreach($agencies ?? [] as $agency)
                                             <option value="{{ $agency->id }}" {{ old('agency_id') == $agency->id ? 'selected' : '' }}
                                                     data-agency-name="{{ $agency->agency_name ?? '' }}"
@@ -111,7 +111,7 @@
                                             <label class="btn btn-outline-primary btn-sm" for="type_1">正式</label>
 
                                             <input type="radio" class="btn-check" name="type" id="type_2" value="2" {{ old('type', '1') == '2' ? 'checked' : '' }}>
-                                            <label class="btn btn-outline-primary btn-sm" for="type_2">見積</label>
+                                            <label class="btn btn-outline-primary btn-sm" for="type_2">臨時</label>
                                         </div>
                                     </div>
 
@@ -402,9 +402,15 @@
         const quantityInput = row.querySelector('.quantity');
         const totalInput = row.querySelector('.line-total-input');
         if (!unitPriceInput || !quantityInput || !totalInput) return;
+        
         const price = parseFloat(unitPriceInput.value) || 0;
         const qty = parseFloat(quantityInput.value) || 0;
-        totalInput.value = (price * qty).toLocaleString('ja-JP', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        
+        // 计算总额并四舍五入到整数
+        const total = Math.round(price * qty);
+        
+        // 格式化为带千分位的整数 (例如: 1,000)，如果不为0则显示数字，为0显示 "0"
+        totalInput.value = total.toLocaleString('ja-JP');
     }
     document.getElementById('itemsBody').addEventListener('input', function (e) {
         if (e.target.classList.contains('unit-price') || e.target.classList.contains('quantity')) {

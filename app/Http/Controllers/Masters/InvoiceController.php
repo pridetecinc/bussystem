@@ -93,7 +93,7 @@ public function store(Request $request)
         'staff_id' => 'nullable|integer',
         'reservation_id' => 'nullable|integer',
         'is_locked' => 'nullable|integer',
-        'agency_id' => 'required|integer',
+        'agency_id' => 'nullable|integer',
         'agency_detail' => 'required|string|max:250',
         'operation_date' => 'nullable|date',
         'bank_id' => 'required|integer',
@@ -414,7 +414,7 @@ public function store(Request $request)
         // === 1. 验证输入（与 store 一致）===
         $validated = $request->validate([
             'reservation_id' => 'nullable|integer',
-            'agency_id' => 'required|integer',
+            'agency_id' => 'nullable|integer',
             'staff_id' => 'nullable|integer',
             'is_locked' => 'nullable|integer',
             'agency_detail' => 'required|string|max:250',
@@ -643,9 +643,9 @@ public function store(Request $request)
         $invoice = Invoice::findOrFail($id);
         $groupId = $request->query('group_id');
 
-        if (! $groupId || $invoice->group_id != $groupId) {
-            abort(403);
-        }
+        // if (! $groupId || $invoice->group_id != $groupId) {
+        //     abort(403);
+        // }
 
         
 

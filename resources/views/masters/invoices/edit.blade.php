@@ -7,12 +7,60 @@
     <div class="row">
         <div class="col-md-12">
             <!-- Breadcrumb -->
-            <nav aria-label="breadcrumb" class="mb-3">
-                <ol class="breadcrumb">
+            <nav aria-label="breadcrumb" class="mb-3 d-flex justify-content-between align-items-center">
+                
+                <!-- 左侧：面包屑导航 -->
+                <ol class="breadcrumb mb-0">
                     <li class="breadcrumb-item"><a href="{{ route('masters.home') }}">ホーム</a></li>
                     <li class="breadcrumb-item"><a href="{{ route('masters.invoices.index', ['group_id' => $groupId]) }}">請求書管理</a></li>
                     <li class="breadcrumb-item active" aria-current="page">請求書編集</li>
                 </ol>
+
+                <!-- 右侧：三个操作按钮 (新規、コピー、入金) -->
+                <div class="d-flex gap-2">
+                    <!-- 1. 新規 (新建) -->
+                    <a href="{{ route('masters.invoices.create', ['group_id' => $groupId]) }}" class="btn btn-success btn-sm">
+                        <i class="bi bi-plus-lg"></i> 新規
+                    </a>
+
+                    <!-- 2. コピー (复制) -->
+                    <a href="{{ route('masters.invoices.duplicate', $invoice->id) }}" 
+                    class="btn btn-info btn-sm text-white"
+                    onclick="return confirm('この請求書をコピーして新規作成しますか？');">
+                        <i class="bi bi-copy"></i> コピー
+                    </a>
+
+                    <!-- 3. 【修改后】入金 (记录付款) - 触发模态框 -->
+                    @if($invoice->total_amount > $invoice->paid_amount)
+                        <button type="button" 
+                                class="btn btn-primary btn-sm"
+                                data-bs-toggle="modal" 
+                                data-bs-target="#bulkReconcileModal" {{-- 注意：ID 必须是 bulkReconcileModal --}}
+                                
+                                {{-- 关键：属性名必须与 JS 中的 dataset.xxx 对应 (驼峰式) --}}
+                                data-invoice-id="{{ $invoice->id }}"
+                                value="{{ $invoice->id }}"
+                                data-locked="{{ $invoice->is_locked ? 1 : 0 }}"
+                                data-customer-id="{{ $invoice->agency_id }}"
+                                data-invoice-no="{{ $invoice->invoice_number }}"
+                                data-currency-code="{{ $invoice->currency_code }}"
+                                data-customer-name="{{ $invoice->agency->agency_name ?? ''}}"
+                                data-request-amount="{{ number_format($invoice->total_amount, 2, '.', '') }}" 
+                                data-balance-amount="{{ number_format($invoice->total_amount - $invoice->paid_amount, 2, '.', '') }}"
+                                
+                                {{ $invoice->is_locked ? 'disabled' : '' }}>
+                            <i class="bi bi-cash-coin"></i> 入金
+                        </button>
+                    @else
+                        <!-- 已付清状态显示为禁用按钮 -->
+                        <button type="button" 
+                                class="btn btn-secondary btn-sm" 
+                                disabled
+                                title="全額入金済み">
+                            <i class="bi bi-check-circle-fill"></i> 入金済
+                        </button>
+                    @endif
+                </div>
             </nav>
 
             <!-- Flash Messages -->
@@ -60,7 +108,7 @@
                                         <i class="bi bi-building"></i> 代理店
                                     </label>
                                     <select class="form-select form-select-sm" id="agency_id" name="agency_id" style="width: auto; min-width: 100px;">
-                                        <option value="">-- 代理店を選択してください --</option>
+                                        <option value="0">-- 代理店を選択してください --</option>
                                         @foreach($agencies ?? [] as $agency)
                                             <option value="{{ $agency->id }}" 
                                                     {{ old('agency_id', $invoice->agency_id) == $agency->id ? 'selected' : '' }}
@@ -117,7 +165,7 @@
                                             <label class="btn btn-outline-primary btn-sm" for="type_1">正式</label>
 
                                             <input type="radio" class="btn-check" name="type" id="type_2" value="2" {{ old('type', $invoice->type) == '2' ? 'checked' : '' }}>
-                                            <label class="btn btn-outline-primary btn-sm" for="type_2">見積</label>
+                                            <label class="btn btn-outline-primary btn-sm" for="type_2">臨時</label>
                                         </div>
                                     </div>
 
@@ -307,31 +355,52 @@
                 </template>
 
                 <!-- 操作ボタン -->
-                <div class="d-flex justify-content-between mb-4">
-                    <div>
-                        <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle"></i> 更新する</button>
+                <div class="d-flex justify-content-between w-100 mb-4">
+                    
+                    <!-- 左侧：原有按钮组 (更新、PDF、取消) -->
+                    <!-- 建议包裹在一个 div 中并添加 gap-2 让按钮之间有间距 -->
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> 更新する
+                        </button>
                         
                         @php
                             $hasPdf = !empty($invoice->pdf_file_path);
                             $pdfUrl = $hasPdf ? '/storage/' . $invoice->pdf_file_path : '';
                         @endphp
                         <a href="javascript:void(0)" 
-                           data-invoice-id="{{ $invoice->id }}"
-                           data-has-pdf="{{ $hasPdf ? '1' : '0' }}"
-                           data-pdf-url="{{ $pdfUrl }}"
-                           onclick="handlePdfClick(this)" 
-                           class="btn btn-secondary btn-pdf-action">
+                        data-invoice-id="{{ $invoice->id }}"
+                        data-has-pdf="{{ $hasPdf ? '1' : '0' }}"
+                        data-pdf-url="{{ $pdfUrl }}"
+                        onclick="handlePdfClick(this)" 
+                        class="btn btn-secondary btn-pdf-action">
                             <i class="bi bi-file-earmark-pdf"></i> <span class="btn-text">PDF 表示</span>
                         </a>
                         
-                        <a href="{{ route('masters.invoices.index', ['group_id' => $groupId]) }}" class="btn btn-secondary"><i class="bi bi-x-circle"></i> キャンセル</a>
+                        <a href="{{ route('masters.invoices.index', ['group_id' => $groupId]) }}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> キャンセル
+                        </a>
                     </div>
+
+                     @if( !$invoice->is_locked && $invoice->total_amount == $invoice->paid_amount )
+                    <form action="{{ route('masters.invoices.destroy', $invoice) }}" 
+                        method="POST" 
+                        class="d-inline ms-auto" 
+                        onsubmit="return confirm('本当にこの請求書を削除しますか？復元できません。');">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash"></i> 削除する
+                        </button>
+                    </form>
+                    @endif
                 </div>
             </form>
         </div>
     </div>
 </div>
-
+{{-- 引入公共销账模态框 --}}
+@include('masters.invoices.components.bulk-reconcile-modal')
 <script>
 (function () {
     // 1. 代理店联动 (Edit Page Logic)
@@ -447,9 +516,15 @@
         const quantityInput = row.querySelector('.quantity');
         const totalInput = row.querySelector('.line-total-input');
         if (!unitPriceInput || !quantityInput || !totalInput) return;
+        
         const price = parseFloat(unitPriceInput.value) || 0;
         const qty = parseFloat(quantityInput.value) || 0;
-        totalInput.value = (price * qty).toLocaleString('ja-JP', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        
+        // 计算总额并四舍五入到整数
+        const total = Math.round(price * qty);
+        
+        // 格式化为带千分位的整数 (例如: 1,000)，如果不为0则显示数字，为0显示 "0"
+        totalInput.value = total.toLocaleString('ja-JP');
     }
 
     document.getElementById('itemsBody').addEventListener('input', function (e) {
@@ -543,6 +618,175 @@
             textSpan.textContent = 'PDF を開く'; 
         }
     }
+
+        document.addEventListener('DOMContentLoaded', function () {
+        const reconcileModal = document.getElementById('reconcileModal');
+
+        // 如果页面上没有这个模态框（例如组件引入失败），则直接退出
+        if (!reconcileModal) {
+            console.warn('Reconcile Modal not found on this page.');
+            return;
+        }
+
+        // 检查 Bootstrap 是否已加载
+        if (typeof bootstrap === 'undefined') {
+            console.error('Bootstrap JS is not loaded! Cannot initialize modal logic.');
+            return;
+        }
+
+        // 监听模态框隐藏事件（可选：用于清空表单或重置状态）
+        reconcileModal.addEventListener('hidden.bs.modal', function () {
+            const form = reconcileModal.querySelector('form');
+            if (form) form.reset();
+            // 清除可能的错误提示
+            reconcileModal.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+            reconcileModal.querySelectorAll('.invalid-feedback').forEach(el => el.style.display = 'none');
+        });
+
+
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const modalEl = document.getElementById('bulkReconcileModal');
+        if (!modalEl) return;
+
+        // 监听模态框即将显示的事件
+        modalEl.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            
+            // 1. 检查是否是从 Edit 页面的按钮触发的 (通过检查 data-invoice-id)
+            const invoiceId = button.getAttribute('data-invoice-id');
+            if (!invoiceId) {
+                // 如果没有 ID，说明可能是从其他逻辑触发的，或者是空的，直接返回
+                console.warn('未检测到发票 ID，跳过渲染。');
+                return;
+            }
+
+            console.log('🚀 Edit 页触发单条入金渲染，ID:', invoiceId);
+
+            // 2. 准备数据对象 (从按钮的 data 属性获取)
+            // 注意：确保 HTML 按钮上的属性名与这里一致 (data-invoice-no, data-balance-amount 等)
+            const singleData = {
+                id: invoiceId,
+                invoice_no: button.getAttribute('data-invoice-no') || 'No ID',
+                customer_name: button.getAttribute('data-customer-name') || '未知',
+                currency_code: button.getAttribute('data-currency-code') || 'JPY',
+                request_amount: parseFloat(button.getAttribute('data-request-amount')) || 0,
+                balance_amount: parseFloat(button.getAttribute('data-balance-amount')) || 0
+            };
+
+            // 3. 获取模态框内部的关键元素
+            const container = document.getElementById('reconcile-items-container');
+            const template = document.getElementById('invoice-item-template');
+            const initialModalEl = document.getElementById('initialActionModal');
+
+            if (!container || !template) {
+                console.error('❌ 找不到模态框容器或模板元素！');
+                return;
+            }
+
+            // 4. 【关键步骤】如果存在“第一步选择模态框”，立即关闭它
+            // 因为单条操作不需要问用户选“详细”还是“全额”，直接进入详情页
+            if (initialModalEl) {
+                const initialModalInstance = bootstrap.Modal.getInstance(initialModalEl);
+                if (initialModalInstance) {
+                    initialModalInstance.hide();
+                }
+                // 防止初始模态框的遮罩层残留
+                document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.remove());
+            }
+
+            // 5. 手动执行渲染逻辑 (复制自 bulk-reconcile-modal 的核心逻辑)
+            container.innerHTML = ''; // 清空旧内容
+            const index = 0; // 单条模式索引为 0
+            
+            const clone = document.importNode(template.content, true);
+
+            // --- 填充具体数据 ---
+            clone.querySelector('.item-invoice-id').value = singleData.id;
+            clone.querySelector('.item-original-amount').value = singleData.request_amount;
+            clone.querySelector('.item-invoice-no').textContent = singleData.invoice_no;
+            clone.querySelector('.item-invoice-no').title = singleData.invoice_no; // 设置 title 用于截断显示
+            clone.querySelector('.item-customer-name').textContent = singleData.customer_name;
+            clone.querySelector('.item-customer-name').title = singleData.customer_name;
+            clone.querySelector('.item-request-amount').textContent = singleData.request_amount.toLocaleString('ja-JP');
+
+            // 货币符号
+            const currencySpan = clone.querySelector('.item-currency-display');
+            if(currencySpan) currencySpan.textContent = singleData.currency_code;
+            
+            // 余额和输入框逻辑
+            const balanceEl = clone.querySelector('.item-balance-amount');
+            const amountInput = clone.querySelector('.item-payment-amount');
+            
+            if (singleData.balance_amount <= 0.005) {
+                // 已付清
+                balanceEl.textContent = "0";
+                balanceEl.className = 'fw-bold font-monospace text-secondary item-balance-amount';
+                amountInput.value = "0.00";
+                amountInput.disabled = true;
+                amountInput.classList.add('bg-light', 'text-muted');
+                amountInput.setAttribute('data-max-amount', "0");
+            } else {
+                // 有余额
+                balanceEl.textContent = singleData.balance_amount.toLocaleString('ja-JP');
+                // 默认填入余额
+                amountInput.value = singleData.balance_amount.toFixed(2); 
+                amountInput.disabled = false;
+                amountInput.setAttribute('data-max-amount', singleData.balance_amount);
+                
+                // 移除可能的错误样式
+                amountInput.classList.remove('is-invalid', 'bg-danger', 'text-white', 'bg-light', 'text-muted');
+                
+                // 绑定输入事件以更新底部统计 (如果全局函数存在)
+                amountInput.addEventListener('input', function() {
+                    const val = parseFloat(this.value) || 0;
+                    const max = parseFloat(this.getAttribute('data-max-amount')) || 0;
+                    this.classList.toggle('is-invalid', val > max + 0.001);
+                    if (typeof updateFooterStats === 'function') updateFooterStats();
+                });
+            }
+
+            // --- 修正表单 name 属性 (将 {index} 替换为 0) ---
+            clone.querySelectorAll('input, select').forEach(el => {
+                const name = el.getAttribute('name');
+                if(name) {
+                    el.setAttribute('name', name.replace('{index}', index));
+                }
+            });
+
+            // --- 绑定删除按钮 (单条模式下删除即关闭) ---
+            const closeBtn = clone.querySelector('.btn-close');
+            if(closeBtn) {
+                closeBtn.addEventListener('click', function() {
+                    const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                    if(modalInstance) modalInstance.hide();
+                });
+            }
+
+            // 将渲染好的卡片加入容器
+            container.appendChild(clone);
+
+            // 6. 更新底部统计栏
+            if (typeof updateFooterStats === 'function') {
+                updateFooterStats();
+            } else {
+                // 兜底：如果全局函数还没加载，手动设置计数
+                document.getElementById('reconcile-count').textContent = '1';
+                document.getElementById('reconcile-count-footer').textContent = '1';
+                document.getElementById('footer-request-total').textContent = singleData.request_amount.toLocaleString('ja-JP');
+                document.getElementById('footer-balance-total').textContent = singleData.balance_amount.toLocaleString('ja-JP');
+                document.getElementById('footer-payment-total').textContent = singleData.balance_amount.toLocaleString('ja-JP');
+                document.getElementById('footer-currency-label').textContent = singleData.currency_code;
+            }
+        });
+        
+        // 监听模态框隐藏，清理可能残留的 backdrop (防止多层遮罩)
+        modalEl.addEventListener('hidden.bs.modal', function () {
+            // 可选：如果需要每次关闭都重置表单，可以在这里加 logic
+            // 但通常不需要，因为下次 show 时会重新 innerHTML = ''
+        });
+    });
 
     window.addEventListener('beforeunload', () => {
         Object.keys(pollingTimers).forEach(id => { clearInterval(pollingTimers[id]); delete pollingTimers[id]; });
