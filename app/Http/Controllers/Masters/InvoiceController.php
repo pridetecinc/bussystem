@@ -1035,7 +1035,8 @@ public function store(Request $request)
             // 修改字段
             $newInvoice->invoice_number = $this->generateInvoiceNumber();
             $newInvoice->paid_amount = 0;
-            $newInvoice->payment_status = 1; // 确认 1 代表你想要的状态（通常是未支付/部分支付）
+            $newInvoice->is_locked = 0;
+            $newInvoice->payment_status = 1;
             
             $newInvoice->save();
 
