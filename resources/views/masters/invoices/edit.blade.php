@@ -293,7 +293,7 @@
                                     @if(count($oldItems) > 0)
                                         @foreach($oldItems as $index => $oldItem)
                                             @php $index = (int)$index; $orderNumber = $index + 1; @endphp
-                                            <tr data-index="{{ $index }}">
+                                            <tr data-index="{{ $index }}" draggable="true">
                                                 <td class="text-center align-middle display-order">{{ $orderNumber }}</td>
                                                 <td>
                                                     <input type="text" class="form-control form-control-sm description" 
@@ -326,7 +326,7 @@
                                             </tr>
                                         @endforeach
                                     @else
-                                        <tr data-index="0">
+                                        <tr data-index="0"  draggable="true">
                                             <td class="text-center align-middle display-order">1</td>
                                             <td><input type="text" class="form-control form-control-sm description" name="items[0][description]" list="product-list-0" value="" placeholder="入力または選択"><datalist id="product-list-0">@foreach($products ?? [] as $product) <option value="{{ $product->name }}"> @endforeach</datalist></td>
                                             <td><input type="number" class="form-control form-control-sm unit-price" name="items[0][unit_price]" value="" min="0" step="0.01"></td>
@@ -344,7 +344,7 @@
 
                 <!-- Template -->
                 <template id="newRowTemplate">
-                    <tr>
+                    <tr draggable="true">
                         <td class="text-center align-middle display-order"></td>
                         <td><input type="text" class="form-control form-control-sm description" name="items[__index__][description]" list="product-list-__index__" value="" placeholder="入力または選択"><datalist id="product-list-__index__">@foreach($products ?? [] as $product) <option value="{{ $product->name }}"> @endforeach</datalist></td>
                         <td><input type="number" class="form-control form-control-sm unit-price" name="items[__index__][unit_price]" min="0" step="0.01" value=""></td>
@@ -499,6 +499,7 @@
         
         updateDisplayOrder();
         calculateRowTotal(newRow);
+        initDraggableRows(); 
     }
 
     document.getElementById('addItemRowBtn').addEventListener('click', () => addNewRow());
@@ -538,6 +539,79 @@
         totalInput.value = total.toLocaleString('ja-JP');
     }
 
+    // ===== 拖拽排序邏輯 =====
+    let dragSrcEl = null;
+
+    function handleDragStart(e) {
+        dragSrcEl = this;
+        e.dataTransfer.effectAllowed = 'move';
+        this.classList.add('dragging');
+    }
+
+    function handleDragOver(e) {
+        if (e.preventDefault) e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        return false;
+    }
+
+    function handleDragEnter(e) {
+        this.classList.add('over');
+    }
+
+    function handleDragLeave() {
+        this.classList.remove('over');
+    }
+
+    function handleDrop(e) {
+        if (e.stopPropagation) e.stopPropagation();
+
+        if (dragSrcEl !== this) {
+            const tbody = document.getElementById('itemsBody');
+            const allRows = Array.from(tbody.querySelectorAll('tr[data-index]'));
+
+            const srcIndex = allRows.indexOf(dragSrcEl);
+            const destIndex = allRows.indexOf(this);
+
+            if (srcIndex === -1 || destIndex === -1) return;
+
+            // 移除原行
+            dragSrcEl.parentNode.removeChild(dragSrcEl);
+
+            // 插入到目標位置
+            if (destIndex < srcIndex) {
+                this.parentNode.insertBefore(dragSrcEl, this);
+            } else {
+                this.parentNode.insertBefore(dragSrcEl, this.nextSibling);
+            }
+
+            updateDisplayOrder();
+        }
+
+        this.classList.remove('over');
+        return false;
+    }
+
+    function handleDragEnd() {
+        const rows = document.querySelectorAll('#itemsBody tr[data-index]');
+        rows.forEach(row => row.classList.remove('dragging', 'over'));
+    }
+
+    function initDraggableRows() {
+        const rows = document.querySelectorAll('#itemsBody tr[data-index]');
+        rows.forEach(row => {
+            // 避免重複綁定（簡單防呆）
+            if (row.hasAttribute('data-drag-initialized')) return;
+            row.setAttribute('data-drag-initialized', 'true');
+
+            row.addEventListener('dragstart', handleDragStart, false);
+            row.addEventListener('dragover', handleDragOver, false);
+            row.addEventListener('dragenter', handleDragEnter, false);
+            row.addEventListener('dragleave', handleDragLeave, false);
+            row.addEventListener('drop', handleDrop, false);
+            row.addEventListener('dragend', handleDragEnd, false);
+        });
+    }
+
     document.getElementById('itemsBody').addEventListener('input', function (e) {
         if (e.target.classList.contains('unit-price') || e.target.classList.contains('quantity')) {
             calculateRowTotal(e.target.closest('tr'));
@@ -545,6 +619,7 @@
     });
     
     document.querySelectorAll('#itemsBody tr[data-index]').forEach(row => calculateRowTotal(row));
+    initDraggableRows();
 
     // 4. PDF 轮询逻辑
     const pollingTimers = {}; 
@@ -660,5 +735,17 @@
 #itemsTable tbody tr { height: 44px !important; }
 #itemsTable td { padding: 0.25rem !important; vertical-align: middle; }
 #itemsTable .btn-sm { padding: 0.125rem 0.25rem !important; font-size: 0.75rem !important; }
+/* 拖拽視覺效果 */
+#itemsTable tbody tr[draggable="true"] {
+    cursor: grab;
+}
+#itemsTable tbody tr.dragging {
+    opacity: 0.6;
+    background-color: #f0f8ff !important;
+    cursor: grabbing;
+}
+#itemsTable tbody tr.over {
+    border-top: 2px solid #0d6efd;
+}
 </style>
 @endsection

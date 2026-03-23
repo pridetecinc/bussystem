@@ -418,7 +418,6 @@ public function store(Request $request)
             'reservation_id' => 'nullable|integer',
             'agency_id' => 'nullable|integer',
             'staff_id' => 'nullable|integer',
-            'is_locked' => 'nullable|integer',
             'agency_detail' => 'required|string|max:250',
             'operation_date' => 'nullable|date',
             'group_id' => 'nullable|integer',
@@ -551,7 +550,6 @@ public function store(Request $request)
             DB::table('invoices')->where('id', $id)->update([
                 'group_id' => $validated['group_id'],
                 'bank_id' => $validated['bank_id'],
-                'is_locked' => $validated['is_locked'],
                 'type' => $validated['type'],
                 'invoice_date' => $validated['invoice_date'],
                 'due_date' => $validated['due_date'],
