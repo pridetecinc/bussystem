@@ -203,45 +203,10 @@
     @csrf
     @method('DELETE')
 </form>
+@endsection
 
-<script>
-function confirmDelete(id, name) {
-    if (confirm(name + ' を削除してもよろしいですか？')) {
-        const form = document.getElementById('deleteForm');
-        form.action = '{{ route('masters.bus-assignments.destroy', ':id') }}'.replace(':id', id);
-        form.submit();
-    }
-}
 
-document.addEventListener('DOMContentLoaded', function() {
-    flatpickr('.datepicker-3months', {
-        locale: 'ja',
-        dateFormat: 'Y-m-d',
-        showMonths: 3,
-        allowInput: true,
-        clickOpens: true,
-        mode: 'single',
-        disableMobile: true,
-        wrap: false,
-        onOpen: function(selectedDates, dateStr, instance) {
-            instance.calendarContainer.style.zIndex = '9999';
-        },
-        onReady: function(selectedDates, dateStr, instance) {
-            const daysContainer = instance.daysContainer;
-            if (daysContainer) {
-                const dayContainers = daysContainer.querySelectorAll('.dayContainer');
-                dayContainers.forEach(function(dayContainer) {
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'month-wrapper';
-                    dayContainer.parentNode.insertBefore(wrapper, dayContainer);
-                    wrapper.appendChild(dayContainer);
-                });
-            }
-        }
-    });
-});
-</script>
-
+@push('styles')
 <style>
 .table td { vertical-align: middle; line-height: 1.3; }
 .table hr { margin: 2px 0; opacity: 0.3; }
@@ -448,4 +413,45 @@ span.flatpickr-weekday {
     width: 514px !important;
 }
 </style>
-@endsection
+@endpush
+
+
+@push('scripts')
+<script>
+function confirmDelete(id, name) {
+    if (confirm(name + ' を削除してもよろしいですか？')) {
+        const form = document.getElementById('deleteForm');
+        form.action = '{{ route('masters.bus-assignments.destroy', ':id') }}'.replace(':id', id);
+        form.submit();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    flatpickr('.datepicker-3months', {
+        locale: 'ja',
+        dateFormat: 'Y-m-d',
+        showMonths: 3,
+        allowInput: true,
+        clickOpens: true,
+        mode: 'single',
+        disableMobile: true,
+        wrap: false,
+        onOpen: function(selectedDates, dateStr, instance) {
+            instance.calendarContainer.style.zIndex = '9999';
+        },
+        onReady: function(selectedDates, dateStr, instance) {
+            const daysContainer = instance.daysContainer;
+            if (daysContainer) {
+                const dayContainers = daysContainer.querySelectorAll('.dayContainer');
+                dayContainers.forEach(function(dayContainer) {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'month-wrapper';
+                    dayContainer.parentNode.insertBefore(wrapper, dayContainer);
+                    wrapper.appendChild(dayContainer);
+                });
+            }
+        }
+    });
+});
+</script>
+@endpush

@@ -65,12 +65,12 @@
             <div class="d-flex mb-1">
                 <div class="label-width text-gray">開始日</div>
                 <div class="d-flex align-items-center" style="flex: 1;">
-                    <input type="text" name="start_date" value="" class="form-input-small input-width-date datepicker-3months" id="start_date" style="flex: 1; min-width: 0;" placeholder="YYYY-MM-DD" readonly>
+                    <input type="text" name="start_date" value="{{ request('start_date', \Carbon\Carbon::today()->format('Y-m-d')) }}" class="form-input-small input-width-date datepicker-3months" id="start_date" style="flex: 1; min-width: 0;" placeholder="YYYY-MM-DD" autocomplete="off">
                     <span class="mx-2">
                         <input type="time" name="start_time" value="{{ old('start_time', '08:00') }}" class="form-input-small input-width-time" step="60" style="width: 90px;">
                     </span>
                     <span class="label-text mx-2" style="margin-left:0 !important;">~</span>
-                    <input type="text" name="end_date" value="" class="form-input-small input-width-date datepicker-3months" id="end_date" style="flex: 1; min-width: 0;" placeholder="YYYY-MM-DD" readonly>
+                    <input type="text" name="end_date" value="{{ request('end_date', \Carbon\Carbon::today()->format('Y-m-d')) }}" class="form-input-small input-width-date datepicker-3months" id="end_date" style="flex: 1; min-width: 0;" placeholder="YYYY-MM-DD" autocomplete="off">
                     <span class="ms-2">
                         <input type="time" name="end_time" value="{{ old('end_time', '18:00') }}" class="form-input-small input-width-time" step="60" style="width: 90px;">
                     </span>
@@ -255,6 +255,121 @@
         <input type="hidden" name="saved_id" id="saved_id" value="">
     </form>
 </div>
+@endsection
+
+
+@push('styles')
+<style>
+    .text-small { color: #374151; font-size: 11px; }
+    .text-gray { color: #6b7280; font-size: 11px; }
+    .card { background-color: white; border: 1px solid #E5E7EB; border-radius: 6px; padding: 4px 8px; margin-bottom: 8px; }
+    .form-input { width: 100%; border: 1px solid #E5E7EB; border-radius: 4px; font-size: 11px; padding: 4px 6px; height: 28px; }
+    .form-input-small { border: 1px solid #E5E7EB; border-radius: 4px; padding: 4px; height: 28px; font-size: 11px; }
+    .checkbox { width: 12px; height: 12px; margin-right: 2px; }
+    .checkbox-large { width: 14px; height: 14px; margin-right: 4px; }
+    .label-text { color: #374151; font-size: 11px; }
+    .label-text-gray { color: #6b7280; font-size: 11px; }
+    .tab-container { position: relative; }
+    .tab-wrapper { display: flex; margin-bottom: -1px; }
+    .tab-item { font-size: 11px; padding: 6px 16px; border-radius: 4px 4px 0 0; cursor: pointer; }
+    .tab-item.active { background-color: white; color: #374151; border-top: 1px solid #d1d5db; border-left: 1px solid #d1d5db; border-right: 1px solid #d1d5db; border-bottom: none; z-index: 2; }
+    .tab-item.inactive { background-color: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; border-bottom: 1px solid #d1d5db; }
+    .tab-line { height: 1px; background-color: #d1d5db; width: 100%; margin-top: -1px; z-index: 1; }
+    .tab-content { padding-top: 4px; }
+    .btn-primary { background-color: #2563eb; border: none; color: white; font-size: 12px; padding: 6px 24px; border-radius: 4px; cursor: pointer; }
+    .btn-primary:hover { background-color: #1d4ed8; }
+    .btn-primary:disabled { background-color: #93c5fd; cursor: not-allowed; }
+    .btn-secondary { background-color: #186718; border: none; color: white; font-size: 12px; padding: 6px 24px; border-radius: 4px; cursor: pointer; }
+    .btn-secondary:hover { background-color: #125112; }
+    .btn-danger { background-color: #dc2626; border: none; color: white; font-size: 12px; padding: 6px 24px; border-radius: 4px; cursor: pointer; }
+    .btn-danger:hover { background-color: #b91c1c; }
+    .dashed-box { color: #6b7280; font-size: 11px; padding: 16px; background-color: #f9fafb; border-radius: 4px; text-align: center; border: 1px dashed #d1d5db; }
+    .label-width { width: 50px; }
+    .label-width-large { width: 60px; }
+    .label-width-copy { width: 90px; }
+    .input-width-date { width: 120px; }
+    .input-width-time { width: 90px; }
+    .input-width-number { width: 60px; }
+    .input-width-100 { width: 100px; }
+    .input-width-40 { width: 40px; }
+    .mr-2 { margin-right: 8px; }
+    .mr-4 { margin-right: 4px; }
+    .mr-5 { margin-right: 8px; }
+    .ml-4 { margin-left: 4px; }
+    .mx-2 { margin: 0 2px; }
+    .mx-3 { margin: 0 4px; }
+    .mb-1 { margin-bottom: 4px; }
+    .mb-2 { margin-bottom: 8px; }
+    .mt-2 { margin-top: 8px; }
+    .mt-3 { margin-top: 12px; }
+    .gap-2 { gap: 8px; }
+    .gap-4 { gap: 16px; }
+    .flex-1 { flex: 1; }
+    .d-flex { display: flex; }
+    .flex-wrap { flex-wrap: wrap; }
+    .align-items-center { align-items: center; }
+    .align-items-start { align-items: flex-start; }
+    .justify-content-between { justify-content: space-between; }
+    .date-container { display: flex; align-items: center; flex-wrap: wrap; gap: 2px; }
+    .position-relative { position: relative; }
+    
+    .suggestions-container {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #E5E7EB;
+        border-radius: 4px;
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 1000;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .suggestion-item {
+        padding: 6px 8px;
+        cursor: pointer;
+        font-size: 11px;
+        border-bottom: 1px solid #f3f4f6;
+    }
+    
+    .suggestion-item:hover {
+        background-color: #f3f4f6;
+    }
+    
+    .suggestion-item:last-child {
+        border-bottom: none;
+    }
+    
+    .vehicle-selected { border-color: #2563eb; background-color: #f0f7ff; }
+    .warning-message { color: #f59e0b; font-size: 10px; margin-top: 2px; animation: fadeIn 0.3s ease; }
+
+    
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+    
+    .is-invalid { border-color: #dc3545 !important; background-color: #fff8f8; }
+    .is-invalid:focus { border-color: #dc3545 !important; box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25); }
+    .error-message { color: #dc3545; font-size: 10px; margin-top: 2px; }
+    .is-invalid { animation: shake 0.2s ease-in-out; }
+    @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+    
+    input[readonly] { background-color: #f9fafb; cursor: default; }
+    input[readonly]:focus { outline: none; border-color: #E5E7EB; }
+
+    input[type="date"]::-webkit-calendar-picker-indicator,
+    input[type="time"]::-webkit-calendar-picker-indicator {
+        cursor: pointer;
+        opacity: 0.6;
+    }
+    
+    input[type="date"]::-webkit-calendar-picker-indicator:hover,
+    input[type="time"]::-webkit-calendar-picker-indicator:hover {
+        opacity: 1;
+    }
+</style>
+@endpush
+
 
 @push('scripts')
 <script>
@@ -652,327 +767,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+document.addEventListener('DOMContentLoaded', function() {
+    initDateRangePicker('input[name="start_date"]', 'input[name="end_date"]');
+});
 </script>
 @endpush
-
-@push('styles')
-<style>
-    .text-small { color: #374151; font-size: 11px; }
-    .text-gray { color: #6b7280; font-size: 11px; }
-    .card { background-color: white; border: 1px solid #E5E7EB; border-radius: 6px; padding: 4px 8px; margin-bottom: 8px; }
-    .form-input { width: 100%; border: 1px solid #E5E7EB; border-radius: 4px; font-size: 11px; padding: 4px 6px; height: 28px; }
-    .form-input-small { border: 1px solid #E5E7EB; border-radius: 4px; padding: 4px; height: 28px; font-size: 11px; }
-    .checkbox { width: 12px; height: 12px; margin-right: 2px; }
-    .checkbox-large { width: 14px; height: 14px; margin-right: 4px; }
-    .label-text { color: #374151; font-size: 11px; }
-    .label-text-gray { color: #6b7280; font-size: 11px; }
-    .tab-container { position: relative; }
-    .tab-wrapper { display: flex; margin-bottom: -1px; }
-    .tab-item { font-size: 11px; padding: 6px 16px; border-radius: 4px 4px 0 0; cursor: pointer; }
-    .tab-item.active { background-color: white; color: #374151; border-top: 1px solid #d1d5db; border-left: 1px solid #d1d5db; border-right: 1px solid #d1d5db; border-bottom: none; z-index: 2; }
-    .tab-item.inactive { background-color: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; border-bottom: 1px solid #d1d5db; }
-    .tab-line { height: 1px; background-color: #d1d5db; width: 100%; margin-top: -1px; z-index: 1; }
-    .tab-content { padding-top: 4px; }
-    .btn-primary { background-color: #2563eb; border: none; color: white; font-size: 12px; padding: 6px 24px; border-radius: 4px; cursor: pointer; }
-    .btn-primary:hover { background-color: #1d4ed8; }
-    .btn-primary:disabled { background-color: #93c5fd; cursor: not-allowed; }
-    .btn-secondary { background-color: #186718; border: none; color: white; font-size: 12px; padding: 6px 24px; border-radius: 4px; cursor: pointer; }
-    .btn-secondary:hover { background-color: #125112; }
-    .btn-danger { background-color: #dc2626; border: none; color: white; font-size: 12px; padding: 6px 24px; border-radius: 4px; cursor: pointer; }
-    .btn-danger:hover { background-color: #b91c1c; }
-    .dashed-box { color: #6b7280; font-size: 11px; padding: 16px; background-color: #f9fafb; border-radius: 4px; text-align: center; border: 1px dashed #d1d5db; }
-    .label-width { width: 50px; }
-    .label-width-large { width: 60px; }
-    .label-width-copy { width: 90px; }
-    .input-width-date { width: 120px; }
-    .input-width-time { width: 90px; }
-    .input-width-number { width: 60px; }
-    .input-width-100 { width: 100px; }
-    .input-width-40 { width: 40px; }
-    .mr-2 { margin-right: 8px; }
-    .mr-4 { margin-right: 4px; }
-    .mr-5 { margin-right: 8px; }
-    .ml-4 { margin-left: 4px; }
-    .mx-2 { margin: 0 2px; }
-    .mx-3 { margin: 0 4px; }
-    .mb-1 { margin-bottom: 4px; }
-    .mb-2 { margin-bottom: 8px; }
-    .mt-2 { margin-top: 8px; }
-    .mt-3 { margin-top: 12px; }
-    .gap-2 { gap: 8px; }
-    .gap-4 { gap: 16px; }
-    .flex-1 { flex: 1; }
-    .d-flex { display: flex; }
-    .flex-wrap { flex-wrap: wrap; }
-    .align-items-center { align-items: center; }
-    .align-items-start { align-items: flex-start; }
-    .justify-content-between { justify-content: space-between; }
-    .date-container { display: flex; align-items: center; flex-wrap: wrap; gap: 2px; }
-    .position-relative { position: relative; }
-    
-    .suggestions-container {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        background: white;
-        border: 1px solid #E5E7EB;
-        border-radius: 4px;
-        max-height: 200px;
-        overflow-y: auto;
-        z-index: 1000;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    
-    .suggestion-item {
-        padding: 6px 8px;
-        cursor: pointer;
-        font-size: 11px;
-        border-bottom: 1px solid #f3f4f6;
-    }
-    
-    .suggestion-item:hover {
-        background-color: #f3f4f6;
-    }
-    
-    .suggestion-item:last-child {
-        border-bottom: none;
-    }
-    
-    .vehicle-selected { border-color: #2563eb; background-color: #f0f7ff; }
-    .warning-message { color: #f59e0b; font-size: 10px; margin-top: 2px; animation: fadeIn 0.3s ease; }
-
-
-
-
-    /* Flatpickr 日历美化样式 - 紧凑版 */
-    .flatpickr-calendar {
-        border: 1px solid #ddd !important;
-        border-radius: 6px !important;
-        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12) !important;
-        font-family: inherit !important;
-        font-size: 11px !important;
-        overflow: hidden !important;
-    }
-
-    .flatpickr-calendar.multiMonth {
-        width: 516px !important;
-        max-width: 95vw !important;
-    }
-
-    .flatpickr-calendar.multiMonth .flatpickr-innerContainer {
-        width: 100% !important;
-    }
-
-    .flatpickr-calendar.multiMonth .flatpickr-months {
-        display: flex !important;
-    }
-
-    .flatpickr-calendar.multiMonth .flatpickr-month {
-        flex: 1 !important;
-    }
-
-    .flatpickr-calendar.multiMonth .flatpickr-month:not(:last-child) {
-        border-right: 1px solid #e9ecef !important;
-    }
-
-    .flatpickr-months {
-        background: linear-gradient(135deg, #1f3241 0%, #2d4a5e 100%) !important;
-        border-radius: 6px 6px 0 0 !important;
-        display: flex !important;
-    }
-
-    .flatpickr-month {
-        height: 28px !important;
-        padding-right: 0 !important;
-    }
-
-    .flatpickr-current-month {
-        padding: 3px 0 0 0 !important;
-    }
-
-    .flatpickr-current-month .flatpickr-monthDropdown-months {
-        font-weight: 600 !important;
-        color: #fff !important;
-        font-size: 11px !important;
-    }
-
-    .flatpickr-current-month .numInputWrapper span {
-        color: #fff !important;
-    }
-
-    .flatpickr-current-month input.cur-year {
-        color: #fff !important;
-        font-weight: 600 !important;
-        font-size: 11px !important;
-    }
-
-    .flatpickr-months .flatpickr-month,
-    .flatpickr-months .flatpickr-next-month,
-    .flatpickr-months .flatpickr-prev-month {
-        color: #fff !important;
-        fill: #fff !important;
-    }
-
-    .flatpickr-months .flatpickr-next-month:hover svg,
-    .flatpickr-months .flatpickr-prev-month:hover svg {
-        fill: #ffc107 !important;
-    }
-
-    .flatpickr-months .flatpickr-next-month,
-    .flatpickr-months .flatpickr-prev-month {
-        width: 20px !important;
-        height: 20px !important;
-        padding: 2px !important;
-    }
-
-    .flatpickr-weekdays {
-        background: #f8f9fa !important;
-        border-bottom: 1px solid #e9ecef !important;
-        margin: 0 !important;
-    }
-
-    .flatpickr-weekday {
-        color: #495057 !important;
-        font-weight: 600 !important;
-        font-size: 10px !important;
-        padding: 1px 0 !important;
-    }
-
-    .flatpickr-days {
-        border: none !important;
-        padding: 0 !important;
-    }
-
-    .flatpickr-day {
-        color: #374151 !important;
-        border-radius: 2px !important;
-        margin: 0 !important;
-        border: 1px solid transparent !important;
-        max-width: 24px !important;
-        width: 24px !important;
-        height: 22px !important;
-        line-height: 20px !important;
-        font-size: 10px !important;
-    }
-
-    .flatpickr-day:hover {
-        background: #e0f2fe !important;
-        border-color: #2563eb !important;
-        color: #2563eb !important;
-    }
-
-    .flatpickr-day.selected {
-        background: #2563eb !important;
-        border-color: #2563eb !important;
-        color: #fff !important;
-        font-weight: 600 !important;
-    }
-
-    .flatpickr-day.selected:hover {
-        background: #1d4ed8 !important;
-    }
-
-    .flatpickr-day.startRange,
-    .flatpickr-day.endRange {
-        background: #2563eb !important;
-        border-color: #2563eb !important;
-        color: #fff !important;
-    }
-
-    .flatpickr-day.inRange {
-        background: #dbeafe !important;
-        border-color: transparent !important;
-        color: #1e40af !important;
-    }
-
-    .flatpickr-day.today {
-        border-color: #ffc107 !important;
-        background: #fffbeb !important;
-        color: #374151 !important;
-    }
-
-    .flatpickr-day.today:hover {
-        background: #fef3c7 !important;
-        border-color: #f59e0b !important;
-        color: #374151 !important;
-    }
-
-    .flatpickr-months .flatpickr-month {
-        background: transparent !important;
-    }
-
-    span.flatpickr-weekday {
-        background: #f8f9fa !important;
-    }
-
-    .flatpickr-calendar.showTimeInput.hasTime .flatpickr-time {
-        border-top: 1px solid #e9ecef !important;
-    }
-
-    /* 确保3个月完整显示 */
-    .flatpickr-calendar.multiMonth .dayContainer {
-        width: 168px !important;
-        min-width: 168px !important;
-        max-width: 168px !important;
-        position: relative !important;
-    }
-
-    /* 外层包装器 - 用于显示竖线 */
-    .month-wrapper {
-        flex: 1 !important;
-        position: relative !important;
-        padding: 2px !important;
-        height: 135px !important;
-    }
-
-    .month-wrapper:not(:last-child)::after {
-        content: '';
-        position: absolute;
-        right: 0;
-        top: 0;
-        bottom: 0;
-        width: 1px;
-        background-color: #e9ecef;
-    }
-
-    /* 确保月份之间竖线显示到底部 - 使用 flex 让所有月份高度一致 */
-    .flatpickr-calendar.multiMonth .flatpickr-days {
-        display: flex !important;
-        position: relative;
-        width: 514px !important;
-    }
-
-    /* 去除右边空白，确保竖线整齐 */
-    .flatpickr-calendar.multiMonth .flatpickr-days .dayContainer {
-        padding: 0 !important;
-    }
-
-    .flatpickr-calendar.multiMonth .flatpickr-rContainer {
-        width: 514px !important;
-    }
-    
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
-    
-    .is-invalid { border-color: #dc3545 !important; background-color: #fff8f8; }
-    .is-invalid:focus { border-color: #dc3545 !important; box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25); }
-    .error-message { color: #dc3545; font-size: 10px; margin-top: 2px; }
-    .is-invalid { animation: shake 0.2s ease-in-out; }
-    @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
-    
-    input[readonly] { background-color: #f9fafb; cursor: default; }
-    input[readonly]:focus { outline: none; border-color: #E5E7EB; }
-
-    input[type="date"]::-webkit-calendar-picker-indicator,
-    input[type="time"]::-webkit-calendar-picker-indicator {
-        cursor: pointer;
-        opacity: 0.6;
-    }
-    
-    input[type="date"]::-webkit-calendar-picker-indicator:hover,
-    input[type="time"]::-webkit-calendar-picker-indicator:hover {
-        opacity: 1;
-    }
-</style>
-@endpush
-@endsection

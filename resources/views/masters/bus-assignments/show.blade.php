@@ -286,7 +286,10 @@
 </div>
 
 </div>
+@endsection
 
+
+@push('styles')
 <style>
 .text-gray { color: #6b7280; font-size: 11px; }
 .form-input { width: 100%; border: 1px solid #aaa; border-radius: 4px; font-size: 11px; padding: 4px 6px; height: 28px; }
@@ -332,7 +335,10 @@
 .tab-button2:not(.active) { background-color: #F3F4F6 !important; border-bottom-color: #aaa !important; color: #6B7280 !important; }
 .tab-content2 { border: 1px #E5E7EB solid; border-top: 0; background-color: #fff; padding: 10px; height: 140px; }
 </style>
+@endpush
 
+
+@push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.tab-button2').forEach(button => {
@@ -368,4 +374,4 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-@endsection
+@endpush

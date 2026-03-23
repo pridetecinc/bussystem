@@ -371,7 +371,10 @@
         @method('DELETE')
     </form>
 </div>
+@endsection
 
+
+@push('styles')
 <style>
 .text-gray { color: #6b7280; font-size: 11px; }
 .form-input { width: 100%; border: 1px solid #aaa; border-radius: 4px; font-size: 11px; padding: 4px 6px; height: 28px; }
@@ -620,7 +623,10 @@ span.flatpickr-weekday {
     width: 514px !important;
 }
 </style>
+@endpush
 
+
+@push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     flatpickr('.datepicker-3months', {
@@ -957,4 +963,4 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-@endsection
+@endpush

@@ -946,7 +946,10 @@
         @method('DELETE')
     </form>
 </div>
+@endsection
 
+
+@push('styles')
 <style>
 .text-gray { color: #6b7280; font-size: 11px; }
 .form-input { width: 100%; border: 1px solid #aaa; border-radius: 4px; font-size: 11px; padding: 4px 6px; height: 28px; }
@@ -1403,7 +1406,10 @@ span.flatpickr-weekday {
     width: 514px !important;
 }
 </style>
+@endpush
 
+
+@push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     flatpickr('.datepicker-3months', {
@@ -1452,13 +1458,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         document.querySelectorAll('.vehicle-select').forEach(selectField => {
             const vehicleIndex = selectField.id.replace('vehicle_select_', '');
-            
-            if (!selectField.value) {
-                alert(`運行詳細-${vehicleIndex.padStart(2, '0')}の車両を選択してください。`);
-                selectField.focus();
-                hasError = true;
-                return;
-            }
             
             const card = selectField.closest('.card');
             
@@ -2147,7 +2146,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function addRowAfter(clickedButton) {
         const currentRow = clickedButton.closest('tr.itinerary-row');
         if (!currentRow) return;
-
+    
         const table = currentRow.closest('table');
         const tbody = table.querySelector('tbody');
         
@@ -2165,10 +2164,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const guideId = card.querySelector('.guide-select') ? card.querySelector('.guide-select').value : '';
         
         const allRows = Array.from(tbody.querySelectorAll('tr.itinerary-row:not(.no-data-row)'));
-        
         let newIndex = allRows.length;
         
-        const newRow = createNewRow(date, newIndex, vehicleGroupValue, cardBusId, vehicleId, driverId, guideId);
+        const uniqueIndex = Date.now() + '_' + Math.random().toString(36).substr(2, 8);
+        
+        const newRow = createNewRow(date, uniqueIndex, vehicleGroupValue, cardBusId, vehicleId, driverId, guideId);
         
         const nextRow = currentRow.nextElementSibling;
         if (nextRow && !nextRow.classList.contains('no-data-row')) {
@@ -2184,7 +2184,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         reindexRows(table);
         updateMoveButtons(table);
-
+    
         const newDateInput = newRow.querySelector('.datepicker-3months');
         if (newDateInput && !newDateInput._flatpickr) {
             flatpickr(newDateInput, {
@@ -2216,38 +2216,90 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function deleteRow(clickedButton) {
-        if (!confirm('この行程を削除してもよろしいですか？')) {
-            return;
-        }
-        
         const row = clickedButton.closest('tr.itinerary-row');
         if (!row) return;
         
         const itineraryId = row.getAttribute('data-itinerary-id');
+        const busId = row.getAttribute('data-bus-id');
+        const groupId = {{ $groupInfo->id }};
+        
         if (itineraryId && itineraryId !== '') {
-            deletedItineraryIds.push(itineraryId);
-        }
-        
-        const table = row.closest('table');
-        const tbody = table.querySelector('tbody');
-        
-        row.remove();
-        
-        const rows = tbody.querySelectorAll('tr.itinerary-row:not(.no-data-row)');
-        if (rows.length === 0) {
-            tbody.innerHTML = `
-                <tr class="no-data-row">
-                    <td colspan="6" class="text-center py-4" style="color: #6c757d; background-color: #f9f9f9;">
-                        <i class="bi bi-info-circle me-1"></i> 旅程データがありません。「+」ボタンを押して追加してください。
-                     </tr>
-                `;
+            if (!confirm('この行程を削除してもよろしいですか？')) {
+                return;
+            }
+            
+            const originalText = clickedButton.innerHTML;
+            clickedButton.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+            clickedButton.disabled = true;
+            
+            fetch(`/masters/group-infos/${groupId}/delete-itinerary`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    itinerary_id: itineraryId,
+                    bus_id: busId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const table = row.closest('table');
+                    const tbody = table.querySelector('tbody');
+                    row.remove();
+                    
+                    const rows = tbody.querySelectorAll('tr.itinerary-row:not(.no-data-row)');
+                    if (rows.length === 0) {
+                        tbody.innerHTML = `
+                            <tr class="no-data-row">
+                                <td colspan="6" class="text-center py-4" style="color: #6c757d; background-color: #f9f9f9;">
+                                    <i class="bi bi-info-circle me-1"></i> 旅程データがありません。「+」ボタンを押して追加してください。
+                                </tr>
+                        `;
+                    } else {
+                        reindexRows(table);
+                        updateMoveButtons(table);
+                    }
+                    
+                    location.reload();
+                } else {
+                    alert('削除に失敗しました: ' + data.message);
+                    clickedButton.innerHTML = originalText;
+                    clickedButton.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('削除中にエラーが発生しました: ' + error.message);
+                clickedButton.innerHTML = originalText;
+                clickedButton.disabled = false;
+            });
         } else {
-            reindexRows(table);
-            updateMoveButtons(table);
+            if (confirm('この行程を削除してもよろしいですか？')) {
+                const table = row.closest('table');
+                const tbody = table.querySelector('tbody');
+                row.remove();
+                
+                const rows = tbody.querySelectorAll('tr.itinerary-row:not(.no-data-row)');
+                if (rows.length === 0) {
+                    tbody.innerHTML = `
+                        <tr class="no-data-row">
+                            <td colspan="6" class="text-center py-4" style="color: #6c757d; background-color: #f9f9f9;">
+                                <i class="bi bi-info-circle me-1"></i> 旅程データがありません。「+」ボタンを押して追加してください。
+                            </tr>
+                    `;
+                } else {
+                    reindexRows(table);
+                    updateMoveButtons(table);
+                }
+            }
         }
     }
 
-    function createNewRow(date, index, vehicleGroup = '1', busId = '', vehicleId = '', driverId = '', guideId = '') {
+    function createNewRow(date, uniqueIndex, vehicleGroup = '1', busId = '', vehicleId = '', driverId = '', guideId = '') {
         if (date && date.includes(' ')) {
             date = date.split(' ')[0];
         }
@@ -2255,54 +2307,57 @@ document.addEventListener('DOMContentLoaded', function() {
         const newRow = document.createElement('tr');
         newRow.className = 'itinerary-row';
         newRow.setAttribute('data-vehicle', vehicleGroup);
-        newRow.setAttribute('data-index', index);
+        newRow.setAttribute('data-index', uniqueIndex);
         newRow.setAttribute('data-bus-id', busId);
         newRow.setAttribute('data-itinerary-id', '');
         
+        const table = newRow.closest('table');
+        const rowNumber = table ? table.querySelectorAll('tr.itinerary-row:not(.no-data-row)').length + 1 : 1;
+        
         newRow.innerHTML = `
             <td style="vertical-align: middle; text-align: center; background-color: #f9f9f9; position: relative;">
-                <span class="row-number" style="position: absolute; top: 2px; left: 2px; color: #2563eb; font-size: 10px; font-weight: bold;">${index + 1}</span>
-                <input type="hidden" name="daily_itineraries[${index}][id]" value="">
-                <input type="hidden" name="daily_itineraries[${index}][display_order]" value="${index + 1}">
-                <input type="hidden" name="daily_itineraries[${index}][bus_assignment_id]" value="${busId}" class="itinerary-bus-id">
-                <input type="hidden" name="daily_itineraries[${index}][vehicle_id]" value="${vehicleId}" class="itinerary-vehicle-id">
-                <input type="hidden" name="daily_itineraries[${index}][driver_id]" value="${driverId}" class="itinerary-driver-id">
-                <input type="hidden" name="daily_itineraries[${index}][guide_id]" value="${guideId}" class="itinerary-guide-id">
-                <input type="text" class="form-control form-control-sm border datepicker-3months" name="daily_itineraries[${index}][date]" value="${date}" style="width: 100%; text-align: center;" placeholder="YYYY-MM-DD">
-                <input type="hidden" name="daily_itineraries[${index}][vehicle_group]" value="${vehicleGroup}">
+                <span class="row-number" style="position: absolute; top: 2px; left: 2px; color: #2563eb; font-size: 10px; font-weight: bold;">${rowNumber}</span>
+                <input type="hidden" name="daily_itineraries[${uniqueIndex}][id]" value="">
+                <input type="hidden" name="daily_itineraries[${uniqueIndex}][display_order]" value="${rowNumber}">
+                <input type="hidden" name="daily_itineraries[${uniqueIndex}][bus_assignment_id]" value="${busId}" class="itinerary-bus-id">
+                <input type="hidden" name="daily_itineraries[${uniqueIndex}][vehicle_id]" value="${vehicleId}" class="itinerary-vehicle-id">
+                <input type="hidden" name="daily_itineraries[${uniqueIndex}][driver_id]" value="${driverId}" class="itinerary-driver-id">
+                <input type="hidden" name="daily_itineraries[${uniqueIndex}][guide_id]" value="${guideId}" class="itinerary-guide-id">
+                <input type="text" class="form-control form-control-sm border datepicker-3months" name="daily_itineraries[${uniqueIndex}][date]" value="${date}" style="width: 100%; text-align: center;" placeholder="YYYY-MM-DD">
+                <input type="hidden" name="daily_itineraries[${uniqueIndex}][vehicle_group]" value="${vehicleGroup}">
              </td>
             <td style="padding: 2px;">
                 <div class="d-flex flex-column" style="gap: 2px;">
                     <input type="time" class="form-control form-control-sm border" 
-                           name="daily_itineraries[${index}][time_start]" value="08:00" 
+                           name="daily_itineraries[${uniqueIndex}][time_start]" value="08:00" 
                            style="width: 100%;" step="60">
                     <input type="text" class="form-control form-control-sm border" 
-                           name="daily_itineraries[${index}][start_location]" value="" 
+                           name="daily_itineraries[${uniqueIndex}][start_location]" value="" 
                            placeholder="開始場所" style="width: 100%;">
                 </div>
-             </td>
+            </td>
             <td style="padding: 2px;">
                 <div class="d-flex flex-column" style="gap: 2px;">
                     <input type="time" class="form-control form-control-sm border" 
-                           name="daily_itineraries[${index}][time_end]" value="18:00" 
+                           name="daily_itineraries[${uniqueIndex}][time_end]" value="18:00" 
                            style="width: 100%;" step="60">
                     <input type="text" class="form-control form-control-sm border" 
-                           name="daily_itineraries[${index}][end_location]" value="" 
+                           name="daily_itineraries[${uniqueIndex}][end_location]" value="" 
                            placeholder="終了場所" style="width: 100%;">
                 </div>
-             </td>
+            </td>
             <td style="vertical-align: middle; padding: 2px;">
-                <textarea name="daily_itineraries[${index}][itinerary]" rows="2" 
+                <textarea name="daily_itineraries[${uniqueIndex}][itinerary]" rows="2" 
                           class="form-control form-control-sm border" 
                           style="width: 100%; height: 100%; min-height: 60px;"></textarea>
-             </td>
+            </td>
             <td style="padding: 2px; text-align: center; vertical-align: middle;">
                 <div style="display: flex; justify-content: center; align-items: center; height: 100%;">
                     <input type="checkbox" class="form-check-input itinerary-select" 
-                           id="select_itinerary_${index}" 
+                           id="select_itinerary_${uniqueIndex}" 
                            style="margin: 0; width: 18px; height: 18px; cursor: pointer;">
                 </div>
-             </td>
+            </td>
             <td style="padding: 2px; text-align: center; vertical-align: middle;">
                 <div class="d-flex justify-content-center gap-1">
                     <button type="button" class="btn btn-outline-secondary btn-sm move-up-btn" title="上へ移動">
@@ -2318,7 +2373,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <i class="bi bi-dash-lg"></i>
                     </button>
                 </div>
-             </td>
+            </td>
         `;
         
         return newRow;
@@ -2674,6 +2729,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function generateRowsFromSource(sourceRows, newIndex, newBusId) {
         let rowsHtml = '';
+        const baseTimestamp = Date.now();
         sourceRows.forEach((row, idx) => {
             const dateInput = row.querySelector('input[name*="[date]"]');
             const timeStartInput = row.querySelector('input[name*="[time_start]"]');
@@ -2696,21 +2752,22 @@ document.addEventListener('DOMContentLoaded', function() {
             const driverId = row.querySelector('.itinerary-driver-id')?.value || '';
             const guideId = row.querySelector('.itinerary-guide-id')?.value || '';
             
-            const globalIndex = (newIndex - 1) * 100 + idx;
+            const uniqueId = baseTimestamp + '_' + Math.random().toString(36).substr(2, 8) + '_' + newIndex + '_' + idx;
+            const globalIndex = uniqueId;
             
             rowsHtml += `
                 <tr class="itinerary-row" data-vehicle="${newIndex}" data-index="${globalIndex}" data-bus-id="" data-itinerary-id="">
                     <td style="vertical-align: middle; text-align: center; background-color: #f9f9f9; position: relative;">
                         <span class="row-number" style="position: absolute; top: 2px; left: 2px; color: #2563eb; font-size: 10px; font-weight: bold;">${idx + 1}</span>
                         <input type="hidden" name="daily_itineraries[${globalIndex}][id]" value="">
-                        <input type="hidden" name="daily_itineraries[${globalIndex}][display_order]" value="${globalIndex + 1}">
+                        <input type="hidden" name="daily_itineraries[${globalIndex}][display_order]" value="${idx + 1}">
                         <input type="hidden" name="daily_itineraries[${globalIndex}][bus_assignment_id]" value="" class="itinerary-bus-id">
                         <input type="hidden" name="daily_itineraries[${globalIndex}][vehicle_id]" value="${vehicleId}" class="itinerary-vehicle-id">
                         <input type="hidden" name="daily_itineraries[${globalIndex}][driver_id]" value="${driverId}" class="itinerary-driver-id">
                         <input type="hidden" name="daily_itineraries[${globalIndex}][guide_id]" value="${guideId}" class="itinerary-guide-id">
                         <input type="text" class="form-control form-control-sm border datepicker-3months" name="daily_itineraries[${globalIndex}][date]" value="${date}" style="width: 100%; text-align: center;" placeholder="YYYY-MM-DD">
                         <input type="hidden" name="daily_itineraries[${globalIndex}][vehicle_group]" value="${newIndex}">
-                      </td>
+                       </td>
                     <td style="padding: 2px;">
                         <div class="d-flex flex-column" style="gap: 2px;">
                             <input type="time" class="form-control form-control-sm border" 
@@ -2720,7 +2777,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                    name="daily_itineraries[${globalIndex}][start_location]" value="${startLocation}" 
                                    placeholder="開始場所" style="width: 100%;">
                         </div>
-                      </td>
+                    </td>
                     <td style="padding: 2px;">
                         <div class="d-flex flex-column" style="gap: 2px;">
                             <input type="time" class="form-control form-control-sm border" 
@@ -2730,19 +2787,19 @@ document.addEventListener('DOMContentLoaded', function() {
                                    name="daily_itineraries[${globalIndex}][end_location]" value="${endLocation}" 
                                    placeholder="終了場所" style="width: 100%;">
                         </div>
-                      </td>
+                    </td>
                     <td style="vertical-align: middle; padding: 2px;">
                         <textarea name="daily_itineraries[${globalIndex}][itinerary]" rows="2" 
                                   class="form-control form-control-sm border" 
                                   style="width: 100%; height: 100%; min-height: 60px;">${itinerary}</textarea>
-                      </td>
+                    </td>
                     <td style="padding: 2px; text-align: center; vertical-align: middle;">
                         <div style="display: flex; justify-content: center; align-items: center; height: 100%;">
                             <input type="checkbox" class="form-check-input itinerary-select" 
                                    id="select_itinerary_${globalIndex}" 
                                    style="margin: 0; width: 18px; height: 18px; cursor: pointer;">
                         </div>
-                      </td>
+                    </td>
                     <td style="padding: 2px; text-align: center; vertical-align: middle;">
                         <div class="d-flex justify-content-center gap-1">
                             <button type="button" class="btn btn-outline-secondary btn-sm move-up-btn" title="上へ移動">
@@ -2758,8 +2815,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <i class="bi bi-dash-lg"></i>
                             </button>
                         </div>
-                      </td>
-                  </tr>
+                    </td>
+                </tr>
             `;
         });
         
@@ -2887,6 +2944,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const newIndex = existingCards.length + 1;
         const newBusId = 'split_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         
+        const sourceVehicleSelect = sourceCard.querySelector('.vehicle-select');
+        const sourceDriverSelect = sourceCard.querySelector('.driver-select');
+        const sourceGuideSelect = sourceCard.querySelector('.guide-select');
+        const sourceVehicleId = sourceVehicleSelect ? sourceVehicleSelect.value : '';
+        const sourceDriverId = sourceDriverSelect ? sourceDriverSelect.value : '';
+        const sourceGuideId = sourceGuideSelect ? sourceGuideSelect.value : '';
+        
         const newCard = createCopyOperationDetailCard(newIndex, newBusId, [], sourceCard);
         container.appendChild(newCard);
         
@@ -2898,9 +2962,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const rowsToMove = [...selectedRows].reverse();
         const newCardBusId = newCard.getAttribute('data-bus-id') || '';
         
+        let uniqueCounter = Date.now();
+        
         rowsToMove.forEach((item, idx) => {
             const row = item.row;
-            
             const clonedRow = row.cloneNode(true);
             
             const clonedCheckbox = clonedRow.querySelector('.itinerary-select');
@@ -2913,10 +2978,35 @@ document.addEventListener('DOMContentLoaded', function() {
                 dateInput.value = dateInput.value.split(' ')[0];
             }
             
+            const uniqueIndex = uniqueCounter + '_' + idx;
+            uniqueCounter++;
+            
+            clonedRow.querySelectorAll('input, textarea, select').forEach(field => {
+                const name = field.getAttribute('name');
+                if (name && name.includes('daily_itineraries[')) {
+                    const newName = name.replace(/daily_itineraries\[\d+\]/, `daily_itineraries[${uniqueIndex}]`);
+                    field.setAttribute('name', newName);
+                }
+            });
+            
             const busIdField = clonedRow.querySelector('.itinerary-bus-id');
             if (busIdField) {
                 busIdField.value = newCardBusId;
-                busIdField.name = busIdField.name.replace(/\[\d+\]/, `[${idx}]`);
+            }
+            
+            const vehicleIdField = clonedRow.querySelector('.itinerary-vehicle-id');
+            if (vehicleIdField) {
+                vehicleIdField.value = '';
+            }
+            
+            const driverIdField = clonedRow.querySelector('.itinerary-driver-id');
+            if (driverIdField) {
+                driverIdField.value = '';
+            }
+            
+            const guideIdField = clonedRow.querySelector('.itinerary-guide-id');
+            if (guideIdField) {
+                guideIdField.value = '';
             }
             
             const vehicleGroupInput = clonedRow.querySelector('input[name*="[vehicle_group]"]');
@@ -2926,9 +3016,33 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             clonedRow.setAttribute('data-bus-id', newCardBusId);
+            clonedRow.setAttribute('data-index', uniqueIndex);
             
             row.remove();
             targetTable.appendChild(clonedRow);
+        });
+        
+        const remainingRows = sourceTable.querySelectorAll('tr.itinerary-row:not(.no-data-row)');
+        remainingRows.forEach((row, newIdx) => {
+            const uniqueIndex = uniqueCounter + '_' + newIdx + '_rem';
+            uniqueCounter++;
+            row.querySelectorAll('input, textarea, select').forEach(field => {
+                const name = field.getAttribute('name');
+                if (name && name.includes('daily_itineraries[')) {
+                    const newName = name.replace(/daily_itineraries\[\d+\]/, `daily_itineraries[${uniqueIndex}]`);
+                    field.setAttribute('name', newName);
+                }
+            });
+            row.setAttribute('data-index', uniqueIndex);
+            
+            const vehicleIdField = row.querySelector('.itinerary-vehicle-id');
+            if (vehicleIdField && sourceVehicleId) {
+                vehicleIdField.value = sourceVehicleId;
+            }
+            const driverIdField = row.querySelector('.itinerary-driver-id');
+            if (driverIdField && sourceDriverId) {
+                driverIdField.value = sourceDriverId;
+            }
         });
         
         if (sourceTable.children.length === 0) {
@@ -2936,8 +3050,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 <tr class="no-data-row">
                     <td colspan="6" class="text-center py-4" style="color: #6c757d; background-color: #f9f9f9;">
                         <i class="bi bi-info-circle me-1"></i> 旅程データがありません。「+」ボタンを押して追加してください。
-                      </tr>
-                `;
+                       </tr>
+            `;
         }
         
         const noDataRow = targetTable.querySelector('.no-data-row');
@@ -2953,7 +3067,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         updateOperationDetailNumbers();
         refreshEventListeners();
-
+    
         const newDateInputs = newCard.querySelectorAll('.datepicker-3months');
         newDateInputs.forEach(function(dateInput) {
             if (!dateInput._flatpickr) {
@@ -2984,7 +3098,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
         });
-
+    
         document.querySelectorAll('.itinerary-select:checked').forEach(cb => {
             cb.checked = false;
         });
@@ -3217,4 +3331,4 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('editForm').addEventListener('submit', submitForm);
 });
 </script>
-@endsection
+@endpush

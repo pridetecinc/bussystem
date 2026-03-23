@@ -159,9 +159,11 @@
         </div>
     </div>
 </div>
+@endsection
 
+
+@push('styles')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-
 <style>
 .table-sm th, .table-sm td {
     padding: 0.2rem 0.2rem !important;
@@ -270,7 +272,10 @@ td a:nth-child(2) {
     margin-right: 12px;
 }
 </style>
+@endpush
 
+
+@push('scripts')
 <script>
 function openIframeModal(url, title = '新規旅程作成') {
     document.getElementById('modalIframe').src = url;
@@ -351,4 +356,4 @@ document.addEventListener('DOMContentLoaded', function() {
     @endif
 });
 </script>
-@endsection
+@endpush

@@ -90,79 +90,8 @@
             </div>
     </form>
 </div>
+@endsection
 
-@push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const isInIframe = window.self !== window.top;
-    
-    function goBack() {
-        if (isInIframe) {
-            window.parent.postMessage('close-iframe', '*');
-        } else {
-            window.location.href = '{{ route('masters.daily-itineraries.index') }}';
-        }
-    }
-    
-    document.getElementById('backBtn')?.addEventListener('click', goBack);
-    document.getElementById('backBtn2')?.addEventListener('click', goBack);
-
-    document.getElementById('createForm')?.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const timeStart = document.querySelector('input[name="time_start"]').value;
-        const timeEnd = document.querySelector('input[name="time_end"]').value;
-        
-        if (timeStart && timeEnd && timeStart >= timeEnd) {
-            alert('終了時刻は開始時刻より後でなければなりません。');
-            return;
-        }
-        
-        const submitBtn = this.querySelector('button[type="submit"]');
-        submitBtn.disabled = true;
-        submitBtn.textContent = '登録中...';
-        
-        fetch(this.action, {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json'
-            },
-            body: new FormData(this)
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                if (isInIframe) {
-                    window.parent.postMessage('close-iframe', '*');
-                } else {
-                    window.location.href = '{{ route('masters.daily-itineraries.index') }}';
-                }
-            } else {
-                if (data.errors) {
-                    let errorMessage = '入力エラー:\n';
-                    for (let field in data.errors) {
-                        errorMessage += data.errors[field].join('\n') + '\n';
-                    }
-                    alert(errorMessage);
-                } else {
-                    alert(data.message || '登録に失敗しました');
-                }
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('通信エラーが発生しました');
-        })
-        .finally(() => {
-            submitBtn.disabled = false;
-            submitBtn.textContent = '登録';
-        });
-    });
-});
-</script>
-@endpush
 
 @push('styles')
 <style>
@@ -249,4 +178,77 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 </style>
 @endpush
-@endsection
+
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const isInIframe = window.self !== window.top;
+    
+    function goBack() {
+        if (isInIframe) {
+            window.parent.postMessage('close-iframe', '*');
+        } else {
+            window.location.href = '{{ route('masters.daily-itineraries.index') }}';
+        }
+    }
+    
+    document.getElementById('backBtn')?.addEventListener('click', goBack);
+    document.getElementById('backBtn2')?.addEventListener('click', goBack);
+
+    document.getElementById('createForm')?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const timeStart = document.querySelector('input[name="time_start"]').value;
+        const timeEnd = document.querySelector('input[name="time_end"]').value;
+        
+        if (timeStart && timeEnd && timeStart >= timeEnd) {
+            alert('終了時刻は開始時刻より後でなければなりません。');
+            return;
+        }
+        
+        const submitBtn = this.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.textContent = '登録中...';
+        
+        fetch(this.action, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            body: new FormData(this)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (isInIframe) {
+                    window.parent.postMessage('close-iframe', '*');
+                } else {
+                    window.location.href = '{{ route('masters.daily-itineraries.index') }}';
+                }
+            } else {
+                if (data.errors) {
+                    let errorMessage = '入力エラー:\n';
+                    for (let field in data.errors) {
+                        errorMessage += data.errors[field].join('\n') + '\n';
+                    }
+                    alert(errorMessage);
+                } else {
+                    alert(data.message || '登録に失敗しました');
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('通信エラーが発生しました');
+        })
+        .finally(() => {
+            submitBtn.disabled = false;
+            submitBtn.textContent = '登録';
+        });
+    });
+});
+</script>
+@endpush

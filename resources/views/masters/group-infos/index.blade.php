@@ -16,11 +16,11 @@
         <form method="GET" action="{{ route('masters.group-infos.index') }}" class="row g-2">
             <div class="col-auto">
                 <input type="text" name="date_from" value="{{ request('date_from', \Carbon\Carbon::today()->format('Y-m-d')) }}" 
-                       class="form-control form-control-sm datepicker-3months" style="width: 140px; border-color: #E5E7EB;" placeholder="YYYY-MM-DD" readonly>
+                       class="form-control form-control-sm datepicker-3months" style="width: 140px; border-color: #E5E7EB;" placeholder="YYYY-MM-DD">
             </div>
             <div class="col-auto">
-                <input type="text" name="date_to" value="{{ request('date_to', \Carbon\Carbon::today()->format('Y-m-d')) }}" 
-                       class="form-control form-control-sm datepicker-3months" style="width: 140px; border-color: #E5E7EB;" placeholder="YYYY-MM-DD" readonly>
+                <input type="text" name="date_end" value="{{ request('date_end', \Carbon\Carbon::today()->format('Y-m-d')) }}" 
+                       class="form-control form-control-sm datepicker-3months" style="width: 140px; border-color: #E5E7EB;" placeholder="YYYY-MM-DD">
             </div>
             <div class="col">
                 <input type="text" name="search" value="{{ request('search') }}" 
@@ -161,7 +161,10 @@
     @csrf
     @method('DELETE')
 </form>
+@endsection
 
+
+@push('styles')
 <style>
 .table-sm th, .table-sm td {
     padding: 0.2rem 0.2rem !important;
@@ -260,210 +263,11 @@ small {
 .operation-links a:last-child {
     margin-right: 0;
 }
-
-.flatpickr-calendar {
-    border: 1px solid #ddd !important;
-    border-radius: 6px !important;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12) !important;
-    font-family: inherit !important;
-    font-size: 11px !important;
-    overflow: hidden !important;
-}
-
-.flatpickr-calendar.multiMonth {
-    width: 516px !important;
-    max-width: 95vw !important;
-}
-
-.flatpickr-calendar.multiMonth .flatpickr-innerContainer {
-    width: 100% !important;
-}
-
-.flatpickr-calendar.multiMonth .flatpickr-months {
-    display: flex !important;
-}
-
-.flatpickr-calendar.multiMonth .flatpickr-month {
-    flex: 1 !important;
-}
-
-.flatpickr-calendar.multiMonth .flatpickr-month:not(:last-child) {
-    border-right: 1px solid #e9ecef !important;
-}
-
-.flatpickr-months {
-    background: linear-gradient(135deg, #1f3241 0%, #2d4a5e 100%) !important;
-    border-radius: 6px 6px 0 0 !important;
-    display: flex !important;
-}
-
-.flatpickr-month {
-    height: 28px !important;
-    padding-right: 0 !important;
-}
-
-.flatpickr-current-month {
-    padding: 3px 0 0 0 !important;
-}
-
-.flatpickr-current-month .flatpickr-monthDropdown-months {
-    font-weight: 600 !important;
-    color: #fff !important;
-    font-size: 11px !important;
-}
-
-.flatpickr-current-month .numInputWrapper span {
-    color: #fff !important;
-}
-
-.flatpickr-current-month input.cur-year {
-    color: #fff !important;
-    font-weight: 600 !important;
-    font-size: 11px !important;
-}
-
-.flatpickr-months .flatpickr-month,
-.flatpickr-months .flatpickr-next-month,
-.flatpickr-months .flatpickr-prev-month {
-    color: #fff !important;
-    fill: #fff !important;
-}
-
-.flatpickr-months .flatpickr-next-month:hover svg,
-.flatpickr-months .flatpickr-prev-month:hover svg {
-    fill: #ffc107 !important;
-}
-
-.flatpickr-months .flatpickr-next-month,
-.flatpickr-months .flatpickr-prev-month {
-    width: 20px !important;
-    height: 20px !important;
-    padding: 2px !important;
-}
-
-.flatpickr-weekdays {
-    background: #f8f9fa !important;
-    border-bottom: 1px solid #e9ecef !important;
-    margin: 0 !important;
-}
-
-.flatpickr-weekday {
-    color: #495057 !important;
-    font-weight: 600 !important;
-    font-size: 10px !important;
-    padding: 1px 0 !important;
-}
-
-.flatpickr-days {
-    border: none !important;
-    padding: 0 !important;
-}
-
-.flatpickr-day {
-    color: #374151 !important;
-    border-radius: 2px !important;
-    margin: 0 !important;
-    border: 1px solid transparent !important;
-    max-width: 24px !important;
-    width: 24px !important;
-    height: 22px !important;
-    line-height: 20px !important;
-    font-size: 10px !important;
-}
-
-.flatpickr-day:hover {
-    background: #e0f2fe !important;
-    border-color: #2563eb !important;
-    color: #2563eb !important;
-}
-
-.flatpickr-day.selected {
-    background: #2563eb !important;
-    border-color: #2563eb !important;
-    color: #fff !important;
-    font-weight: 600 !important;
-}
-
-.flatpickr-day.selected:hover {
-    background: #1d4ed8 !important;
-}
-
-.flatpickr-day.startRange,
-.flatpickr-day.endRange {
-    background: #2563eb !important;
-    border-color: #2563eb !important;
-    color: #fff !important;
-}
-
-.flatpickr-day.inRange {
-    background: #dbeafe !important;
-    border-color: transparent !important;
-    color: #1e40af !important;
-}
-
-.flatpickr-day.today {
-    border-color: #ffc107 !important;
-    background: #fffbeb !important;
-    color: #374151 !important;
-}
-
-.flatpickr-day.today:hover {
-    background: #fef3c7 !important;
-    border-color: #f59e0b !important;
-    color: #374151 !important;
-}
-
-.flatpickr-months .flatpickr-month {
-    background: transparent !important;
-}
-
-span.flatpickr-weekday {
-    background: #f8f9fa !important;
-}
-
-.flatpickr-calendar.showTimeInput.hasTime .flatpickr-time {
-    border-top: 1px solid #e9ecef !important;
-}
-
-.flatpickr-calendar.multiMonth .dayContainer {
-    width: 168px !important;
-    min-width: 168px !important;
-    max-width: 168px !important;
-    position: relative !important;
-}
-
-.month-wrapper {
-    flex: 1 !important;
-    position: relative !important;
-    padding: 2px !important;
-    height: 135px !important;
-}
-
-.month-wrapper:not(:last-child)::after {
-    content: '';
-    position: absolute;
-    right: 0;
-    top: 0;
-    bottom: 0;
-    width: 1px;
-    background-color: #e9ecef;
-}
-
-.flatpickr-calendar.multiMonth .flatpickr-days {
-    display: flex !important;
-    position: relative;
-    width: 514px !important;
-}
-
-.flatpickr-calendar.multiMonth .flatpickr-days .dayContainer {
-    padding: 0 !important;
-}
-
-.flatpickr-calendar.multiMonth .flatpickr-rContainer {
-    width: 514px !important;
-}
 </style>
+@endpush
 
+
+@push('scripts')
 <script>
 function openIframeModal(url, title = '新規グループ作成') {
     const iframe = document.getElementById('modalIframe');
@@ -533,31 +337,7 @@ document.addEventListener('keydown', function(e) {
 });
 
 document.addEventListener('DOMContentLoaded', function() {
-    flatpickr('.datepicker-3months', {
-        locale: 'ja',
-        dateFormat: 'Y-m-d',
-        showMonths: 3,
-        allowInput: true,
-        clickOpens: true,
-        mode: 'single',
-        disableMobile: true,
-        wrap: false,
-        onOpen: function(selectedDates, dateStr, instance) {
-            instance.calendarContainer.style.zIndex = '9999';
-        },
-        onReady: function(selectedDates, dateStr, instance) {
-            const daysContainer = instance.daysContainer;
-            if (daysContainer) {
-                const dayContainers = daysContainer.querySelectorAll('.dayContainer');
-                dayContainers.forEach(function(dayContainer) {
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'month-wrapper';
-                    dayContainer.parentNode.insertBefore(wrapper, dayContainer);
-                    wrapper.appendChild(dayContainer);
-                });
-            }
-        }
-    });
+    initDateRangePicker('input[name="date_from"]', 'input[name="date_end"]');
 });
 </script>
-@endsection
+@endpush

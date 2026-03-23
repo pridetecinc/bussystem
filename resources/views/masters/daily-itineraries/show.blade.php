@@ -176,68 +176,8 @@
         </div>
     </div>
 </div>
+@endsection
 
-@push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const isInIframe = window.self !== window.top;
-    
-    function goBack() {
-        if (isInIframe) {
-            window.parent.postMessage('close-iframe', '*');
-        } else {
-            window.location.href = '{{ route('masters.daily-itineraries.index') }}';
-        }
-    }
-    
-    document.getElementById('backBtn')?.addEventListener('click', goBack);
-    document.getElementById('backBtn2')?.addEventListener('click', goBack);
-
-    const deleteBtn = document.querySelector('.delete-btn');
-    const deleteModal = document.getElementById('deleteModal');
-    
-    if (deleteBtn && deleteModal) {
-        const modal = new bootstrap.Modal(deleteModal);
-        
-        deleteBtn.addEventListener('click', function() {
-            modal.show();
-        });
-        
-        document.getElementById('confirmDelete').addEventListener('click', function() {
-            const deleteBtn = document.querySelector('.delete-btn');
-            const uuid = deleteBtn.dataset.uuid;
-            
-            fetch(`{{ url('masters/daily-itineraries') }}/${uuid}`, {
-                method: 'DELETE',
-                headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    modal.hide();
-                    
-                    if (isInIframe) {
-                        window.parent.postMessage('close-iframe', '*');
-                    } else {
-                        window.location.href = '{{ route('masters.daily-itineraries.index') }}';
-                    }
-                } else {
-                    alert(data.message || '削除に失敗しました');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('エラーが発生しました');
-            });
-        });
-    }
-});
-</script>
-@endpush
 
 @push('styles')
 <style>
@@ -377,4 +317,66 @@ document.addEventListener('DOMContentLoaded', function() {
     .small { font-size: 11px; }
 </style>
 @endpush
-@endsection
+
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const isInIframe = window.self !== window.top;
+    
+    function goBack() {
+        if (isInIframe) {
+            window.parent.postMessage('close-iframe', '*');
+        } else {
+            window.location.href = '{{ route('masters.daily-itineraries.index') }}';
+        }
+    }
+    
+    document.getElementById('backBtn')?.addEventListener('click', goBack);
+    document.getElementById('backBtn2')?.addEventListener('click', goBack);
+
+    const deleteBtn = document.querySelector('.delete-btn');
+    const deleteModal = document.getElementById('deleteModal');
+    
+    if (deleteBtn && deleteModal) {
+        const modal = new bootstrap.Modal(deleteModal);
+        
+        deleteBtn.addEventListener('click', function() {
+            modal.show();
+        });
+        
+        document.getElementById('confirmDelete').addEventListener('click', function() {
+            const deleteBtn = document.querySelector('.delete-btn');
+            const uuid = deleteBtn.dataset.uuid;
+            
+            fetch(`{{ url('masters/daily-itineraries') }}/${uuid}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    modal.hide();
+                    
+                    if (isInIframe) {
+                        window.parent.postMessage('close-iframe', '*');
+                    } else {
+                        window.location.href = '{{ route('masters.daily-itineraries.index') }}';
+                    }
+                } else {
+                    alert(data.message || '削除に失敗しました');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('エラーが発生しました');
+            });
+        });
+    }
+});
+</script>
+@endpush

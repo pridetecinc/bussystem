@@ -96,7 +96,10 @@
         @endif
     </div>
 </div>
+@endsection
 
+
+@push('styles')
 <style>
 .table th {
     border-color: #E5E7EB;
@@ -107,7 +110,10 @@
     vertical-align: middle;
 }
 </style>
+@endpush
 
+
+@push('scripts')
 <script>
 function closeIframe() {
     window.parent.postMessage('close-iframe', '*');
@@ -117,4 +123,4 @@ function openEditModal() {
     window.parent.postMessage('open-edit', '{{ route('masters.group-infos.edit', $groupInfo->id) }}');
 }
 </script>
-@endsection
+@endpush
