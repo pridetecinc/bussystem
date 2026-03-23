@@ -18,7 +18,6 @@ class BusAssignmentController extends Controller
 {
     public function index(Request $request)
     {
-        // 検索条件の取得
         $groupName = $request->input('group_name');
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
@@ -28,9 +27,8 @@ class BusAssignmentController extends Controller
         $branchId = $request->input('branch_id');
         $vehicleTypeId = $request->input('vehicle_type_id');
         $vehicleName = $request->input('vehicle_name');
-        $vehicleId = $request->input('vehicle_id'); // 追加：車両名のドロップダウンから選択された車両ID
+        $vehicleId = $request->input('vehicle_id');
     
-        // 日付のデフォルト設定
         if ($dateType == 'today') {
             $startDate = now()->format('Y-m-d');
             $endDate = now()->format('Y-m-d');
@@ -53,22 +51,18 @@ class BusAssignmentController extends Controller
                 }
             ]);
     
-        // 運行IDでの検索
         if ($operationId) {
             $query->where('id', $operationId);
         }
     
-        // 予約ID（group_info_id）での検索
         if ($reservationId) {
             $query->where('group_info_id', $reservationId);
         }
     
-        // 車両IDでの検索（追加）- ここに追加！
         if ($vehicleId) {
             $query->where('vehicle_id', $vehicleId);
         }
     
-        // 日付範囲での検索
         if ($startDate && $endDate) {
             $query->where(function($q) use ($startDate, $endDate) {
                 $q->whereBetween('start_date', [$startDate, $endDate])
@@ -80,35 +74,30 @@ class BusAssignmentController extends Controller
             });
         }
     
-        // 車両名での検索（vehicle.registration_number）- テキスト検索用
         if ($vehicleName) {
             $query->whereHas('vehicle', function($q) use ($vehicleName) {
                 $q->where('registration_number', 'like', '%' . $vehicleName . '%');
             });
         }
     
-        // 車種での検索（vehicle.vehicle_type_id）
         if ($vehicleTypeId) {
             $query->whereHas('vehicle', function($q) use ($vehicleTypeId) {
                 $q->where('vehicle_type_id', $vehicleTypeId);
             });
         }
     
-        // 営業所での検索（vehicle.branch_id）
         if ($branchId) {
             $query->whereHas('vehicle', function($q) use ($branchId) {
                 $q->where('branch_id', $branchId);
             });
         }
     
-        // 団体名での検索（groupInfo.group_name）
         if ($groupName) {
             $query->whereHas('groupInfo', function($q) use ($groupName) {
                 $q->where('group_name', 'like', '%' . $groupName . '%');
             });
         }
     
-        // グループがない運行割当も含める
         $query->orWhereDoesntHave('groupInfo');
     
         $assignments = $query->orderBy('vehicle_index', 'asc')
@@ -117,13 +106,11 @@ class BusAssignmentController extends Controller
             ->paginate(20)
             ->withQueryString();
     
-        // 合計の計算
         $totalAdult = $assignments->sum('adult_count');
         $totalChild = $assignments->sum('child_count');
         $totalGuide = $assignments->sum('guide_count');
         $totalAmount = $totalAdult * 15000;
     
-        // マスターデータをビューに渡す
         $branches = Branch::orderBy('display_order')->get();
         $vehicleTypes = VehicleType::with('models')->orderBy('type_name')->get();
         $vehicles = Vehicle::with('vehicleModel')->orderBy('registration_number')->get();
@@ -138,7 +125,7 @@ class BusAssignmentController extends Controller
             'operationId',
             'branchId',
             'vehicleTypeId',
-            'vehicleId',        // 追加
+            'vehicleId',
             'vehicleName',
             'totalAdult',
             'totalChild',
@@ -150,7 +137,6 @@ class BusAssignmentController extends Controller
         ));
     }
 
-    // 他のメソッドは変更なし...
     public function create()
     {
         $groupInfos = GroupInfo::orderBy('created_at', 'desc')->get();
@@ -181,7 +167,24 @@ class BusAssignmentController extends Controller
             'representative' => 'nullable|string|max:100',
             'representative_phone' => 'nullable|string|max:20',
             'operation_remarks' => 'nullable|string',
+            'ignore_operation' => 'nullable|boolean',
         ]);
+
+        $availability = BusAssignment::checkAvailability([
+            'vehicle_id' => $validated['vehicle_id'] ?? null,
+            'driver_id' => $validated['driver_id'] ?? null,
+            'start_date' => $validated['start_date'],
+            'start_time' => $validated['start_time'] ?? null,
+            'end_date' => $validated['end_date'],
+            'end_time' => $validated['end_time'] ?? null,
+            'ignore_operation' => $validated['ignore_operation'] ?? false,
+        ]);
+
+        if (!$availability['vehicle'] || !$availability['driver']) {
+            return back()->withInput()->withErrors([
+                'conflict' => $availability['message']
+            ]);
+        }
 
         $maxIndex = BusAssignment::where('group_info_id', $validated['group_info_id'])
                                  ->max('vehicle_index') ?? 0;
@@ -203,12 +206,8 @@ class BusAssignmentController extends Controller
         return view('masters.bus-assignments.show', compact('busAssignment'));
     }
 
-    /**
-     * 編集画面表示
-     */
     public function edit($id)
     {
-        // 手动查找模型 - 使用 findOrFail 会自动返回 404 如果找不到
         $busAssignment = BusAssignment::with([
                 'groupInfo',
                 'vehicle.vehicleModel',
@@ -217,20 +216,17 @@ class BusAssignmentController extends Controller
             ])
             ->findOrFail($id);
         
-        // 加载每日行程（单独加载以保持代码清晰）
         $busAssignment->load([
             'dailyItineraries' => function($query) {
                 $query->orderBy('date', 'asc')->orderBy('time_start', 'asc');
             }
         ]);
 
-        // マスターデータ取得
         $vehicles = Vehicle::with('vehicleModel')->orderBy('registration_number')->get();
         $drivers = Driver::orderBy('name')->get();
         $guides = Guide::orderBy('name')->get();
         $groupInfos = GroupInfo::orderBy('created_at', 'desc')->get();
 
-        // 同じグループに属する他の運行割当を取得（複数車両の場合）
         $otherAssignments = collect();
         if ($busAssignment->group_info_id) {
             $otherAssignments = BusAssignment::with([
@@ -247,10 +243,8 @@ class BusAssignmentController extends Controller
                 ->get();
         }
 
-        // すべての運行割当を1つのコレクションにまとめる（表示用）
         $allAssignments = collect([$busAssignment])->concat($otherAssignments);
 
-        // 日付範囲計算（ビューで使用）
         $startDate = $busAssignment->start_date ? $busAssignment->start_date->format('Y-m-d') : now()->format('Y-m-d');
         $endDate = $busAssignment->end_date ? $busAssignment->end_date->format('Y-m-d') : now()->addDays(7)->format('Y-m-d');
 
@@ -266,9 +260,6 @@ class BusAssignmentController extends Controller
         ));
     }
 
-    /**
-     * 更新処理
-     */
     public function update(Request $request, $id)
     {
         $busAssignment = BusAssignment::findOrFail($id);
@@ -298,14 +289,50 @@ class BusAssignmentController extends Controller
             'ignore_driver' => 'boolean',
         ]);
 
+        $isIgnored = $validated['ignore_operation'] ?? $busAssignment->ignore_operation ?? false;
+        
+        if (!$isIgnored) {
+            $needCheck = false;
+            
+            $newVehicleId = $validated['vehicle_id'] ?? $busAssignment->vehicle_id;
+            $newDriverId = $validated['driver_id'] ?? $busAssignment->driver_id;
+            $newStartDate = $validated['start_date'] ?? $busAssignment->start_date;
+            $newEndDate = $validated['end_date'] ?? $busAssignment->end_date;
+            $newStartTime = $validated['start_time'] ?? $busAssignment->start_time;
+            $newEndTime = $validated['end_time'] ?? $busAssignment->end_time;
+            
+            if ($newVehicleId != $busAssignment->vehicle_id ||
+                $newDriverId != $busAssignment->driver_id ||
+                $newStartDate != $busAssignment->start_date ||
+                $newEndDate != $busAssignment->end_date) {
+                $needCheck = true;
+            }
+            
+            if ($needCheck) {
+                $availability = BusAssignment::checkAvailability([
+                    'vehicle_id' => $newVehicleId,
+                    'driver_id' => $newDriverId,
+                    'start_date' => $newStartDate,
+                    'start_time' => $newStartTime,
+                    'end_date' => $newEndDate,
+                    'end_time' => $newEndTime,
+                    'ignore_operation' => false,
+                ], $busAssignment->id);
+
+                if (!$availability['vehicle'] || !$availability['driver']) {
+                    return back()->withInput()->withErrors([
+                        'conflict' => $availability['message']
+                    ]);
+                }
+            }
+        }
+
         $busAssignment->update($validated);
 
-        // 日次行程の更新処理
         if ($request->has('daily_itineraries')) {
             $this->updateDailyItineraries($request->daily_itineraries, $busAssignment->id);
         }
 
-        // 削除された日次行程の処理
         if ($request->has('deleted_itineraries')) {
             DailyItinerary::whereIn('id', $request->deleted_itineraries)->delete();
         }
@@ -313,9 +340,6 @@ class BusAssignmentController extends Controller
         return back()->with('success', '運行割当を更新しました。');
     }
 
-    /**
-     * 日次行程の一括更新
-     */
     private function updateDailyItineraries(array $itineraries, $busAssignmentId)
     {
         foreach ($itineraries as $index => $data) {
@@ -323,11 +347,9 @@ class BusAssignmentController extends Controller
             unset($data['vehicle_group']);
             
             if (empty($data['id'])) {
-                // 新規作成
                 $data['bus_assignment_id'] = $busAssignmentId;
                 DailyItinerary::create($data);
             } else {
-                // 更新
                 $itinerary = DailyItinerary::find($data['id']);
                 if ($itinerary) {
                     $itinerary->update($data);
@@ -336,9 +358,6 @@ class BusAssignmentController extends Controller
         }
     }
 
-    /**
-     * 特定の運行割当のみを更新（AJAX用）
-     */
     public function updateSingle(Request $request, $id)
     {
         $busAssignment = BusAssignment::findOrFail($id);

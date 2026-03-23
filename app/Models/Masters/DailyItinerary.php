@@ -65,6 +65,6 @@ class DailyItinerary extends Model
     
     public function busAssignments()
     {
-        return $this->hasMany(BusAssignment::class, 'id', 'bus_assignment_id');
+        return $this->hasMany(BusAssignment::class, 'daily_itinerary_id', 'id');
     }
 }

@@ -199,10 +199,10 @@ class DailyItineraryController extends Controller
     {
         $dailyItinerary = DailyItinerary::with([
             'groupInfo',
-            'busAssignment.vehicle.vehicleType',
-            'busAssignment.vehicle.vehicleModel',
-            'busAssignment.vehicle.branch',
-            'busAssignment.driver'
+            'busAssignments.vehicle.vehicleType',
+            'busAssignments.vehicle.vehicleModel',
+            'busAssignments.vehicle.branch',
+            'busAssignments.driver'
         ])->findOrFail($id);
         
         $groupItineraries = DailyItinerary::where('group_info_id', $dailyItinerary->group_info_id)
@@ -455,64 +455,69 @@ class DailyItineraryController extends Controller
             return ($a['display_order'] ?? 0) - ($b['display_order'] ?? 0);
         });
         
-        $firstVehicle = $vehicles[0] ?? null;
+        $existingAssignments = BusAssignment::where('daily_itinerary_id', $dailyItinerary->id)->get();
+        $existingIds = $existingAssignments->pluck('id')->toArray();
+        $submittedIds = [];
         
-        if (!$firstVehicle) {
-            return;
-        }
-        
-        $existingAssignment = null;
-        if ($dailyItinerary->bus_assignment_id) {
-            $existingAssignment = BusAssignment::find($dailyItinerary->bus_assignment_id);
-        }
-        
-        $busAssignmentData = [
-            'group_info_id' => $dailyItinerary->group_info_id,
-            'vehicle_id' => $firstVehicle['vehicle_id'] ?? null,
-            'driver_id' => $firstVehicle['driver_id'] ?? null,
-            'start_date' => $dailyItinerary->date,
-            'start_time' => $dailyItinerary->time_start,
-            'end_date' => $dailyItinerary->date,
-            'end_time' => $dailyItinerary->time_end,
-            'lock_arrangement' => 0,
-            'status_sent' => 0,
-            'status_finalized' => 0,
-            'count_daily' => 1,
-            'vehicle_number' => $firstVehicle['vehicle_number'] ?? null,
-            'step_car' => $firstVehicle['step_car'] ?? null,
-            'adult_count' => $firstVehicle['adult_count'] ?? 0,
-            'child_count' => $firstVehicle['child_count'] ?? 0,
-            'guide_count' => $firstVehicle['guide_count'] ?? 0,
-            'other_count' => $firstVehicle['other_count'] ?? 0,
-            'luggage_count' => $firstVehicle['luggage_count'] ?? 0,
-            'vehicle_type_spec_check' => $firstVehicle['vehicle_type_spec_check'] ?? false,
-            'temporary_driver' => $firstVehicle['temporary_driver'] ?? false,
-            'representative' => $firstVehicle['representative'] ?? null,
-            'representative_phone' => $firstVehicle['representative_phone'] ?? null,
-            'attention' => $firstVehicle['attention'] ?? null,
-            'operation_remarks' => $firstVehicle['operation_remarks'] ?? null,
-            'operation_memo' => $firstVehicle['operation_memo'] ?? null,
-            'operation_basic_remarks' => $firstVehicle['operation_basic_remarks'] ?? null,
-            'doc_remarks' => $firstVehicle['doc_remarks'] ?? null,
-            'history_remarks' => $firstVehicle['history_remarks'] ?? null,
-            'vehicle_index' => $firstVehicle['vehicle_index'] ?? 1,
-            'updated_by' => $userId,
-            'updated_at' => now(),
-        ];
-        
-        if ($existingAssignment) {
-            $existingAssignment->update($busAssignmentData);
-            $assignmentId = $existingAssignment->id;
-        } else {
-            $busAssignmentData['created_by'] = $userId;
-            $busAssignmentData['created_at'] = now();
+        foreach ($vehicles as $index => $vehicle) {
+            $assignmentId = $vehicle['id'] ?? null;
             
-            $newAssignment = BusAssignment::create($busAssignmentData);
-            $assignmentId = $newAssignment->id;
+            if ($assignmentId && in_array($assignmentId, $existingIds)) {
+                $submittedIds[] = $assignmentId;
+            }
+            
+            $busAssignmentData = [
+                'group_info_id' => $dailyItinerary->group_info_id,
+                'daily_itinerary_id' => $dailyItinerary->id,
+                'vehicle_id' => $vehicle['vehicle_id'] ?? null,
+                'driver_id' => $vehicle['driver_id'] ?? null,
+                'start_date' => $dailyItinerary->date,
+                'start_time' => $dailyItinerary->time_start,
+                'end_date' => $dailyItinerary->date,
+                'end_time' => $dailyItinerary->time_end,
+                'lock_arrangement' => 0,
+                'status_sent' => 0,
+                'status_finalized' => 0,
+                'count_daily' => 1,
+                'vehicle_number' => $vehicle['vehicle_number'] ?? null,
+                'step_car' => $vehicle['step_car'] ?? null,
+                'adult_count' => $vehicle['adult_count'] ?? 0,
+                'child_count' => $vehicle['child_count'] ?? 0,
+                'guide_count' => $vehicle['guide_count'] ?? 0,
+                'other_count' => $vehicle['other_count'] ?? 0,
+                'luggage_count' => $vehicle['luggage_count'] ?? 0,
+                'vehicle_type_spec_check' => $vehicle['vehicle_type_spec_check'] ?? false,
+                'temporary_driver' => $vehicle['temporary_driver'] ?? false,
+                'representative' => $vehicle['representative'] ?? null,
+                'representative_phone' => $vehicle['representative_phone'] ?? null,
+                'attention' => $vehicle['attention'] ?? null,
+                'operation_remarks' => $vehicle['operation_remarks'] ?? null,
+                'operation_memo' => $vehicle['operation_memo'] ?? null,
+                'operation_basic_remarks' => $vehicle['operation_basic_remarks'] ?? null,
+                'doc_remarks' => $vehicle['doc_remarks'] ?? null,
+                'history_remarks' => $vehicle['history_remarks'] ?? null,
+                'vehicle_index' => $vehicle['display_order'] ?? ($index + 1),
+                'updated_by' => $userId,
+                'updated_at' => now(),
+            ];
+            
+            if ($assignmentId && in_array($assignmentId, $existingIds)) {
+                BusAssignment::where('id', $assignmentId)->update($busAssignmentData);
+            } else {
+                $busAssignmentData['created_by'] = $userId;
+                $busAssignmentData['created_at'] = now();
+                $newAssignment = BusAssignment::create($busAssignmentData);
+                $submittedIds[] = $newAssignment->id;
+            }
         }
         
+        $toDelete = array_diff($existingIds, $submittedIds);
+        if (!empty($toDelete)) {
+            BusAssignment::whereIn('id', $toDelete)->delete();
+        }
+        
+        $firstVehicle = $vehicles[0] ?? null;
         $dailyItinerary->update([
-            'bus_assignment_id' => $assignmentId,
             'vehicle' => $firstVehicle['vehicle_name'] ?? null,
             'driver' => $firstVehicle['driver_name'] ?? null,
         ]);
