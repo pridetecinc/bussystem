@@ -3,32 +3,33 @@
 @section('title', '請求書作成')
 
 @section('content')
-<div class="container-fluid">
+<!-- 修改点：减少容器左右内边距 px-2 -->
+<div class="container-fluid px-2">
     <div class="row">
         <div class="col-md-12">
-            <!-- Breadcrumb -->
-            <nav aria-label="breadcrumb" class="mb-3">
-                <ol class="breadcrumb">
+            <!-- Breadcrumb: 减小底部间距 mb-2，字体变小 -->
+            <nav aria-label="breadcrumb" class="mb-2" style="font-size: 0.875rem;">
+                <ol class="breadcrumb mb-0">
                     <li class="breadcrumb-item"><a href="{{ route('masters.home') }}">ホーム</a></li>
                     <li class="breadcrumb-item"><a href="{{ route('masters.invoices.index', ['group_id' => $groupId]) }}">請求書管理</a></li>
                     <li class="breadcrumb-item active" aria-current="page">請求書作成</li>
                 </ol>
             </nav>
 
-            <!-- Flash Messages -->
+            <!-- Flash Messages: 减小内边距 py-2，字体变小 -->
             @if(session('success'))
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <div class="alert alert-success alert-dismissible fade show py-2 mb-2" role="alert" style="font-size: 0.875rem;">
                 <i class="bi bi-check-circle"></i> {{ session('success') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert"></button>
             </div>
             @endif
             @if($errors->any())
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <h5 class="alert-heading"><i class="bi bi-exclamation-triangle"></i> 入力エラーがあります</h5>
-                <ul class="mb-0 ps-3">
+            <div class="alert alert-danger alert-dismissible fade show py-2 mb-2" role="alert" style="font-size: 0.875rem;">
+                <h5 class="alert-heading fs-6 mb-1"><i class="bi bi-exclamation-triangle"></i> 入力エラーがあります</h5>
+                <ul class="mb-0 ps-3 small">
                     @foreach($errors->all() as $error) <li>{{ $error }}</li> @endforeach
                 </ul>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert"></button>
             </div>
             @endif
 
@@ -37,24 +38,29 @@
                 <input type="hidden" name="group_id" value="{{ $groupId }}">
 
                 <!-- ================= 第一部分：基本情報 ================= -->
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0"><i class="bi bi-info-circle"></i> 請求書基本情報</h5>
+                <!-- 修改点：mb-3 (减小间距), 移除 shadow-sm (可选，这里保留原意只改大小) -->
+                <div class="card shadow-sm mb-3">
+                    <!-- 修改点：添加 py-1 减小高度，h5 添加 style 强制缩小字体 -->
+                    <div class="card-header bg-primary text-white py-1">
+                        <h5 class="mb-0 fs-6" style="font-size: 0.9rem !important; line-height: 1.2;">
+                            <i class="bi bi-info-circle"></i> 請求書基本情報
+                        </h5>
                     </div>
-                    <div class="card-body p-3">
+                    <!-- 修改点：p-2 (减小内边距) -->
+                    <div class="card-body p-2">
                         
-                        <!-- Row 1: 左侧代理店 (6 列) + 右侧 8 字段 (6 列) -->
-                        <div class="row g-3 mb-3 align-items-start">
+                        <!-- Row 1: 修改点 g-2 (减小列间距), mb-2 (减小底间距) -->
+                        <div class="row g-2 mb-2 align-items-start">
                             
-                            <!-- 左侧：代理店 & Textarea (占 6 列，去掉了卡片包裹和多余标题) -->
+                            <!-- 左侧：代理店 & Textarea -->
                             <div class="col-lg-6">
-                                <!-- 新增：Flex 容器，让文字和下拉框在同一行 -->
-                                <div class="d-flex align-items-center mb-2">
-                                    <label for="agency_id" class="fw-bold me-2 mb-0">
+                                <!-- 修改点：mb-1 -->
+                                <div class="d-flex align-items-center mb-1">
+                                    <!-- 修改点：字体变小 me-2 -> me-1 -->
+                                    <label for="agency_id" class="fw-bold me-1 mb-0" style="font-size: 0.875rem;">
                                         <i class="bi bi-building"></i> 代理店
                                     </label>
-                                    <!-- 下拉框：去掉 form-select-lg，增加 style 控制宽度 -->
-                                    <select class="form-select form-select-sm" id="agency_id" name="agency_id" style="width: auto; min-width: 100px;">
+                                    <select class="form-select form-select-sm" id="agency_id" name="agency_id" style="width: auto; min-width: 100px; font-size: 0.875rem;">
                                         <option value="0">-- 代理店を選択してください --</option>
                                         @foreach($agencies ?? [] as $agency)
                                             <option value="{{ $agency->id }}" {{ old('agency_id') == $agency->id ? 'selected' : '' }}
@@ -66,17 +72,18 @@
                                     </select>
                                 </div>
                                 
-                                <!-- Textarea：rows 从 7 改为 3 -->
-                                <textarea required class="form-control" id="agency_detail" name="agency_detail" rows="3" placeholder="代理店を選択すると自動入力されます...">{{ old('agency_detail') }}</textarea>
+                                <!-- Textarea: 字体变小 -->
+                                <textarea required class="form-control form-control-sm" id="agency_detail" name="agency_detail" rows="3" placeholder="代理店を選択すると自動入力されます..." style="font-size: 0.875rem;">{{ old('agency_detail') }}</textarea>
                             </div>
 
-                            <!-- 右侧：8 个字段 (占 6 列，强制 2 行 x 4 列) -->
+                            <!-- 右侧：8 个字段 -->
                             <div class="col-lg-6">
-                                <div class="row g-2">
-                                    <!-- 第一行：4 个字段 -->
+                                <!-- 修改点：g-1 (极小间距) -->
+                                <div class="row g-1">
+                                    <!-- 第一行 -->
                                     <div class="col-md-3 col-6">
-                                        <label for="billing_contact" class="form-label small mb-1">請求担当</label>
-                                        <select class="form-select form-select-sm" id="staff_id" name="staff_id">
+                                        <label for="billing_contact" class="form-label mb-0" style="font-size: 0.75rem;">請求担当</label>
+                                        <select class="form-select form-select-sm" id="staff_id" name="staff_id" style="font-size: 0.875rem;">
                                             @foreach($staffs ?? [] as $staff)
                                                 <option value="{{ $staff->id }}" {{ old('staff_id') == $staff->id ? 'selected' : '' }}>
                                                     {{ $staff->name }}
@@ -85,40 +92,37 @@
                                         </select>
                                     </div>
                                     <div class="col-md-3 col-6">
-                                        <label class="form-label small mb-1">内税/外税</label>
+                                        <label class="form-label mb-0" style="font-size: 0.75rem;">内税/外税</label>
                                         <div class="btn-group w-100" role="group">
                                             <input type="radio" class="btn-check" name="tax_mode" id="tax_mode_1" value="1" {{ old('tax_mode', '1') == '1' ? 'checked' : '' }}>
-                                            <label class="btn btn-outline-primary btn-sm" for="tax_mode_1">内税</label>
-
+                                            <label class="btn btn-outline-primary btn-sm" for="tax_mode_1" style="font-size: 0.75rem;">内税</label>
                                             <input type="radio" class="btn-check" name="tax_mode" id="tax_mode_2" value="2" {{ old('tax_mode', '1') == '2' ? 'checked' : '' }}>
-                                            <label class="btn btn-outline-primary btn-sm" for="tax_mode_2">外税</label>
+                                            <label class="btn btn-outline-primary btn-sm" for="tax_mode_2" style="font-size: 0.75rem;">外税</label>
                                         </div>
                                     </div>
                                     <div class="col-md-3 col-6">
-                                        <label class="form-label small mb-1">言語</label>
+                                        <label class="form-label mb-0" style="font-size: 0.75rem;">言語</label>
                                         <div class="btn-group w-100" role="group">
                                             <input type="radio" class="btn-check" name="language" id="lang_1" value="1" {{ old('language', '1') == '1' ? 'checked' : '' }}>
-                                            <label class="btn btn-outline-primary btn-sm" for="lang_1">日本語</label>
-
+                                            <label class="btn btn-outline-primary btn-sm" for="lang_1" style="font-size: 0.75rem;">日本語</label>
                                             <input type="radio" class="btn-check" name="language" id="lang_2" value="2" {{ old('language', '1') == '2' ? 'checked' : '' }}>
-                                            <label class="btn btn-outline-primary btn-sm" for="lang_2">英語</label>
+                                            <label class="btn btn-outline-primary btn-sm" for="lang_2" style="font-size: 0.75rem;">英語</label>
                                         </div>
                                     </div>
                                     <div class="col-md-3 col-6">
-                                        <label class="form-label small mb-1">タイプ</label>
+                                        <label class="form-label mb-0" style="font-size: 0.75rem;">タイプ</label>
                                         <div class="btn-group w-100" role="group">
                                             <input type="radio" class="btn-check" name="type" id="type_1" value="1" {{ old('type', '1') == '1' ? 'checked' : '' }}>
-                                            <label class="btn btn-outline-primary btn-sm" for="type_1">正式</label>
-
+                                            <label class="btn btn-outline-primary btn-sm" for="type_1" style="font-size: 0.75rem;">正式</label>
                                             <input type="radio" class="btn-check" name="type" id="type_2" value="2" {{ old('type', '1') == '2' ? 'checked' : '' }}>
-                                            <label class="btn btn-outline-primary btn-sm" for="type_2">臨時</label>
+                                            <label class="btn btn-outline-primary btn-sm" for="type_2" style="font-size: 0.75rem;">臨時</label>
                                         </div>
                                     </div>
 
-                                    <!-- 第二行：4 个字段 -->
+                                    <!-- 第二行 -->
                                     <div class="col-md-3 col-6">
-                                        <label for="currency_code" class="form-label small mb-1">通貨</label>
-                                        <select class="form-select form-select-sm" id="currency_code" name="currency_code">
+                                        <label for="currency_code" class="form-label mb-0" style="font-size: 0.75rem;">通貨</label>
+                                        <select class="form-select form-select-sm" id="currency_code" name="currency_code" style="font-size: 0.875rem;">
                                             @foreach($currencies ?? [] as $currency)
                                                 <option value="{{ $currency->currency_code }}" {{ old('currency_code') == $currency->currency_code ? 'selected' : '' }}>
                                                     {{ $currency->currency_code }}
@@ -127,39 +131,41 @@
                                         </select>
                                     </div>
                                     <div class="col-md-3 col-6">
-                                        <label for="invoice_date" class="form-label small mb-1">請求日</label>
-                                        <input type="date" class="form-control form-control-sm" id="invoice_date" name="invoice_date" value="{{ old('invoice_date', now()->format('Y-m-d')) }}">
+                                        <label for="invoice_date" class="form-label mb-0" style="font-size: 0.75rem;">請求日</label>
+                                        <input type="date" class="form-control form-control-sm" id="invoice_date" name="invoice_date" value="{{ old('invoice_date', now()->format('Y-m-d')) }}" style="font-size: 0.875rem;">
                                     </div>
                                     <div class="col-md-3 col-6">
-                                        <label for="operation_date" class="form-label small mb-1">運行日</label>
-                                        <input type="date" class="form-control form-control-sm" id="operation_date" name="operation_date" value="{{ old('operation_date') }}">
+                                        <label for="operation_date" class="form-label mb-0" style="font-size: 0.75rem;">運行日</label>
+                                        <input type="date" class="form-control form-control-sm" id="operation_date" name="operation_date" value="{{ old('operation_date') }}" style="font-size: 0.875rem;">
                                     </div>
                                     <div class="col-md-3 col-6">
-                                        <label for="reservation_id" class="form-label small mb-1">予約 ID</label>
-                                        <input type="text" class="form-control form-control-sm" id="reservation_id" name="reservation_id" value="{{ old('reservation_id') }}">
+                                        <label for="reservation_id" class="form-label mb-0" style="font-size: 0.75rem;">予約 ID</label>
+                                        <input type="text" class="form-control form-control-sm" id="reservation_id" name="reservation_id" value="{{ old('reservation_id') }}" style="font-size: 0.875rem;">
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <hr class="my-3 text-muted">
+                        <!-- 修改点：my-2 (减小分割线间距) -->
+                        <hr class="my-2 text-muted">
 
                         <!-- Row 2: 标题、支付日、银行、锁 -->
-                        <div class="row g-3 align-items-end mb-3">
+                        <!-- 修改点：g-2, mb-2 -->
+                        <div class="row g-2 align-items-end mb-2">
                             <div class="col-md-4">
-                                <label for="billing_title" class="form-label fw-bold">タイトル</label>
-                                <input type="text" class="form-control @error('billing_title') is-invalid @enderror"
+                                <label for="billing_title" class="form-label fw-bold mb-0" style="font-size: 0.875rem;">タイトル</label>
+                                <input type="text" class="form-control form-control-sm @error('billing_title') is-invalid @enderror"
                                     id="billing_title" name="billing_title"
-                                    value="{{ old('billing_title') }}" placeholder="例：2024 年 3 月分請求書">
+                                    value="{{ old('billing_title') }}" placeholder="例：2024 年 3 月分請求書" style="font-size: 0.875rem;">
                             </div>
                             <div class="col-md-3">
-                                <label for="due_date" class="form-label fw-bold">支払指定日</label>
-                                <input type="date" required class="form-control @error('due_date') is-invalid @enderror"
-                                    id="due_date" name="due_date" value="{{ old('due_date') }}">
+                                <label for="due_date" class="form-label fw-bold mb-0" style="font-size: 0.875rem;">支払指定日</label>
+                                <input type="date" required class="form-control form-control-sm @error('due_date') is-invalid @enderror"
+                                    id="due_date" name="due_date" value="{{ old('due_date') }}" style="font-size: 0.875rem;">
                             </div>
                             <div class="col-md-3">
-                                <label for="bank_id" class="form-label fw-bold">入金銀行</label>
-                                <select class="form-select @error('bank_id') is-invalid @enderror" id="bank_id" name="bank_id">
+                                <label for="bank_id" class="form-label fw-bold mb-0" style="font-size: 0.875rem;">入金銀行</label>
+                                <select class="form-select form-select-sm @error('bank_id') is-invalid @enderror" id="bank_id" name="bank_id" style="font-size: 0.875rem;">
                                     @foreach($banks ?? [] as $bank)
                                         <option value="{{ $bank->id }}" {{ old('bank_id') == $bank->id ? 'selected' : '' }}>
                                             {{ $bank->bank_name }}
@@ -168,54 +174,56 @@
                                 </select>
                             </div>
                             <div class="col-md-2">
-                                <label class="form-label fw-bold d-block text-center">ロック</label>
-                                <!-- 隐藏真实的 checkbox，但保留功能 -->
+                                <label class="form-label fw-bold d-block text-center mb-0" style="font-size: 0.875rem;">ロック</label>
                                 <input class="form-check-input" type="checkbox" role="switch" id="lock_switch" 
                                     {{ old('is_locked') ? 'checked' : '' }} style="display: none;">
                                 
-                                <!-- 只显示这个图标容器，点击它来触发隐藏的 checkbox -->
-                                <div class="text-center mt-2" id="lock_icon_container" style="cursor: pointer; font-size: 2rem;">
-                                    <!-- 图标内容由 JS 控制 -->
+                                <!-- 修改点：mt-1, font-size 1.5rem (原 2rem) -->
+                                <div class="text-center mt-1" id="lock_icon_container" style="cursor: pointer; font-size: 1.5rem;">
                                     <i class="bi bi-unlock-fill text-success"></i>
                                 </div>
                                 
-                                <!-- 提交用的隐藏域 -->
                                 <input type="hidden" name="is_locked" id="lock_hidden_input" value="{{ old('is_locked') ? '1' : '0' }}">
                             </div>
                         </div>
 
-                        <!-- Row 3: 備考 (独占一行) -->
+                        <!-- Row 3: 備考 -->
                         <div class="row">
                             <div class="col-12">
-                                <label for="notes" class="form-label fw-bold">備考</label>
-                                <textarea class="form-control" id="notes" name="notes" rows="2" placeholder="請求書的下に表示する備考を入力してください。">{{ old('notes') }}</textarea>
-                                @error('notes') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                                <label for="notes" class="form-label fw-bold mb-0" style="font-size: 0.875rem;">備考</label>
+                                <textarea class="form-control form-control-sm" id="notes" name="notes" rows="2" placeholder="請求書の下に表示する備考を入力してください。" style="font-size: 0.875rem;">{{ old('notes') }}</textarea>
+                                @error('notes') <div class="invalid-feedback d-block small">{{ $message }}</div> @enderror
                             </div>
                         </div>
 
                     </div>
                 </div>
 
-                <!-- ================= 第二部分：請求明細 (保持原样) ================= -->
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0"><i class="bi bi-list-task"></i> 請求明細</h5>
-                        <button type="button" class="btn btn-light btn-sm" id="addItemRowBtn">
+                <!-- ================= 第二部分：請求明細 ================= -->
+                <!-- 修改点：mb-3 -->
+                <div class="card shadow-sm mb-3">
+                    <!-- 修改点：py-1, h5 字体缩小 -->
+                    <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center py-1">
+                        <h5 class="mb-0 fs-6" style="font-size: 0.9rem !important; line-height: 1.2;">
+                            <i class="bi bi-list-task"></i> 請求明細
+                        </h5>
+                        <button type="button" class="btn btn-light btn-sm" id="addItemRowBtn" style="font-size: 0.75rem; padding: 0.1rem 0.4rem;">
                             <i class="bi bi-plus-lg"></i> 行を追加
                         </button>
                     </div>
-                    <div class="card-body">
+                    <!-- 修改点：p-2 -->
+                    <div class="card-body p-2">
                         <div class="table-responsive">
-                            <table class="table table-bordered table-hover" id="itemsTable">
+                            <table class="table table-bordered table-hover mb-0" id="itemsTable" style="font-size: 0.875rem;">
                                 <thead class="table-light">
                                     <tr>
-                                        <th style="width: 50px;">No.</th>
-                                        <th style="width: 500px;">内容</th>
-                                        <th style="width: 100px;">単価</th>
-                                        <th style="width: 100px;">数量</th>
-                                        <th style="width: 100px;">税率 (%)</th>
-                                        <th style="width: 120px;">小計</th> 
-                                        <th style="width: 100px;">操作</th>
+                                        <th style="width: 50px;" class="py-1">No.</th>
+                                        <th style="width: 500px;" class="py-1">内容</th>
+                                        <th style="width: 100px;" class="py-1">単価</th>
+                                        <th style="width: 100px;" class="py-1">数量</th>
+                                        <th style="width: 100px;" class="py-1">税率 (%)</th>
+                                        <th style="width: 120px;" class="py-1">小計</th> 
+                                        <th style="width: 100px;" class="py-1">操作</th>
                                     </tr>
                                 </thead>
                                 <tbody id="itemsBody">
@@ -226,8 +234,8 @@
                                     @foreach($displayItems as $index => $item)
                                         @php $index = (int)$index; $orderNumber = $index + 1; @endphp
                                         <tr data-index="{{ $index }}" draggable="true">
-                                            <td class="text-center align-middle display-order">{{ $orderNumber }}</td>
-                                            <td>
+                                            <td class="text-center align-middle display-order py-1" style="font-size: 0.8rem;">{{ $orderNumber }}</td>
+                                            <td class="py-1">
                                                 <input type="text" class="form-control form-control-sm description" 
                                                     name="items[{{ $index }}][description]" list="product-list-{{ $index }}" 
                                                     value="{{ $item['description'] ?? old('items.'.$index.'.description') }}" placeholder="入力または選択">
@@ -235,9 +243,9 @@
                                                     @foreach($products ?? [] as $product) <option value="{{ $product->name }}"> @endforeach
                                                 </datalist>
                                             </td>
-                                            <td><input type="number" class="form-control form-control-sm unit-price" name="items[{{ $index }}][unit_price]" value="{{ $item['unit_price'] ?? '' }}" min="0" step="0.01"></td>
-                                            <td><input type="number" class="form-control form-control-sm quantity" name="items[{{ $index }}][quantity]" value="{{ $item['quantity'] ?? '' }}" min="1" step="1"></td>
-                                            <td>
+                                            <td class="py-1"><input type="number" class="form-control form-control-sm unit-price" name="items[{{ $index }}][unit_price]" value="{{ $item['unit_price'] ?? '' }}" min="0" step="0.01"></td>
+                                            <td class="py-1"><input type="number" class="form-control form-control-sm quantity" name="items[{{ $index }}][quantity]" value="{{ $item['quantity'] ?? '' }}" min="1" step="1"></td>
+                                            <td class="py-1">
                                                 <select class="form-control form-control-sm tax-rate" name="items[{{ $index }}][tax_rate]">
                                                     <option value="10" {{ (isset($item['tax_rate']) && $item['tax_rate'] == 10) ? 'selected' : '' }}>10</option>
                                                     <option value="8"  {{ (isset($item['tax_rate']) && $item['tax_rate'] == 8)  ? 'selected' : '' }}>8</option>
@@ -245,13 +253,13 @@
                                                     <option value="-2" {{ (isset($item['tax_rate']) && $item['tax_rate'] == -2) ? 'selected' : '' }}>非課税</option>
                                                 </select>
                                             </td>
-                                            <td class="align-middle"><input type="text" tabindex="-1" class="form-control form-control-sm line-total-input" value="0.00" readonly style="background-color: #f8f9fa; text-align: left;"></td>
-                                            <td class="text-center align-middle">
+                                            <td class="align-middle py-1"><input type="text" tabindex="-1" class="form-control form-control-sm line-total-input" value="0.00" readonly style="background-color: #f8f9fa; text-align: left;"></td>
+                                            <td class="text-center align-middle py-1">
                                                 <div class="d-flex justify-content-center gap-1">
-                                                    <button type="button" class="btn btn-outline-secondary btn-sm move-up-btn" title="上へ移動" tabindex="-1"><i class="bi bi-arrow-up"></i></button>
-                                                    <button type="button" class="btn btn-outline-secondary btn-sm move-down-btn" title="下へ移動" tabindex="-1"><i class="bi bi-arrow-down"></i></button>
-                                                    <button type="button" class="btn btn-outline-success btn-sm add-row-btn" title="行を追加" tabindex="-1"><i class="bi bi-plus-lg"></i></button>
-                                                    <button type="button" class="btn btn-outline-danger btn-sm delete-row-btn" title="行を削除" tabindex="-1"><i class="bi bi-dash-lg"></i></button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm move-up-btn" title="上へ移動" tabindex="-1" style="padding: 0.1rem 0.3rem;"><i class="bi bi-arrow-up"></i></button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm move-down-btn" title="下へ移動" tabindex="-1" style="padding: 0.1rem 0.3rem;"><i class="bi bi-arrow-down"></i></button>
+                                                    <button type="button" class="btn btn-outline-success btn-sm add-row-btn" title="行を追加" tabindex="-1" style="padding: 0.1rem 0.3rem;"><i class="bi bi-plus-lg"></i></button>
+                                                    <button type="button" class="btn btn-outline-danger btn-sm delete-row-btn" title="行を削除" tabindex="-1" style="padding: 0.1rem 0.3rem;"><i class="bi bi-dash-lg"></i></button>
                                                 </div>
                                                 <input type="hidden" name="items[{{ $index }}][display_order]" value="{{ $orderNumber }}">
                                             </td>
@@ -263,39 +271,39 @@
                     </div>
                 </div>
 
-                <!-- Template -->
+                <!-- Template (保持逻辑，样式由 CSS 控制) -->
                 <template id="newRowTemplate">
                     <tr draggable="true">
-                        <td class="text-center align-middle display-order"></td>
-                        <td>
+                        <td class="text-center align-middle display-order py-1" style="font-size: 0.8rem;"></td>
+                        <td class="py-1">
                             <input type="text" class="form-control form-control-sm description" name="items[__index__][description]" list="product-list-__index__" value="" placeholder="入力または選択">
                             <datalist id="product-list-__index__">@foreach($products ?? [] as $product) <option value="{{ $product->name }}"> @endforeach</datalist>
                         </td>
-                        <td><input type="number" class="form-control form-control-sm unit-price" name="items[__index__][unit_price]" min="0" step="0.01" value=""></td>
-                        <td><input type="number" class="form-control form-control-sm quantity" name="items[__index__][quantity]" min="1" step="1" value=""></td>
-                        <td>
+                        <td class="py-1"><input type="number" class="form-control form-control-sm unit-price" name="items[__index__][unit_price]" min="0" step="0.01" value=""></td>
+                        <td class="py-1"><input type="number" class="form-control form-control-sm quantity" name="items[__index__][quantity]" min="1" step="1" value=""></td>
+                        <td class="py-1">
                             <select class="form-control form-control-sm tax-rate" name="items[__index__][tax_rate]">
                                 <option value="10" selected>10</option><option value="8">8</option><option value="-1">免税</option><option value="-2">非課税</option>
                             </select>
                         </td>
-                        <td class="align-middle"><input type="text" tabindex="-1" class="form-control form-control-sm line-total-input" value="0.00" readonly style="background-color: #f8f9fa; text-align: left;"></td>
-                        <td class="text-center align-middle">
+                        <td class="align-middle py-1"><input type="text" tabindex="-1" class="form-control form-control-sm line-total-input" value="0.00" readonly style="background-color: #f8f9fa; text-align: left;"></td>
+                        <td class="text-center align-middle py-1">
                             <div class="d-flex justify-content-center gap-1">
-                                <button type="button" class="btn btn-outline-secondary btn-sm move-up-btn" tabindex="-1"><i class="bi bi-arrow-up"></i></button>
-                                <button type="button" class="btn btn-outline-secondary btn-sm move-down-btn" tabindex="-1"><i class="bi bi-arrow-down"></i></button>
-                                <button type="button" class="btn btn-outline-success btn-sm add-row-btn" tabindex="-1"><i class="bi bi-plus-lg"></i></button>
-                                <button type="button" class="btn btn-outline-danger btn-sm delete-row-btn" tabindex="-1"><i class="bi bi-dash-lg"></i></button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm move-up-btn" tabindex="-1" style="padding: 0.1rem 0.3rem;"><i class="bi bi-arrow-up"></i></button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm move-down-btn" tabindex="-1" style="padding: 0.1rem 0.3rem;"><i class="bi bi-arrow-down"></i></button>
+                                <button type="button" class="btn btn-outline-success btn-sm add-row-btn" tabindex="-1" style="padding: 0.1rem 0.3rem;"><i class="bi bi-plus-lg"></i></button>
+                                <button type="button" class="btn btn-outline-danger btn-sm delete-row-btn" tabindex="-1" style="padding: 0.1rem 0.3rem;"><i class="bi bi-dash-lg"></i></button>
                             </div>
                             <input type="hidden" name="items[__index__][display_order]" value="">
                         </td>
                     </tr>
                 </template>
 
-                <!-- 操作ボタン -->
-                <div class="d-flex justify-content-between mb-4">
+                <!-- 操作ボタン：减小间距 mb-3 -->
+                <div class="d-flex justify-content-between mb-3">
                     <div>
-                        <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle"></i> 登録する</button>
-                        <a href="{{ route('masters.invoices.index', ['group_id' => $groupId]) }}" class="btn btn-secondary"><i class="bi bi-x-circle"></i> キャンセル</a>
+                        <button type="submit" class="btn btn-primary btn-sm" style="font-size: 0.875rem;"><i class="bi bi-check-circle"></i> 登録する</button>
+                        <a href="{{ route('masters.invoices.index', ['group_id' => $groupId]) }}" class="btn btn-secondary btn-sm ms-2" style="font-size: 0.875rem;"><i class="bi bi-x-circle"></i> キャンセル</a>
                     </div>
                 </div>
             </form>
@@ -323,35 +331,29 @@
 
     // 2. 锁开关
     const lockIconContainer = document.getElementById('lock_icon_container');
-    const lockSwitch = document.getElementById('lock_switch'); // 隐藏的开关
+    const lockSwitch = document.getElementById('lock_switch');
     const lockHiddenInput = document.getElementById('lock_hidden_input');
 
     if (lockIconContainer && lockSwitch && lockHiddenInput) {
-        
-        // 初始化图标状态
         updateLockIcon();
-
-        // 点击图标容器 -> 触发隐藏开关的点击
         lockIconContainer.addEventListener('click', function () {
-            lockSwitch.checked = !lockSwitch.checked; // 反转状态
-            updateLockIcon(); // 更新图标
+            lockSwitch.checked = !lockSwitch.checked;
+            updateLockIcon();
         });
 
         function updateLockIcon() {
             const iconElement = lockIconContainer.querySelector('i');
             if (lockSwitch.checked) {
-                // 锁定状态：红色锁头
                 iconElement.className = 'bi bi-lock-fill text-danger';
                 lockHiddenInput.value = '1';
             } else {
-                // 解锁状态：绿色开锁
                 iconElement.className = 'bi bi-unlock-fill text-success';
                 lockHiddenInput.value = '0';
             }
         }
     }
 
-    // 3. 表格逻辑 (保持不变)
+    // 3. 表格逻辑
     const existingRows = document.querySelectorAll('#itemsBody tr[data-index]');
     let globalRowIndex = existingRows.length;
     function updateDisplayOrder() {
@@ -407,11 +409,7 @@
         
         const price = parseFloat(unitPriceInput.value) || 0;
         const qty = parseFloat(quantityInput.value) || 0;
-        
-        // 计算总额并四舍五入到整数
         const total = Math.round(price * qty);
-        
-        // 格式化为带千分位的整数 (例如: 1,000)，如果不为0则显示数字，为0显示 "0"
         totalInput.value = total.toLocaleString('ja-JP');
     }
 
@@ -441,31 +439,20 @@
 
     function handleDrop(e) {
         if (e.stopPropagation) e.stopPropagation();
-
         if (dragSrcEl !== this) {
-            // 替换内容（简单方式：交换 outerHTML）
             const tbody = document.getElementById('itemsBody');
             const allRows = Array.from(tbody.querySelectorAll('tr[data-index]'));
-
             const srcIndex = allRows.indexOf(dragSrcEl);
             const destIndex = allRows.indexOf(this);
-
             if (srcIndex === -1 || destIndex === -1) return;
-
-            // 移除原行
             dragSrcEl.parentNode.removeChild(dragSrcEl);
-
-            // 插入到目标位置
             if (destIndex < srcIndex) {
                 this.parentNode.insertBefore(dragSrcEl, this);
             } else {
                 this.parentNode.insertBefore(dragSrcEl, this.nextSibling);
             }
-
-            // 重新绑定事件？不需要，因为我们用的是事件委托
             updateDisplayOrder();
         }
-
         this.classList.remove('over');
         return false;
     }
@@ -475,7 +462,6 @@
         rows.forEach(row => row.classList.remove('dragging', 'over'));
     }
 
-    // 绑定拖拽事件（使用事件委托或直接绑定）
     function initDraggableRows() {
         const rows = document.querySelectorAll('#itemsBody tr[data-index]');
         rows.forEach(row => {
@@ -488,9 +474,7 @@
         });
     }
 
-    // 在表格初始化后调用
     initDraggableRows();
-
 
     document.getElementById('itemsBody').addEventListener('input', function (e) {
         if (e.target.classList.contains('unit-price') || e.target.classList.contains('quantity')) {
@@ -502,21 +486,65 @@
 </script>
 
 <style>
+/* 全局紧凑样式覆盖 */
+body {
+    font-size: 0.875rem !important;
+}
 .required::after { content: " *"; color: #dc3545; }
+
+/* 表单控件统一变小 */
+.form-control, .form-select {
+    font-size: 0.875rem !important;
+    padding: 0.25rem 0.5rem !important; /* 更小的内边距 */
+    height: auto;
+}
+
+/* 标签统一变小 */
+.form-label {
+    font-size: 0.75rem !important;
+    margin-bottom: 0.15rem !important;
+}
+
+/* 表格样式压缩 */
 .table-bordered td { border: 1px solid #dee2e6; }
 #itemsTable tbody tr:hover { background-color: #f8f9fa; }
 #itemsTable tbody tr td { vertical-align: middle; }
 .gap-1 { gap: 0.25rem; }
-#itemsTable .form-control-sm { padding: 0.125rem 0.25rem !important; font-size: 0.875rem !important; height: auto !important; }
-#itemsTable tbody tr { height: 44px !important; }
-#itemsTable td { padding: 0.25rem !important; vertical-align: middle; }
-#itemsTable .btn-sm { padding: 0.125rem 0.25rem !important; font-size: 0.75rem !important; }
+
+#itemsTable .form-control-sm { 
+    padding: 0.1rem 0.25rem !important; 
+    font-size: 0.8rem !important; 
+    height: auto !important; 
+}
+
+#itemsTable tbody tr { 
+    height: 36px !important; /* 进一步压缩行高 */
+}
+
+#itemsTable td { 
+    padding: 0.2rem !important; 
+    vertical-align: middle; 
+}
+
+#itemsTable .btn-sm { 
+    padding: 0.1rem 0.2rem !important; 
+    font-size: 0.7rem !important; 
+    line-height: 1;
+}
+
+/* 拖拽效果 */
 #itemsBody tr.dragging {
     opacity: 0.5;
     background-color: #e9ecef !important;
 }
 #itemsBody tr.over {
     border-top: 2px solid #0d6efd;
+}
+
+/* 卡片头部字体修正 */
+.card-header h5 {
+    font-size: 0.9rem !important;
+    line-height: 1.2;
 }
 </style>
 @endsection
