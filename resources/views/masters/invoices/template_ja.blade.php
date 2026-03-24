@@ -173,7 +173,7 @@
             {{-- 行 1: 10% 统计 --}}
             <tr class="summary-row">
                 <td class="c1 text-left" colspan="2" style="padding-left: 5px; font-weight: normal;">10％対象</td>
-                <td class="c3 text-right">{{ number_format($summary_10->total_with_tax ?? 0) }}</td>
+                <td class="c3 text-right">{{ number_format($summary_10->subtotal ?? 0) }}</td>
                 <td class="c4 text-right" style="font-weight: normal; font-size: 8.5pt;">消費税</td>
                 <td class="c5 text-right">{{ number_format($summary_10->tax_amount ?? 0) }}</td>
                 <td class="c6 text-right" colspan="2" style="text-align: right;">小計</td>
@@ -185,7 +185,7 @@
             {{-- 行 2: 8% 统计 --}}
             <tr class="summary-row">
                 <td class="c1 text-left" colspan="2" style="padding-left: 5px; font-weight: normal;">8％対象</td>
-                <td class="c3 text-right">{{ number_format($summary_8->total_with_tax ?? 0) }}</td>
+                <td class="c3 text-right">{{ number_format($summary_8->subtotal ?? 0) }}</td>
                 <td class="c4 text-right" style="font-weight: normal; font-size: 8.5pt;">消費税</td>
                 <td class="c5 text-right">{{ number_format($summary_8->tax_amount ?? 0) }}</td>
                 <td class="c6 text-right" colspan="2" style="text-align: right;">消費税{{ $invoice->tax_mode==1 ?"(内税)":"" }}</td>

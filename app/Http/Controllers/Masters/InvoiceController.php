@@ -375,7 +375,10 @@ public function store(Request $request)
         $banks = Bank::where("is_active",1)->get();
         $agencies = Agency::where("is_active",1)->get();
         $staffs = Staff::where("is_active",1)->get();
-        return view('masters.invoices.edit', compact('invoice', 'groupId','items','currencies','products','banks','agencies','staffs'));
+        $summary_10 = InvoiceTaxSummary::where('invoice_id', $invoice->id)->where('tax_rate', 10)->first();
+        $summary_8 = InvoiceTaxSummary::where('invoice_id', $invoice->id)->where('tax_rate', 8)->first();
+        $non_taxable = InvoiceItem::where('invoice_id', $invoice->id)->where('tax_rate','<', 0)->sum('amount');
+        return view('masters.invoices.edit', compact('invoice', 'groupId','items','currencies','products','banks','agencies','staffs','summary_10','summary_8','non_taxable'));
     }
 
     public function update(Request $request, int $id)
