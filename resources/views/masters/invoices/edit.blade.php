@@ -46,6 +46,7 @@
                                 data-balance-amount="{{ number_format($invoice->total_amount - $invoice->paid_amount, 2, '.', '') }}"
                                 data-locked="{{ $invoice->is_locked ? 1 : 0 }}"
                                 data-customer-id="{{ $invoice->agency_id }}"
+                                data-return-url="{{ url()->current() }}"
                                 
                                 {{ $invoice->is_locked ? 'disabled' : '' }}>
                             <i class="bi bi-cash-coin"></i> 入金
@@ -138,13 +139,13 @@
                                         </select>
                                     </div>
                                     <div class="col-md-3 col-6">
-                                        <label class="form-label small mb-1">税込/税別</label>
+                                        <label class="form-label small mb-1">内税/外税</label>
                                         <div class="btn-group w-100" role="group">
                                             <input type="radio" class="btn-check" name="tax_mode" id="tax_mode_1" value="1" {{ old('tax_mode', $invoice->tax_mode) == '1' ? 'checked' : '' }}>
-                                            <label class="btn btn-outline-primary btn-sm" for="tax_mode_1">税込</label>
+                                            <label class="btn btn-outline-primary btn-sm" for="tax_mode_1">内税</label>
 
                                             <input type="radio" class="btn-check" name="tax_mode" id="tax_mode_2" value="2" {{ old('tax_mode', $invoice->tax_mode) == '2' ? 'checked' : '' }}>
-                                            <label class="btn btn-outline-primary btn-sm" for="tax_mode_2">税別</label>
+                                            <label class="btn btn-outline-primary btn-sm" for="tax_mode_2">外税</label>
                                         </div>
                                     </div>
                                     <div class="col-md-3 col-6">
@@ -225,14 +226,15 @@
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label fw-bold d-block text-center">ロック</label>
-                                <input class="form-check-input" type="checkbox" role="switch" id="lock_switch" 
-                                    {{ old('is_locked', $invoice->is_locked) ? 'checked' : '' }} style="display: none;">
                                 
-                                <div class="text-center mt-2" id="lock_icon_container" style="cursor: pointer; font-size: 2rem;">
-                                    <i class="bi {{ old('is_locked', $invoice->is_locked) ? 'bi-lock-fill text-danger' : 'bi-unlock-fill text-success' }}"></i>
+                                <!-- 可点击的锁图标容器 -->
+                                <div class="text-center mt-2" id="lock_icon_container" style="cursor: pointer; font-size: 2rem;" title="クリックしてロック/ロック解除">
+                                    @if($invoice->is_locked)
+                                        <i class="bi bi-lock-fill text-danger"></i>
+                                    @else
+                                        <i class="bi bi-unlock-fill text-success"></i>
+                                    @endif
                                 </div>
-                                
-                                <input type="hidden" name="is_locked" id="lock_hidden_input" value="{{ old('is_locked', $invoice->is_locked) ? '1' : '0' }}">
                             </div>
                         </div>
 
@@ -291,7 +293,7 @@
                                     @if(count($oldItems) > 0)
                                         @foreach($oldItems as $index => $oldItem)
                                             @php $index = (int)$index; $orderNumber = $index + 1; @endphp
-                                            <tr data-index="{{ $index }}">
+                                            <tr data-index="{{ $index }}" draggable="true">
                                                 <td class="text-center align-middle display-order">{{ $orderNumber }}</td>
                                                 <td>
                                                     <input type="text" class="form-control form-control-sm description" 
@@ -324,7 +326,7 @@
                                             </tr>
                                         @endforeach
                                     @else
-                                        <tr data-index="0">
+                                        <tr data-index="0"  draggable="true">
                                             <td class="text-center align-middle display-order">1</td>
                                             <td><input type="text" class="form-control form-control-sm description" name="items[0][description]" list="product-list-0" value="" placeholder="入力または選択"><datalist id="product-list-0">@foreach($products ?? [] as $product) <option value="{{ $product->name }}"> @endforeach</datalist></td>
                                             <td><input type="number" class="form-control form-control-sm unit-price" name="items[0][unit_price]" value="" min="0" step="0.01"></td>
@@ -342,7 +344,7 @@
 
                 <!-- Template -->
                 <template id="newRowTemplate">
-                    <tr>
+                    <tr draggable="true">
                         <td class="text-center align-middle display-order"></td>
                         <td><input type="text" class="form-control form-control-sm description" name="items[__index__][description]" list="product-list-__index__" value="" placeholder="入力または選択"><datalist id="product-list-__index__">@foreach($products ?? [] as $product) <option value="{{ $product->name }}"> @endforeach</datalist></td>
                         <td><input type="number" class="form-control form-control-sm unit-price" name="items[__index__][unit_price]" min="0" step="0.01" value=""></td>
@@ -400,13 +402,13 @@
 </div>
 {{-- 引入公共销账模态框 --}}
 @include('masters.invoices.components.bulk-reconcile-modal')
+
 <script>
 (function () {
     // 1. 代理店联动 (Edit Page Logic)
     const agencySelect = document.getElementById('agency_id');
     const clientDetailsTextarea = document.getElementById('agency_detail');
     if (agencySelect && clientDetailsTextarea) {
-        // 初始化：如果页面加载时已有选中项，触发一次 change 以填充 textarea (防止 old() 有值但 JS 没运行)
         if(agencySelect.value) {
             const event = new Event('change');
             agencySelect.dispatchEvent(event);
@@ -415,43 +417,57 @@
         agencySelect.addEventListener('change', function () {
             const selectedOption = this.options[this.selectedIndex];
             if (this.value === "") { 
-                // 如果用户清空选择，是否清空 textarea? 这里选择保留用户手动修改的内容，或者你可以取消注释下一行来清空
-                // clientDetailsTextarea.value = ""; 
                 return; 
             }
             const agencyName = selectedOption.getAttribute('data-agency-name') || '';
             const agencyCode = selectedOption.getAttribute('data-agency-code') || '';
             const name = selectedOption.text;
             
-            // 只有当 textarea 为空或者是默认提示语时才覆盖？或者直接覆盖？
-            // 这里采用直接覆盖策略，确保数据一致性
             let detailsText = `会社名:${name}\n`;
             if (agencyCode) detailsText += `コード:${agencyCode}\n`;
             clientDetailsTextarea.value = detailsText;
         });
     }
 
-    // 2. 锁开关 (Lock Switch Logic)
+    // 2. 【新】锁开关 - 直接 AJAX 切换（替代原 checkbox 逻辑）
     const lockIconContainer = document.getElementById('lock_icon_container');
-    const lockSwitch = document.getElementById('lock_switch');
-    const lockHiddenInput = document.getElementById('lock_hidden_input');
+    if (lockIconContainer) {
+        const invoiceId = {{ $invoice->id }};
+        const currentLocked = {{ $invoice->is_locked ? 'true' : 'false' }};
 
-    if (lockIconContainer && lockSwitch && lockHiddenInput) {
         lockIconContainer.addEventListener('click', function () {
-            lockSwitch.checked = !lockSwitch.checked;
-            updateLockIcon();
-        });
+            const message = currentLocked 
+                ? 'ロックを解除しますか？' 
+                : 'この請求書をロックしますか？\nロック後は編集・削除ができなくなります。';
 
-        function updateLockIcon() {
-            const iconElement = lockIconContainer.querySelector('i');
-            if (lockSwitch.checked) {
-                iconElement.className = 'bi bi-lock-fill text-danger';
-                lockHiddenInput.value = '1';
-            } else {
-                iconElement.className = 'bi bi-unlock-fill text-success';
-                lockHiddenInput.value = '0';
-            }
-        }
+            if (!confirm(message)) return;
+
+            // 显示加载状态
+            this.innerHTML = '<i class="bi bi-hourglass-split text-muted" style="font-size: 2rem;"></i>';
+
+            fetch(`/masters/invoices/${invoiceId}/toggle-lock`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ locked: currentLocked ? 0 : 1 })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.reload(); // 简单可靠：刷新页面
+                } else {
+                    alert('操作に失敗しました: ' + (data.message || ''));
+                    window.location.reload();
+                }
+            })
+            .catch(error => {
+                console.error('Lock toggle error:', error);
+                alert('ネットワークエラーが発生しました。');
+                window.location.reload();
+            });
+        });
     }
 
     // 3. 表格逻辑 (Table Logic - Reused from Create)
@@ -483,6 +499,7 @@
         
         updateDisplayOrder();
         calculateRowTotal(newRow);
+        initDraggableRows(); 
     }
 
     document.getElementById('addItemRowBtn').addEventListener('click', () => addNewRow());
@@ -518,12 +535,81 @@
         
         const price = parseFloat(unitPriceInput.value) || 0;
         const qty = parseFloat(quantityInput.value) || 0;
-        
-        // 计算总额并四舍五入到整数
         const total = Math.round(price * qty);
-        
-        // 格式化为带千分位的整数 (例如: 1,000)，如果不为0则显示数字，为0显示 "0"
         totalInput.value = total.toLocaleString('ja-JP');
+    }
+
+    // ===== 拖拽排序邏輯 =====
+    let dragSrcEl = null;
+
+    function handleDragStart(e) {
+        dragSrcEl = this;
+        e.dataTransfer.effectAllowed = 'move';
+        this.classList.add('dragging');
+    }
+
+    function handleDragOver(e) {
+        if (e.preventDefault) e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        return false;
+    }
+
+    function handleDragEnter(e) {
+        this.classList.add('over');
+    }
+
+    function handleDragLeave() {
+        this.classList.remove('over');
+    }
+
+    function handleDrop(e) {
+        if (e.stopPropagation) e.stopPropagation();
+
+        if (dragSrcEl !== this) {
+            const tbody = document.getElementById('itemsBody');
+            const allRows = Array.from(tbody.querySelectorAll('tr[data-index]'));
+
+            const srcIndex = allRows.indexOf(dragSrcEl);
+            const destIndex = allRows.indexOf(this);
+
+            if (srcIndex === -1 || destIndex === -1) return;
+
+            // 移除原行
+            dragSrcEl.parentNode.removeChild(dragSrcEl);
+
+            // 插入到目標位置
+            if (destIndex < srcIndex) {
+                this.parentNode.insertBefore(dragSrcEl, this);
+            } else {
+                this.parentNode.insertBefore(dragSrcEl, this.nextSibling);
+            }
+
+            updateDisplayOrder();
+        }
+
+        this.classList.remove('over');
+        return false;
+    }
+
+    function handleDragEnd() {
+        const rows = document.querySelectorAll('#itemsBody tr[data-index]');
+        rows.forEach(row => row.classList.remove('dragging', 'over'));
+    }
+
+    function initDraggableRows() {
+        const rows = document.querySelectorAll('#itemsBody tr[data-index]');
+        rows.forEach(row => {
+            // 避免重複綁定（簡單防呆）
+            if (row.hasAttribute('data-drag-initialized')) return;
+            row.setAttribute('data-drag-initialized', 'true');
+
+            row.addEventListener('dragstart', handleDragStart, false);
+            row.addEventListener('dragover', handleDragOver, false);
+            row.addEventListener('dragenter', handleDragEnter, false);
+            row.addEventListener('dragleave', handleDragLeave, false);
+            row.addEventListener('drop', handleDrop, false);
+            row.addEventListener('dragend', handleDragEnd, false);
+        });
     }
 
     document.getElementById('itemsBody').addEventListener('input', function (e) {
@@ -532,10 +618,10 @@
         }
     });
     
-    // 初始化计算所有行
     document.querySelectorAll('#itemsBody tr[data-index]').forEach(row => calculateRowTotal(row));
+    initDraggableRows();
 
-    // 4. PDF 轮询逻辑 (Reused from Edit)
+    // 4. PDF 轮询逻辑
     const pollingTimers = {}; 
 
     function showStatusMessage(message, type = 'info') {
@@ -618,33 +704,21 @@
         }
     }
 
-        document.addEventListener('DOMContentLoaded', function () {
+    // 5. 销账模态框初始化
+    document.addEventListener('DOMContentLoaded', function () {
         const reconcileModal = document.getElementById('reconcileModal');
+        if (!reconcileModal) return;
+        if (typeof bootstrap === 'undefined') return;
 
-        // 如果页面上没有这个模态框（例如组件引入失败），则直接退出
-        if (!reconcileModal) {
-            console.warn('Reconcile Modal not found on this page.');
-            return;
-        }
-
-        // 检查 Bootstrap 是否已加载
-        if (typeof bootstrap === 'undefined') {
-            console.error('Bootstrap JS is not loaded! Cannot initialize modal logic.');
-            return;
-        }
-
-        // 监听模态框隐藏事件（可选：用于清空表单或重置状态）
         reconcileModal.addEventListener('hidden.bs.modal', function () {
             const form = reconcileModal.querySelector('form');
             if (form) form.reset();
-            // 清除可能的错误提示
             reconcileModal.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
             reconcileModal.querySelectorAll('.invalid-feedback').forEach(el => el.style.display = 'none');
         });
-
-
     });
 
+    // 清理轮询定时器
     window.addEventListener('beforeunload', () => {
         Object.keys(pollingTimers).forEach(id => { clearInterval(pollingTimers[id]); delete pollingTimers[id]; });
     });
@@ -661,5 +735,17 @@
 #itemsTable tbody tr { height: 44px !important; }
 #itemsTable td { padding: 0.25rem !important; vertical-align: middle; }
 #itemsTable .btn-sm { padding: 0.125rem 0.25rem !important; font-size: 0.75rem !important; }
+/* 拖拽視覺效果 */
+#itemsTable tbody tr[draggable="true"] {
+    cursor: grab;
+}
+#itemsTable tbody tr.dragging {
+    opacity: 0.6;
+    background-color: #f0f8ff !important;
+    cursor: grabbing;
+}
+#itemsTable tbody tr.over {
+    border-top: 2px solid #0d6efd;
+}
 </style>
 @endsection

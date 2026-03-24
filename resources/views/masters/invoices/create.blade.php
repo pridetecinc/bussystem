@@ -85,13 +85,13 @@
                                         </select>
                                     </div>
                                     <div class="col-md-3 col-6">
-                                        <label class="form-label small mb-1">税込/税別</label>
+                                        <label class="form-label small mb-1">内税/外税</label>
                                         <div class="btn-group w-100" role="group">
                                             <input type="radio" class="btn-check" name="tax_mode" id="tax_mode_1" value="1" {{ old('tax_mode', '1') == '1' ? 'checked' : '' }}>
-                                            <label class="btn btn-outline-primary btn-sm" for="tax_mode_1">税込</label>
+                                            <label class="btn btn-outline-primary btn-sm" for="tax_mode_1">内税</label>
 
                                             <input type="radio" class="btn-check" name="tax_mode" id="tax_mode_2" value="2" {{ old('tax_mode', '1') == '2' ? 'checked' : '' }}>
-                                            <label class="btn btn-outline-primary btn-sm" for="tax_mode_2">税別</label>
+                                            <label class="btn btn-outline-primary btn-sm" for="tax_mode_2">外税</label>
                                         </div>
                                     </div>
                                     <div class="col-md-3 col-6">
@@ -225,7 +225,7 @@
                                     @endphp
                                     @foreach($displayItems as $index => $item)
                                         @php $index = (int)$index; $orderNumber = $index + 1; @endphp
-                                        <tr data-index="{{ $index }}">
+                                        <tr data-index="{{ $index }}" draggable="true">
                                             <td class="text-center align-middle display-order">{{ $orderNumber }}</td>
                                             <td>
                                                 <input type="text" class="form-control form-control-sm description" 
@@ -265,7 +265,7 @@
 
                 <!-- Template -->
                 <template id="newRowTemplate">
-                    <tr>
+                    <tr draggable="true">
                         <td class="text-center align-middle display-order"></td>
                         <td>
                             <input type="text" class="form-control form-control-sm description" name="items[__index__][description]" list="product-list-__index__" value="" placeholder="入力または選択">
@@ -375,6 +375,8 @@
             else tbody.appendChild(newRow);
         } else { tbody.appendChild(newRow); }
         updateDisplayOrder();
+        calculateRowTotal(newRow);
+        initDraggableRows();
     }
     document.getElementById('addItemRowBtn').addEventListener('click', () => addNewRow());
     document.getElementById('itemsBody').addEventListener('click', function (e) {
@@ -412,6 +414,84 @@
         // 格式化为带千分位的整数 (例如: 1,000)，如果不为0则显示数字，为0显示 "0"
         totalInput.value = total.toLocaleString('ja-JP');
     }
+
+    // ===== 拖拽排序逻辑 =====
+    let dragSrcEl = null;
+
+    function handleDragStart(e) {
+        dragSrcEl = this;
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/html', this.outerHTML);
+        this.classList.add('dragging');
+    }
+
+    function handleDragOver(e) {
+        if (e.preventDefault) e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        return false;
+    }
+
+    function handleDragEnter(e) {
+        this.classList.add('over');
+    }
+
+    function handleDragLeave() {
+        this.classList.remove('over');
+    }
+
+    function handleDrop(e) {
+        if (e.stopPropagation) e.stopPropagation();
+
+        if (dragSrcEl !== this) {
+            // 替换内容（简单方式：交换 outerHTML）
+            const tbody = document.getElementById('itemsBody');
+            const allRows = Array.from(tbody.querySelectorAll('tr[data-index]'));
+
+            const srcIndex = allRows.indexOf(dragSrcEl);
+            const destIndex = allRows.indexOf(this);
+
+            if (srcIndex === -1 || destIndex === -1) return;
+
+            // 移除原行
+            dragSrcEl.parentNode.removeChild(dragSrcEl);
+
+            // 插入到目标位置
+            if (destIndex < srcIndex) {
+                this.parentNode.insertBefore(dragSrcEl, this);
+            } else {
+                this.parentNode.insertBefore(dragSrcEl, this.nextSibling);
+            }
+
+            // 重新绑定事件？不需要，因为我们用的是事件委托
+            updateDisplayOrder();
+        }
+
+        this.classList.remove('over');
+        return false;
+    }
+
+    function handleDragEnd() {
+        const rows = document.querySelectorAll('#itemsBody tr[data-index]');
+        rows.forEach(row => row.classList.remove('dragging', 'over'));
+    }
+
+    // 绑定拖拽事件（使用事件委托或直接绑定）
+    function initDraggableRows() {
+        const rows = document.querySelectorAll('#itemsBody tr[data-index]');
+        rows.forEach(row => {
+            row.addEventListener('dragstart', handleDragStart, false);
+            row.addEventListener('dragover', handleDragOver, false);
+            row.addEventListener('dragenter', handleDragEnter, false);
+            row.addEventListener('dragleave', handleDragLeave, false);
+            row.addEventListener('drop', handleDrop, false);
+            row.addEventListener('dragend', handleDragEnd, false);
+        });
+    }
+
+    // 在表格初始化后调用
+    initDraggableRows();
+
+
     document.getElementById('itemsBody').addEventListener('input', function (e) {
         if (e.target.classList.contains('unit-price') || e.target.classList.contains('quantity')) {
             calculateRowTotal(e.target.closest('tr'));
@@ -431,5 +511,12 @@
 #itemsTable tbody tr { height: 44px !important; }
 #itemsTable td { padding: 0.25rem !important; vertical-align: middle; }
 #itemsTable .btn-sm { padding: 0.125rem 0.25rem !important; font-size: 0.75rem !important; }
+#itemsBody tr.dragging {
+    opacity: 0.5;
+    background-color: #e9ecef !important;
+}
+#itemsBody tr.over {
+    border-top: 2px solid #0d6efd;
+}
 </style>
 @endsection

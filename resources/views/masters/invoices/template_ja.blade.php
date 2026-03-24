@@ -94,7 +94,7 @@
     <div class="greeting">下記の通りご請求申し上げます。</div>
     <div class="total-hint">
         ご請求金額({{$invoice->currency_code}})：<strong>{{ number_format($invoice->total_amount) }}</strong> 
-        @if($invoice->tax_mode == 1)(税込)@else(税別)@endif
+        @if($invoice->tax_mode == 1)(内税)@else(外税)@endif
     </div>
 
     <!-- ================= 主表格 (使用 colgroup 强制列宽) ================= -->
@@ -188,12 +188,16 @@
                 <td class="c3 text-right">{{ number_format($summary_8->total_with_tax ?? 0) }}</td>
                 <td class="c4 text-right" style="font-weight: normal; font-size: 8.5pt;">消費税</td>
                 <td class="c5 text-right">{{ number_format($summary_8->tax_amount ?? 0) }}</td>
-                <td class="c6 text-right" colspan="2" style="text-align: right;">消費税額</td>
-                <td class="c8 text-right font-bold" colspan="2">{{ number_format($invoice->tax_amount) }}</td>
+                <td class="c6 text-right" colspan="2" style="text-align: right;">消費税{{ $invoice->tax_mode==1 ?"(内税)":"" }}</td>
+                @if($invoice->tax_mode==1)
+                <td class="c8 text-right font-bold" colspan="2">({{number_format($invoice->tax_amount)}})</td>
+                @else
+                <td class="c8 text-right font-bold" colspan="2">{{number_format($invoice->tax_amount)}}</td>
+                @endif
             </tr>
 
             {{-- 行 3: 合计 --}}
-            <tr class="summary-row total-final-row">
+            <tr class="summary-row">
                 <td class="c1 text-left" colspan="2" style="padding-left: 5px; font-weight: normal;">非課税/免税</td>
                 <td class="c3 text-right">{{ number_format($invoice->non_taxable) }}</td>
                 <td class="c4" colspan="2"></td>

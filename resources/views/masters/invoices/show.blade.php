@@ -15,6 +15,21 @@
                 </ol>
             </nav>
 
+            <!-- 成功/错误提示 -->
+            @if(session('success'))
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle me-2"></i>{{ session('success') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            @endif
+            
+            @if(session('error'))
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle me-2"></i>{{ session('error') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            @endif
+
             <!-- Header Actions -->
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h4 class="mb-0 text-primary"><i class="bi bi-file-earmark-text"></i> 請求書詳細</h4>
@@ -59,10 +74,10 @@
                                     <div class="form-control-plaintext fw-normal">{{ $invoice->staff->name ?? '—' }}</div>
                                 </div>
                                 <div class="col-md-3 col-6">
-                                    <label class="form-label small mb-1 text-muted">税込/税別</label>
+                                    <label class="form-label small mb-1 text-muted">内税/外税</label>
                                     <div>
                                         <span class="badge {{ $invoice->tax_mode == 1 ? 'bg-primary' : 'bg-outline-secondary text-dark border' }}">
-                                            {{ $invoice->tax_mode == 1 ? '税込' : '税別' }}
+                                            {{ $invoice->tax_mode == 1 ? '内税' : '外税' }}
                                         </span>
                                     </div>
                                 </div>
@@ -108,7 +123,7 @@
 
                     <!-- Row 2: 标题、支付日、银行、锁 -->
                     <div class="row g-3 align-items-end mb-3">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label class="form-label fw-bold text-muted">タイトル</label>
                             <div class="form-control-plaintext fs-6">{{ $invoice->billing_title ?? '—' }}</div>
                         </div>
@@ -120,14 +135,20 @@
                             <label class="form-label fw-bold text-muted">入金銀行</label>
                             <div class="form-control-plaintext">{{ $invoice->bank->bank_name ?? '—' }}</div>
                         </div>
-                        <div class="col-md-2">
-                            <label class="form-label fw-bold d-block text-center text-muted">ロック</label>
-                            <div class="text-center mt-2" style="font-size: 2rem;">
-                                @if($invoice->is_locked)
-                                    <i class="bi bi-lock-fill text-danger" title="ロック中"></i>
-                                @else
-                                    <i class="bi bi-unlock-fill text-success" title="ロック解除"></i>
-                                @endif
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold text-muted">ロック</label>
+                            <div class="d-flex align-items-center gap-2">
+                                <div style="font-size: 1.8rem; min-width: 36px; text-align: center;">
+                                    @if($invoice->is_locked)
+                                        <i class="bi bi-lock-fill text-danger" title="ロック中"></i>
+                                    @else
+                                        <i class="bi bi-unlock-fill text-success" title="ロック解除"></i>
+                                    @endif
+                                </div>
+                                <div class="small lh-sm">
+                                    <div><strong>{{ $invoice->locked_user}}</strong></div>
+                                    <div class="text-muted">{{ $invoice->locked_at }}</div>
+                                </div>
                             </div>
                         </div>
                     </div>
