@@ -8,7 +8,7 @@
         <h5 class="mb-0" style="color: #374151; font-size: 1.25rem;">グループ情報一覧</h5>
         <button type="button" id="newGroupBtn" class="btn btn-primary btn-sm px-3 py-1" 
                 style="background-color: #2563eb; border-color: #2563eb; font-size: 0.875rem;">
-            新規グループ
+            新規予約
         </button>
     </div>
 
@@ -145,6 +145,11 @@
     </div>
 </div>
 
+<form id="deleteForm" method="POST" style="display: none;">
+    @csrf
+    @method('DELETE')
+</form>
+
 <div id="iframeModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); z-index: 9999; overflow: auto;">
     <div style="position: relative; width: 100%; min-height: 100%; display: flex; justify-content: center; align-items: center; padding: 20px;">
         <div id="modalContent" style="background-color: #f3f4f6; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); width: 90%; max-width: 550px; overflow: hidden; transition: all 0.3s ease;">
@@ -156,11 +161,6 @@
         </div>
     </div>
 </div>
-
-<form id="deleteForm" method="POST" style="display: none;">
-    @csrf
-    @method('DELETE')
-</form>
 @endsection
 
 
