@@ -6,6 +6,13 @@
 <div class="container-fluid px-4 py-0">
     <div class="d-flex justify-content-between align-items-center mb-2">
         <h5 class="mb-0" style="color: #374151; font-size: 1.25rem;">運行一覧</h5>
+
+        <div class="d-flex gap-2">
+            <button type="button" id="newGroupBtn" class="btn btn-primary btn-sm px-3" 
+                    style="background-color: #2563eb; border-color: #2563eb; font-size: 0.875rem;">
+                <i class="bi bi-plus-lg"></i> 新規予約
+            </button>
+        </div>
     </div>
 
     <div class="bg-light p-2 mb-2 rounded" style="background-color: #F3F4F6 !important; border: 1px solid #E5E7EB;">
@@ -203,6 +210,18 @@
     @csrf
     @method('DELETE')
 </form>
+
+<div id="iframeModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); z-index: 9999; overflow: auto;">
+    <div style="position: relative; width: 100%; min-height: 100%; display: flex; justify-content: center; align-items: center; padding: 20px;">
+        <div id="modalContent" style="background-color: #f3f4f6; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); width: 90%; max-width: 550px; overflow: hidden; transition: all 0.3s ease;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 16px; color: #fff; font-size: 14px; font-weight: 500; background-color: #374151;">
+                <span id="modalTitle">新規グループ作成</span>
+                <button onclick="closeIframeModal()" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #fff;">&times;</button>
+            </div>
+            <iframe id="modalIframe" src="" style="width: 100%; height: 480px; border: none; display: block; transition: height 0.3s ease;"></iframe>
+        </div>
+    </div>
+</div>
 @endsection
 
 
@@ -418,6 +437,32 @@ span.flatpickr-weekday {
 
 @push('scripts')
 <script>
+function openIframeModal(url, title = '新規グループ作成') {
+    const iframe = document.getElementById('modalIframe');
+    const modal = document.getElementById('iframeModal');
+    const modalContent = document.getElementById('modalContent');
+    const modalTitle = document.getElementById('modalTitle');
+    
+    if (!iframe || !modal) return;
+    
+    iframe.src = url;
+    modalTitle.textContent = title;
+    iframe.style.height = '480px';
+    if (modalContent) modalContent.style.maxWidth = '550px';
+    
+    modal.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeIframeModal() {
+    const iframe = document.getElementById('modalIframe');
+    const modal = document.getElementById('iframeModal');
+    
+    if (iframe) iframe.src = '';
+    if (modal) modal.style.display = 'none';
+    document.body.style.overflow = '';
+}
+
 function confirmDelete(id, name) {
     if (confirm(name + ' を削除してもよろしいですか？')) {
         const form = document.getElementById('deleteForm');
@@ -452,6 +497,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+});
+
+
+document.getElementById('newGroupBtn').addEventListener('click', function() {
+    openIframeModal('{{ route('masters.group-infos.create') }}', '新規グループ作成');
 });
 </script>
 @endpush

@@ -49,8 +49,18 @@ class GroupInfoController extends Controller
 
     public function show($id)
     {
-        $groupInfo = GroupInfo::with('dailyItineraries')->findOrFail($id);
-        return view('masters.group-infos.show', compact('groupInfo'));
+        $groupInfo = GroupInfo::with([
+            'busAssignments.vehicle',
+            'busAssignments.driver',
+            'busAssignments.guide',
+            'dailyItineraries'
+        ])->findOrFail($id);
+        
+        $busAssignments = $groupInfo->busAssignments->sortBy('vehicle_index');
+        
+        $dailyItineraries = $groupInfo->dailyItineraries->sortBy('date');
+        
+        return view('masters.group-infos.show', compact('groupInfo', 'busAssignments', 'dailyItineraries'));
     }
 
     public function create()
@@ -228,16 +238,8 @@ class GroupInfoController extends Controller
         }
 
         foreach ($busAssignments as $i => $bus1) {
-            if ($bus1->ignore_operation) {
-                continue;
-            }
-            
             foreach ($busAssignments as $j => $bus2) {
                 if ($i >= $j) continue;
-                
-                if ($bus2->ignore_operation) {
-                    continue;
-                }
 
                 if ($bus1->vehicle_id && $bus1->vehicle_id === $bus2->vehicle_id) {
                     $startDate1 = $bus1->start_date;
@@ -1198,8 +1200,6 @@ class GroupInfoController extends Controller
                         'lock_arrangement' => isset($busData['lock_arrangement']) ? (bool)$busData['lock_arrangement'] : false,
                         'status_sent' => isset($busData['status_sent']) ? (bool)$busData['status_sent'] : false,
                         'status_finalized' => isset($busData['status_finalized']) ? (bool)$busData['status_finalized'] : false,
-                        'ignore_operation' => isset($busData['ignore_operation']) ? (bool)$busData['ignore_operation'] : false,
-                        'ignore_driver' => isset($busData['ignore_driver']) ? (bool)$busData['ignore_driver'] : false,
                         'vehicle_number' => $busData['vehicle_number'] ?? sprintf('%02d', $busData['vehicle_index'] ?? 1),
                         'step_car' => $busData['step_car'] ?? null,
                         'adult_count' => $busData['adult_count'] ?? 0,
@@ -1238,15 +1238,15 @@ class GroupInfoController extends Controller
                         $busData['created_by'] = $existingBus->created_by;
                         $busData['created_at'] = $existingBus->created_at;
                         
-                        if (isset($busData['vehicle_id'])) {
-                            $busData['vehicle_id'] = $busData['vehicle_id'] > 0 ? $busData['vehicle_id'] : null;
-                        }
-                        if (isset($busData['driver_id'])) {
-                            $busData['driver_id'] = $busData['driver_id'] > 0 ? $busData['driver_id'] : null;
-                        }
-                        if (isset($busData['guide_id'])) {
-                            $busData['guide_id'] = $busData['guide_id'] > 0 ? $busData['guide_id'] : null;
-                        }
+                        $busData['vehicle_id'] = isset($busData['vehicle_id']) 
+                            ? ($busData['vehicle_id'] > 0 ? $busData['vehicle_id'] : null) 
+                            : null;
+                        $busData['driver_id'] = isset($busData['driver_id']) 
+                            ? ($busData['driver_id'] > 0 ? $busData['driver_id'] : null) 
+                            : null;
+                        $busData['guide_id'] = isset($busData['guide_id']) 
+                            ? ($busData['guide_id'] > 0 ? $busData['guide_id'] : null) 
+                            : null;
                         
                         $existingBus->update($busData);
                     }
@@ -1361,6 +1361,24 @@ class GroupInfoController extends Controller
                             ? (int)$itineraryData['bus_assignment_id'] 
                             : (int)$existingItinerary->bus_assignment_id;
                         
+                        $itineraryVehicleId = null;
+                        $itineraryDriverId = null;
+                        $itineraryGuideId = null;
+                        
+                        if ($busAssignmentId && isset($submittedBusAssignmentData[$busAssignmentId])) {
+                            $busForThisItinerary = $submittedBusAssignmentData[$busAssignmentId];
+                            $itineraryVehicleId = $busForThisItinerary['vehicle_id'] ?? null;
+                            $itineraryDriverId = $busForThisItinerary['driver_id'] ?? null;
+                            $itineraryGuideId = $busForThisItinerary['guide_id'] ?? null;
+                        }
+                        
+                        if (empty($itineraryVehicleId)) {
+                            $itineraryVehicleId = $itineraryData['vehicle_id'] ?? null;
+                        }
+                        if (empty($itineraryDriverId)) {
+                            $itineraryDriverId = $itineraryData['driver_id'] ?? null;
+                        }
+                        
                         $itineraryFields = [
                             'group_info_id' => (int)$groupInfo->id,
                             'date' => $date,
@@ -1370,11 +1388,11 @@ class GroupInfoController extends Controller
                             'start_location' => $itineraryData['start_location'] ?? $existingItinerary->start_location,
                             'end_location' => $itineraryData['end_location'] ?? $existingItinerary->end_location,
                             'accommodation' => isset($itineraryData['accommodation']) ? (bool)$itineraryData['accommodation'] : $existingItinerary->accommodation,
-                            'vehicle_id' => $finalVehicleId,
+                            'vehicle_id' => !empty($itineraryVehicleId) && $itineraryVehicleId > 0 ? $itineraryVehicleId : null,
                             'vehicle' => $vehicleName ?: $existingItinerary->vehicle,
-                            'driver_id' => $finalDriverId,
+                            'driver_id' => !empty($itineraryDriverId) && $itineraryDriverId > 0 ? $itineraryDriverId : null,
                             'driver' => $driverName ?: $existingItinerary->driver,
-                            'guide_id' => $finalGuideId,
+                            'guide_id' => !empty($itineraryGuideId) && $itineraryGuideId > 0 ? $itineraryGuideId : null,
                             'guide' => $guideNameForItinerary ?: $existingItinerary->guide,
                             'remarks' => $itineraryData['remarks'] ?? $existingItinerary->remarks,
                             'bus_assignment_id' => $busAssignmentId,
@@ -1554,23 +1572,8 @@ class GroupInfoController extends Controller
                     }
                 }
                 
-                if (!$groupInfo->ignore_operation) {
-                    $ignoreBusIds = [];
-                    if ($request->has('bus_assignments') && is_array($request->bus_assignments)) {
-                        foreach ($request->bus_assignments as $busData) {
-                            if (isset($busData['ignore_operation']) && $busData['ignore_operation']) {
-                                $busId = $busData['id'] ?? null;
-                                if ($busId && is_numeric($busId)) {
-                                    $ignoreBusIds[] = (int)$busId;
-                                }
-                            }
-                        }
-                    }
-                    
+                if (!$validated['ignore_operation']) {
                     foreach ($vehicleSchedules as $schedule) {
-                        if (in_array($schedule['bus_id'], $ignoreBusIds)) {
-                            continue;
-                        }
                         $this->checkResourceConflicts(
                             'vehicle',
                             $schedule['id'],
@@ -1583,9 +1586,6 @@ class GroupInfoController extends Controller
                     }
                     
                     foreach ($driverSchedules as $schedule) {
-                        if (in_array($schedule['bus_id'], $ignoreBusIds)) {
-                            continue;
-                        }
                         $this->checkResourceConflicts(
                             'driver',
                             $schedule['id'],
@@ -1599,9 +1599,6 @@ class GroupInfoController extends Controller
                     
                     $vehicleConflicts = [];
                     foreach ($vehicleSchedules as $schedule) {
-                        if (in_array($schedule['bus_id'], $ignoreBusIds)) {
-                            continue;
-                        }
                         $key = $schedule['id'] . '_' . $schedule['date'];
                         if (!isset($vehicleConflicts[$key])) {
                             $vehicleConflicts[$key] = [];
@@ -1633,9 +1630,6 @@ class GroupInfoController extends Controller
                     
                     $driverConflicts = [];
                     foreach ($driverSchedules as $schedule) {
-                        if (in_array($schedule['bus_id'], $ignoreBusIds)) {
-                            continue;
-                        }
                         $key = $schedule['id'] . '_' . $schedule['date'];
                         if (!isset($driverConflicts[$key])) {
                             $driverConflicts[$key] = [];
@@ -1700,9 +1694,9 @@ class GroupInfoController extends Controller
                     $submittedDriverId = $submittedBusData['driver_id'] ?? null;
                     $guideIdFromRequest = $submittedBusData['guide_id'] ?? null;
                 
-                    $finalVehicleId = $submittedVehicleId ?? ($firstItinerary->vehicle_id > 0 ? $firstItinerary->vehicle_id : null);
-                    $finalDriverId = $submittedDriverId ?? ($firstItinerary->driver_id > 0 ? $firstItinerary->driver_id : null);
-                    $finalGuideId = $guideIdFromRequest ?? $firstItinerary->guide_id;
+                    $finalVehicleId = !empty($submittedVehicleId) && $submittedVehicleId > 0 ? $submittedVehicleId : null;
+                    $finalDriverId = !empty($submittedDriverId) && $submittedDriverId > 0 ? $submittedDriverId : null;
+                    $finalGuideId = !empty($guideIdFromRequest) && $guideIdFromRequest > 0 ? $guideIdFromRequest : null;
                 
                     $bus->update([
                         'vehicle_id' => $finalVehicleId,
@@ -1732,7 +1726,7 @@ class GroupInfoController extends Controller
                 }
             }
     
-            if (!$groupInfo->ignore_operation) {
+            if (!$validated['ignore_operation']) {
                 $this->checkSameGroupConflicts($groupInfo->id);
             }
     
@@ -1794,12 +1788,12 @@ class GroupInfoController extends Controller
                     'success' => true,
                     'id' => $groupInfo->id,
                     'message' => 'グループ情報を更新しました。',
-                    'redirect' => route('masters.group-infos.edit', $groupInfo->id),
+                    'redirect' => route('masters.group-infos.show', $groupInfo->id) . '#edit-section',
                     'reload' => true
                 ]);
             }
     
-            return redirect()->route('masters.group-infos.edit', $groupInfo->id)
+            return redirect()->route('masters.group-infos.show', $groupInfo->id) . '#edit-section'
                 ->with([
                     'success' => 'グループ情報を更新しました。データは正常に保存されました。',
                     'alert-type' => 'success'

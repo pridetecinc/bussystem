@@ -65,12 +65,12 @@
             <div class="d-flex mb-1">
                 <div class="label-width text-gray">開始日</div>
                 <div class="d-flex align-items-center" style="flex: 1;">
-                    <input type="text" name="start_date" value="{{ request('start_date', \Carbon\Carbon::today()->format('Y-m-d')) }}" class="form-input-small input-width-date datepicker-3months" id="start_date" style="flex: 1; min-width: 0;" placeholder="YYYY-MM-DD" autocomplete="off">
+                    <input type="text" name="start_date" value="" class="form-input-small input-width-date datepicker-3months" id="start_date" style="flex: 1; min-width: 0;" placeholder="YYYY-MM-DD" autocomplete="off">
                     <span class="mx-2">
                         <input type="time" name="start_time" value="{{ old('start_time', '08:00') }}" class="form-input-small input-width-time" step="60" style="width: 90px;">
                     </span>
                     <span class="label-text mx-2" style="margin-left:0 !important;">~</span>
-                    <input type="text" name="end_date" value="{{ request('end_date', \Carbon\Carbon::today()->format('Y-m-d')) }}" class="form-input-small input-width-date datepicker-3months" id="end_date" style="flex: 1; min-width: 0;" placeholder="YYYY-MM-DD" autocomplete="off">
+                    <input type="text" name="end_date" value="" class="form-input-small input-width-date datepicker-3months" id="end_date" style="flex: 1; min-width: 0;" placeholder="YYYY-MM-DD" autocomplete="off">
                     <span class="ms-2">
                         <input type="time" name="end_time" value="{{ old('end_time', '18:00') }}" class="form-input-small input-width-time" step="60" style="width: 90px;">
                     </span>
@@ -723,10 +723,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
                 const editUrl = '{{ route("masters.group-infos.edit", ":id") }}'.replace(':id', data.id);
-                window.parent.postMessage({
-                    action: 'open-edit',
-                    url: editUrl
-                }, '*');
+                window.top.location.href = editUrl;
                 
                 
                 detailBtn.style.display = 'block';

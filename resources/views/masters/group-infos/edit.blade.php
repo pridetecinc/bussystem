@@ -5,10 +5,35 @@
 @section('content')
 <div class="container-fluid px-4 py-0">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="mb-0 page-title">グループ情報編集</h5>
-        <a href="{{ route('masters.group-infos.index') }}" class="btn btn-outline-secondary btn-sm px-3">
-            <i class="bi bi-arrow-left"></i> 一覧に戻る
-        </a>
+        <div class="d-flex align-items-center gap-3">
+            <h5 class="mb-0 page-title">グループ情報編集</h5>
+            <div class="d-flex gap-2 ms-5">
+                <a href="{{ route('masters.drivers.index') }}" class="btn btn-outline-primary btn-sm px-2">
+                    運転台帳
+                </a>
+                <a href="{{ route('masters.drivers.index') }}" class="btn btn-outline-primary btn-sm px-2">
+                    運転手台帳
+                </a>
+                <a href="{{ route('masters.bus-assignments.index') }}" class="btn btn-outline-primary btn-sm px-2">
+                    運転一覧
+                </a>
+                <a href="{{ route('masters.group-infos.index') }}" class="btn btn-outline-primary btn-sm px-2">
+                    予約一覧
+                </a>
+                <a href="#" class="btn btn-outline-primary btn-sm px-2">
+                    乘務指示書
+                </a>
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" id="newGroupBtn" class="btn btn-primary btn-sm px-3" 
+                    style="background-color: #2563eb; border-color: #2563eb; font-size: 0.875rem;">
+                <i class="bi bi-plus-lg"></i> 新規予約
+            </button>
+            <a href="{{ route('masters.group-infos.index') }}" class="btn btn-outline-secondary btn-sm px-3">
+                <i class="bi bi-arrow-left"></i> 一覧に戻る
+            </a>
+        </div>
     </div>
     
     <div id="alert-container"></div>
@@ -565,16 +590,6 @@
                                         <span class="span-label" style="min-width: 30px;">備考</span>
                                         <textarea name="bus_assignments[{{ $vehicleIndex }}][operation_remarks]" rows="1" class="form-control form-control-sm border" placeholder="指示書に表示">{{ $busAssignment->operation_remarks ?? '' }}</textarea>
                                     </div>
-                                    <div class="d-flex align-items-center gap-4 mt-2">
-                                        <div class="form-check d-flex align-items-center">
-                                            <input type="checkbox" class="form-check-input me-1" name="bus_assignments[{{ $vehicleIndex }}][ignore_operation]" value="1" {{ $busAssignment && $busAssignment->ignore_operation ? 'checked' : '' }} style="margin: 0 0 0 40px;">
-                                            <label class="form-check-label">運行無視</label>
-                                        </div>
-                                        <div class="form-check d-flex align-items-center">
-                                            <input type="checkbox" class="form-check-input me-1" name="bus_assignments[{{ $vehicleIndex }}][ignore_driver]" value="1" {{ $busAssignment && $busAssignment->ignore_driver ? 'checked' : '' }} style="margin: 0;">
-                                            <label class="form-check-label">運転無視</label>
-                                        </div>
-                                    </div>
                                 </div>
                                 
                                 <div class="col-md-6" style="width:40%; padding-right: 5px; padding-left: 5px;">
@@ -901,16 +916,6 @@
                                     <span class="span-label" style="min-width: 30px;">備考</span>
                                     <textarea name="bus_assignments[1][operation_remarks]" rows="1" class="form-control form-control-sm border" placeholder="指示書に表示">{{ $busAssignment->operation_remarks ?? '' }}</textarea>
                                 </div>
-                                <div class="d-flex align-items-center gap-4 mt-2">
-                                    <div class="form-check d-flex align-items-center">
-                                        <input type="checkbox" class="form-check-input me-1" name="bus_assignments[1][ignore_operation]" value="1" {{ $busAssignment->ignore_operation ?? false ? 'checked' : '' }} style="margin: 0 0 0 40px;">
-                                        <label class="form-check-label">運行無視</label>
-                                    </div>
-                                    <div class="form-check d-flex align-items-center">
-                                        <input type="checkbox" class="form-check-input me-1" name="bus_assignments[1][ignore_driver]" value="1" {{ $busAssignment->ignore_driver ?? false ? 'checked' : '' }} style="margin: 0;">
-                                        <label class="form-check-label">運転無視</label>
-                                    </div>
-                                </div>
                         
                             </div>
                             
@@ -922,11 +927,22 @@
                 </div>
             @endif
         </div>
+        
+        <div class="d-flex align-items-center gap-4 my-2">
+            <div class="form-check d-flex align-items-center">
+                <input type="checkbox" class="form-check-input me-2" name="ignore_operation" value="1" id="global_ignore_operation" {{ $groupInfo->ignore_operation ? 'checked' : '' }} style="width: 18px; height: 18px;">
+                <label class="form-check-label" for="global_ignore_operation" style="font-size: 0.9rem;">運行無視</label>
+            </div>
+            <div class="form-check d-flex align-items-center">
+                <input type="checkbox" class="form-check-input me-2" name="ignore_attendance" value="1" id="global_ignore_attendance" {{ $groupInfo->ignore_attendance ? 'checked' : '' }} style="width: 18px; height: 18px;">
+                <label class="form-check-label" for="global_ignore_attendance" style="font-size: 0.9rem;">勤怠無視</label>
+            </div>
+        </div>
 
         <div class="d-flex justify-content-between align-items-center mt-3">
             <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-primary btn-sm px-3" id="saveBtn">
-                    <i class="bi bi-check-circle"></i> 保存
+                    <i class="bi bi-check-circle"></i> 確認
                 </button>
                 <a href="{{ route('masters.group-infos.index') }}" class="btn btn-sm btn-outline-secondary px-3 ms-2">
                     <i class="bi bi-x-circle"></i> キャンセル
@@ -945,6 +961,19 @@
         @csrf
         @method('DELETE')
     </form>
+</div>
+
+
+<div id="iframeModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); z-index: 9999; overflow: auto;">
+    <div style="position: relative; width: 100%; min-height: 100%; display: flex; justify-content: center; align-items: center; padding: 20px;">
+        <div id="modalContent" style="background-color: #f3f4f6; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); width: 90%; max-width: 550px; overflow: hidden;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 16px; color: #fff; font-size: 14px; font-weight: 500; background-color: #374151;">
+                <span id="modalTitle">新規グループ作成</span>
+                <button onclick="closeIframeModal()" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #fff;">&times;</button>
+            </div>
+            <iframe id="modalIframe" src="" style="width: 100%; height: 480px; border: none; display: block;"></iframe>
+        </div>
+    </div>
 </div>
 @endsection
 
@@ -997,6 +1026,7 @@
 .mt-2 { margin-top: 8px; }
 .mt-3 { margin-top: 12px; }
 .gap-2 { gap: 8px; }
+.gap-3 { gap: 1rem;}
 .gap-4 { gap: 16px; }
 .flex-1 { flex: 1; }
 .d-flex { display: flex; }
@@ -1469,24 +1499,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (rowBusIdField && rowBusIdField.value === cardBusId) {
                         const vehicleIdInput = row.querySelector('.itinerary-vehicle-id');
                         if (vehicleIdInput) {
-                            vehicleIdInput.value = selectField.value;
+                            vehicleIdInput.value = selectField.value || '';
                         }
                     }
                 });
             }
         });
         
-        if (hasError) {
-            const submitBtn = document.getElementById('saveBtn');
-            submitBtn.innerHTML = '<i class="bi bi-check-circle"></i> 保存';
-            submitBtn.disabled = false;
-            return false;
-        }
-        
         document.querySelectorAll('.driver-select').forEach(selectField => {
             const card = selectField.closest('.card');
             
-            if (card && selectField.value) {
+            if (card) {
                 const cardBusId = card.getAttribute('data-bus-id');
                 const rows = card.querySelectorAll('.itinerary-row');
                 rows.forEach(row => {
@@ -1494,7 +1517,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (rowBusIdField && rowBusIdField.value === cardBusId) {
                         const driverIdInput = row.querySelector('.itinerary-driver-id');
                         if (driverIdInput) {
-                            driverIdInput.value = selectField.value;
+                            driverIdInput.value = selectField.value || '';
                         }
                     }
                 });
@@ -1504,7 +1527,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.guide-select').forEach(selectField => {
             const card = selectField.closest('.card');
             
-            if (card && selectField.value) {
+            if (card) {
                 const cardBusId = card.getAttribute('data-bus-id');
                 const rows = card.querySelectorAll('.itinerary-row');
                 rows.forEach(row => {
@@ -1512,7 +1535,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (rowBusIdField && rowBusIdField.value === cardBusId) {
                         const guideIdInput = row.querySelector('.itinerary-guide-id');
                         if (guideIdInput) {
-                            guideIdInput.value = selectField.value;
+                            guideIdInput.value = selectField.value || '';
                         }
                     }
                 });
@@ -2704,17 +2727,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             <span class="span-label" style="min-width: 30px;">備考</span>
                             <textarea name="bus_assignments[${newIndex}][operation_remarks]" rows="1" class="form-control form-control-sm border" placeholder="指示書に表示">${operationRemarks || ''}</textarea>
                         </div>
-    
-                        <div class="d-flex align-items-center gap-4 mt-2">
-                            <div class="form-check d-flex align-items-center">
-                                <input type="checkbox" class="form-check-input me-1" name="bus_assignments[${newIndex}][ignore_operation]" value="1" style="margin: 0 0 0 40px;">
-                                <label class="form-check-label">運行無視</label>
-                            </div>
-                            <div class="form-check d-flex align-items-center">
-                                <input type="checkbox" class="form-check-input me-1" name="bus_assignments[${newIndex}][ignore_driver]" value="1" style="margin: 0;">
-                                <label class="form-check-label">運転無視</label>
-                            </div>
-                        </div>
                     </div>
     
                     <div class="col-md-6" style="width:40%; padding-right: 5px; padding-left: 5px;">
@@ -3036,12 +3048,16 @@ document.addEventListener('DOMContentLoaded', function() {
             row.setAttribute('data-index', uniqueIndex);
             
             const vehicleIdField = row.querySelector('.itinerary-vehicle-id');
-            if (vehicleIdField && sourceVehicleId) {
-                vehicleIdField.value = sourceVehicleId;
+            if (vehicleIdField) {
+                vehicleIdField.value = sourceVehicleId || '';
             }
             const driverIdField = row.querySelector('.itinerary-driver-id');
-            if (driverIdField && sourceDriverId) {
-                driverIdField.value = sourceDriverId;
+            if (driverIdField) {
+                driverIdField.value = sourceDriverId || '';
+            }
+            const guideIdField = row.querySelector('.itinerary-guide-id');
+            if (guideIdField) {
+                guideIdField.value = sourceGuideId || '';
             }
         });
         
@@ -3050,7 +3066,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <tr class="no-data-row">
                     <td colspan="6" class="text-center py-4" style="color: #6c757d; background-color: #f9f9f9;">
                         <i class="bi bi-info-circle me-1"></i> 旅程データがありません。「+」ボタンを押して追加してください。
-                       </tr>
+                         </tr>
             `;
         }
         
@@ -3329,6 +3345,39 @@ document.addEventListener('DOMContentLoaded', function() {
     refreshEventListeners();
 
     document.getElementById('editForm').addEventListener('submit', submitForm);
+});
+
+
+
+function openIframeModal(url, title = '新規グループ作成') {
+    const iframe = document.getElementById('modalIframe');
+    const modal = document.getElementById('iframeModal');
+    const modalContent = document.getElementById('modalContent');
+    const modalTitle = document.getElementById('modalTitle');
+    
+    if (!iframe || !modal) return;
+    
+    iframe.src = url;
+    modalTitle.textContent = title;
+    iframe.style.height = '480px';
+    if (modalContent) modalContent.style.maxWidth = '550px';
+    
+    modal.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeIframeModal() {
+    const iframe = document.getElementById('modalIframe');
+    const modal = document.getElementById('iframeModal');
+    
+    if (iframe) iframe.src = '';
+    if (modal) modal.style.display = 'none';
+    document.body.style.overflow = '';
+}
+
+
+document.getElementById('newGroupBtn').addEventListener('click', function() {
+    openIframeModal('{{ route('masters.group-infos.create') }}', '新規グループ作成');
 });
 </script>
 @endpush
