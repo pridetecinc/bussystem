@@ -144,6 +144,8 @@ public function store(Request $request)
             $validItems[] = $item;
         }
 
+
+
         // 3. 检查是否至少有一行有效数据
         if (count($validItems) === 0) {
             return back()->withErrors(['items' => '明細は最低1行必要です。'])
@@ -181,6 +183,9 @@ public function store(Request $request)
     try {
         // === 第一步：按税率分组原始输入金额（不分舍入）===
         $groups = [];
+        $subtotalAmount = 0;
+        $totalTaxAmount = 0;
+        $taxGroups = []; // 用于 invoice_tax_summary
         foreach ($validated['items'] as $item) {
             $quantity = (float)$item['quantity'];
             $unitPrice = (float)$item['unit_price'];
@@ -196,76 +201,45 @@ public function store(Request $request)
             $groups[$rateKey]['total_input_raw'] += $quantity * $unitPrice;
         }
 
-        // === 第二步：对每组统一计算不含税 & 税额 ===
-        $subtotalAmount = 0;
-        $totalTaxAmount = 0;
-        $taxGroups = []; // 用于 invoice_tax_summary
+
 
         foreach ($groups as $rateKey => $group) {
             $taxRate = $group['tax_rate'];
             $totalInputRaw = $group['total_input_raw'];
 
-            if ($validated['tax_mode'] == 1) {
-                // ========== 税込モード：totalInputRaw 是含税总额 ==========
-                $totalIncl = round($totalInputRaw); // 先取整为整数円
+            if ($validated['tax_mode'] == 1) {//税入
+            
+                $totalIncl = round($totalInputRaw);
                 if ($taxRate > 0) {
                     $baseAmount = $totalIncl / (1 + $taxRate / 100);
                     $totalExcl = (int)ceil($baseAmount); // ✅ 向上取整
                     $taxAmount = $totalIncl - $totalExcl; // 保证 totalIncl = totalExcl + taxAmount
-                } else {
-                    $totalExcl = $totalIncl;
+                }else{
                     $taxAmount = 0;
-                }
-            } else {
-                // ========== 税別モード：totalInputRaw 是不含税总额 ==========
+                } 
+                $subtotalAmount += $totalIncl;
+                $totalTaxAmount += $taxAmount;
+
+                $taxGroups[$rateKey] = [
+                    'subtotal' => $totalIncl,
+                    'tax_amount' => $taxAmount,
+                    'total_with_tax' => $totalIncl,
+                ];
+            } else {//税别
                 $totalExcl = round($totalInputRaw);
                 $taxAmount = ($taxRate > 0) ? (int)round($totalExcl * ($taxRate / 100)) : 0;
+                // 累加到全局
+                $subtotalAmount += $totalExcl;
+                $totalTaxAmount += $taxAmount;
+
+                $taxGroups[$rateKey] = [
+                    'subtotal' => $totalExcl,
+                    'tax_amount' => $taxAmount,
+                    'total_with_tax' => $totalExcl + $taxAmount,
+                ];
             }
 
-            // 累加到全局
-            $subtotalAmount += $totalExcl;
-            $totalTaxAmount += $taxAmount;
 
-            // 保存分组结果（即使 taxRate=0 也暂存，后续过滤）
-            $taxGroups[$rateKey] = [
-                'subtotal' => $totalExcl,
-                'tax_amount' => $taxAmount,
-                'total_with_tax' => $totalExcl + $taxAmount,
-            ];
-        }
-
-        // === 第三步：1円調整（仅税込模式）===
-        $totalAmount = $subtotalAmount + $totalTaxAmount;
-        if ($validated['tax_mode'] == 1) {
-            // 计算用户输入的总含税金额（期望值）
-            $expectedTotal = 0;
-            foreach ($groups as $group) {
-                $expectedTotal += round($group['total_input_raw']);
-            }
-
-            $diff = $expectedTotal - $totalAmount;
-
-            // 允许 ±1 円误差，进行调整
-            if ($diff !== 0 && abs($diff) <= 1) {
-                // 从 taxGroups 中找最后一个应税组（tax_rate > 0）调整
-                $adjusted = false;
-                foreach (array_reverse($taxGroups, true) as $rateKey => $data) {
-                    if ((float)$rateKey > 0) {
-                        $taxGroups[$rateKey]['tax_amount'] += $diff;
-                        $taxGroups[$rateKey]['total_with_tax'] += $diff;
-                        $totalTaxAmount += $diff;
-                        $totalAmount += $diff;
-                        $adjusted = true;
-                        break;
-                    }
-                }
-
-                // 如果没有应税项目，则调整 subtotal（极少见）
-                if (!$adjusted) {
-                    $subtotalAmount -= $diff;
-                    $totalAmount -= $diff;
-                }
-            }
         }
 
         // === 第四步：插入 invoices 主表 ===
@@ -279,7 +253,7 @@ public function store(Request $request)
             'billing_title' => $validated['billing_title'],
             'subtotal_amount' => $subtotalAmount,
             'tax_amount' => $totalTaxAmount,
-            'total_amount' => $totalAmount,
+            'total_amount' => $validated['tax_mode']==2 ? $subtotalAmount+$totalTaxAmount : $subtotalAmount,
             'tax_mode' => $validated['tax_mode'],
             'language' => $validated['language'],
             'currency_code' => $validated['currency_code'],
@@ -464,48 +438,53 @@ public function store(Request $request)
             }
 
             // === 3. 按税率分组原始输入金额（不分舍入）===
-            $groups = [];
-            foreach ($validated['items'] as $item) {
-                $quantity = (float)$item['quantity'];
-                $unitPrice = (float)$item['unit_price'];
-                $taxRate = (float)$item['tax_rate'];
-                $rateKey = number_format($taxRate, 2, '.', '');
+        $groups = [];
+        $subtotalAmount = 0;
+        $totalTaxAmount = 0;
+        $taxGroups = []; // 用于 invoice_tax_summary
+        foreach ($validated['items'] as $item) {
+            $quantity = (float)$item['quantity'];
+            $unitPrice = (float)$item['unit_price'];
+            $taxRate = (float)$item['tax_rate'];
+            $rateKey = number_format($taxRate, 2, '.', '');
 
-                if (!isset($groups[$rateKey])) {
-                    $groups[$rateKey] = [
-                        'tax_rate' => $taxRate,
-                        'total_input_raw' => 0,
-                    ];
-                }
-                $groups[$rateKey]['total_input_raw'] += $quantity * $unitPrice;
+            if (!isset($groups[$rateKey])) {
+                $groups[$rateKey] = [
+                    'tax_rate' => $taxRate,
+                    'total_input_raw' => 0, // 原始 quantity * unit_price 总和（未取整）
+                ];
             }
+            $groups[$rateKey]['total_input_raw'] += $quantity * $unitPrice;
+        }
 
-            // === 4. 对每组统一计算不含税 & 税额 ===
-            $subtotalAmount = 0;
-            $totalTaxAmount = 0;
-            $taxGroups = [];
 
-            foreach ($groups as $rateKey => $group) {
-                $taxRate = $group['tax_rate'];
-                $totalInputRaw = $group['total_input_raw'];
 
-                if ($validated['tax_mode'] == 1) {
-                    // ========== 税込モード ==========
-                    $totalIncl = round($totalInputRaw);
-                    if ($taxRate > 0) {
-                        $baseAmount = $totalIncl / (1 + $taxRate / 100);
-                        $totalExcl = (int)ceil($baseAmount); // ✅ 向上取整
-                        $taxAmount = $totalIncl - $totalExcl;
-                    } else {
-                        $totalExcl = $totalIncl;
-                        $taxAmount = 0;
-                    }
-                } else {
-                    // ========== 税別モード ==========
-                    $totalExcl = round($totalInputRaw);
-                    $taxAmount = ($taxRate > 0) ? (int)round($totalExcl * ($taxRate / 100)) : 0;
-                }
+        foreach ($groups as $rateKey => $group) {
+            $taxRate = $group['tax_rate'];
+            $totalInputRaw = $group['total_input_raw'];
 
+            if ($validated['tax_mode'] == 1) {//税入
+            
+                $totalIncl = round($totalInputRaw);
+                if ($taxRate > 0) {
+                    $baseAmount = $totalIncl / (1 + $taxRate / 100);
+                    $totalExcl = (int)ceil($baseAmount); // ✅ 向上取整
+                    $taxAmount = $totalIncl - $totalExcl; // 保证 totalIncl = totalExcl + taxAmount
+                }else{
+                    $taxAmount = 0;
+                } 
+                $subtotalAmount += $totalIncl;
+                $totalTaxAmount += $taxAmount;
+
+                $taxGroups[$rateKey] = [
+                    'subtotal' => $totalIncl,
+                    'tax_amount' => $taxAmount,
+                    'total_with_tax' => $totalIncl,
+                ];
+            } else {//税别
+                $totalExcl = round($totalInputRaw);
+                $taxAmount = ($taxRate > 0) ? (int)round($totalExcl * ($taxRate / 100)) : 0;
+                // 累加到全局
                 $subtotalAmount += $totalExcl;
                 $totalTaxAmount += $taxAmount;
 
@@ -516,33 +495,8 @@ public function store(Request $request)
                 ];
             }
 
-            // === 5. 1円調整（仅税込模式）===
-            $totalAmount = $subtotalAmount + $totalTaxAmount;
-            if ($validated['tax_mode'] == 1) {
-                $expectedTotal = 0;
-                foreach ($groups as $group) {
-                    $expectedTotal += round($group['total_input_raw']);
-                }
 
-                $diff = $expectedTotal - $totalAmount;
-                if ($diff !== 0 && abs($diff) <= 1) {
-                    $adjusted = false;
-                    foreach (array_reverse($taxGroups, true) as $rateKey => $data) {
-                        if ((float)$rateKey > 0) {
-                            $taxGroups[$rateKey]['tax_amount'] += $diff;
-                            $taxGroups[$rateKey]['total_with_tax'] += $diff;
-                            $totalTaxAmount += $diff;
-                            $totalAmount += $diff;
-                            $adjusted = true;
-                            break;
-                        }
-                    }
-                    if (!$adjusted) {
-                        $subtotalAmount -= $diff;
-                        $totalAmount -= $diff;
-                    }
-                }
-            }
+        }
 
 
 
@@ -556,7 +510,7 @@ public function store(Request $request)
                 'billing_title' => $validated['billing_title'],
                 'subtotal_amount' => $subtotalAmount,
                 'tax_amount' => $totalTaxAmount,
-                'total_amount' => $totalAmount,
+                'total_amount' => $validated['tax_mode']==2 ? $subtotalAmount+$totalTaxAmount : $subtotalAmount,
                 'tax_mode' => $validated['tax_mode'],
                 'language' => $validated['language'],
                 'currency_code' => $validated['currency_code'],
