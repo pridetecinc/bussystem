@@ -66,8 +66,18 @@ class GroupInfo extends Model
         'updated_at' => 'datetime',
     ];
     
+    public function busAssignments()
+    {
+        return $this->hasMany(BusAssignment::class, 'group_info_id', 'id');
+    }
+    
     public function dailyItineraries()
     {
         return $this->hasMany(DailyItinerary::class, 'group_info_id', 'id');
+    }
+    
+    public function guide()
+    {
+        return $this->belongsTo(Guide::class, 'guide_id', 'id');
     }
 }
