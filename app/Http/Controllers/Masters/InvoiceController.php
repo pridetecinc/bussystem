@@ -398,7 +398,7 @@ public function store(Request $request)
             'bank_id' => 'required|integer',
             
             'billing_title' => 'nullable|string|max:200',
-            'tax_mode' => 'required|in:1,2', // 1=税込, 2=税別
+            'tax_mode' => 'required|in:1,2', // 1=内税, 2=外税
             'language' => 'required|in:1,2', // 1=日语, 2=英语
             'type' => 'required|in:1,2',
             'currency_code' => 'required|string|max:50',

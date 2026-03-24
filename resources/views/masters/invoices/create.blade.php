@@ -85,13 +85,13 @@
                                         </select>
                                     </div>
                                     <div class="col-md-3 col-6">
-                                        <label class="form-label small mb-1">税込/税別</label>
+                                        <label class="form-label small mb-1">内税/外税</label>
                                         <div class="btn-group w-100" role="group">
                                             <input type="radio" class="btn-check" name="tax_mode" id="tax_mode_1" value="1" {{ old('tax_mode', '1') == '1' ? 'checked' : '' }}>
-                                            <label class="btn btn-outline-primary btn-sm" for="tax_mode_1">税込</label>
+                                            <label class="btn btn-outline-primary btn-sm" for="tax_mode_1">内税</label>
 
                                             <input type="radio" class="btn-check" name="tax_mode" id="tax_mode_2" value="2" {{ old('tax_mode', '1') == '2' ? 'checked' : '' }}>
-                                            <label class="btn btn-outline-primary btn-sm" for="tax_mode_2">税別</label>
+                                            <label class="btn btn-outline-primary btn-sm" for="tax_mode_2">外税</label>
                                         </div>
                                     </div>
                                     <div class="col-md-3 col-6">

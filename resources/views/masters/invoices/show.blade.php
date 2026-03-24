@@ -74,10 +74,10 @@
                                     <div class="form-control-plaintext fw-normal">{{ $invoice->staff->name ?? '—' }}</div>
                                 </div>
                                 <div class="col-md-3 col-6">
-                                    <label class="form-label small mb-1 text-muted">税込/税別</label>
+                                    <label class="form-label small mb-1 text-muted">内税/外税</label>
                                     <div>
                                         <span class="badge {{ $invoice->tax_mode == 1 ? 'bg-primary' : 'bg-outline-secondary text-dark border' }}">
-                                            {{ $invoice->tax_mode == 1 ? '税込' : '税別' }}
+                                            {{ $invoice->tax_mode == 1 ? '内税' : '外税' }}
                                         </span>
                                     </div>
                                 </div>

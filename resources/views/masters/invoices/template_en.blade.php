@@ -6,7 +6,6 @@
     <style>
         @page { size: A4; margin: 15mm 15mm; }
         body { 
-            /* 英文优先无衬线，兼容特殊字符 */
             font-family: "Helvetica", "Arial", "MS Mincho", sans-serif; 
             font-size: 10pt; 
             margin: 0; 
@@ -65,7 +64,7 @@
         }
         .total-hint strong { font-size: 15pt; }
 
-        /* ================= 核心表格样式 (与日文版完全一致) ================= */
+        /* ================= 核心表格样式 (已应用日文版修复逻辑) ================= */
         .main-table { 
             width: 100%; 
             border-collapse: collapse; 
@@ -81,6 +80,13 @@
             overflow: hidden;
             word-wrap: break-word;
         }
+        
+        /* 【关键修复】强制最后一列显示双线边框，完全复刻日文版逻辑 */
+        .main-table tr > th:last-child,
+        .main-table tr > td:last-child {
+            border-right: 2px double #333333 !important;
+        }
+
         .main-table thead th { 
             background-color: #3b5998; 
             color: #fff; 
@@ -91,12 +97,10 @@
             text-transform: uppercase;
         }
 
-        /* 列宽由 colgroup 控制，此处仅保留对齐类 */
         .text-left { text-align: left !important; }
         .text-right { text-align: right !important; }
         .font-bold { font-weight: bold; }
         
-        /* 统计行背景 */
         .summary-row td {
             background-color: #f9f9f9;
             font-weight: bold;
@@ -112,7 +116,7 @@
         .bank-info { width: 100%; line-height: 1.4; }
         div.bank-title { font-weight: bold; margin-bottom: 4px; display: block; font-size: 10pt; text-decoration: none !important; border-bottom: none !important; color: #3b5998; text-transform: uppercase; }
         .bank-row { display: flex; margin-bottom: 2px; }
-        .bank-label { width: 100px; font-weight: bold; } /* 加宽以适应英文标签 */
+        .bank-label { width: 100px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -151,10 +155,9 @@
         @if($invoice->tax_mode == 1)(Inc. Tax)@else(Excl. Tax)@endif
     </div>
 
-    <!-- ================= Main Table (9-Column System) ================= -->
+    <!-- ================= Main Table ================= -->
     <table class="main-table">
-        <!-- 【关键】强制列宽定义 (与日文版逻辑一致) -->
-        <!-- 5 + 11 + 17 + 15 + 17 + 5 + 12 + 10 + 8 = 100% -->
+        <!-- 列宽定义 (保持总和 100%) -->
         <colgroup>
             <col style="width: 5%;">   <!-- No. -->
             <col style="width: 11%;">  <!-- Desc Part 1 -->
@@ -170,7 +173,6 @@
         <thead>
             <tr>
                 <th>No.</th>
-                <!-- Description spans 4 columns (60% total) -->
                 <th class="text-left" colspan="4" style="padding-left: 5px;">Description</th>
                 <th>Qty</th>
                 <th>Unit Price</th>
@@ -204,10 +206,10 @@
             </tr>
             @endforeach
             
-            {{-- B. Empty Rows (Keep total 15 rows including summary) --}}
+            {{-- B. Empty Rows --}}
             @php 
                 $detailCount = count($items);
-                $summaryRows = 4; // Increased to 4 for English layout (10%, 8%, Non-tax, Grand Total)
+                $summaryRows = 3; 
                 $targetTotalRows = 15; 
                 $remaining = max(0, $targetTotalRows - $detailCount - $summaryRows); 
             @endphp
@@ -231,9 +233,9 @@
                 <td class="text-right">{{ number_format($summary_10->total_with_tax ?? 0) }}</td>
                 <td class="text-right" style="font-weight: normal; font-size: 8.5pt;">Tax</td>
                 <td class="text-right">{{ number_format($summary_10->tax_amount ?? 0) }}</td>
-                <td class="text-right" colspan="2" style="text-align: right;">Subtotal (10%)</td>
+                <td class="text-right" colspan="2" style="text-align: right;">Subtotal</td>
                 <td class="text-right font-bold" colspan="2">
-                    @if($invoice->tax_mode == 1){{ number_format($summary_10->total_with_tax ?? 0) }}@else{{ number_format(($summary_10->total_with_tax ?? 0) - ($summary_10->tax_amount ?? 0)) }}@endif
+                    @if($invoice->tax_mode == 1){{ number_format($invoice->total_amount) }}@else{{ number_format($invoice->subtotal_amount) }}@endif
                 </td>
             </tr>
 
@@ -243,10 +245,12 @@
                 <td class="text-right">{{ number_format($summary_8->total_with_tax ?? 0) }}</td>
                 <td class="text-right" style="font-weight: normal; font-size: 8.5pt;">Tax</td>
                 <td class="text-right">{{ number_format($summary_8->tax_amount ?? 0) }}</td>
-                <td class="text-right" colspan="2" style="text-align: right;">Subtotal (8%)</td>
-                <td class="text-right font-bold" colspan="2">
-                    @if($invoice->tax_mode == 1){{ number_format($summary_8->total_with_tax ?? 0) }}@else{{ number_format(($summary_8->total_with_tax ?? 0) - ($summary_8->tax_amount ?? 0)) }}@endif
-                </td>
+                <td class="text-right" colspan="2" style="text-align: right;">Total Tax</td>
+                @if($invoice->tax_mode==1)
+                <td class="text-right font-bold" colspan="2">({{ number_format($invoice->tax_amount) }})</td>
+                @else
+                <td class="text-right font-bold" colspan="2">{{ number_format($invoice->tax_amount) }}</td>
+                @endif
             </tr>
 
             {{-- Row 3: Non-Taxable & Total Tax --}}
@@ -254,15 +258,8 @@
                 <td class="text-left" colspan="2" style="padding-left: 5px; font-weight: normal;">Non-Taxable</td>
                 <td class="text-right">{{ number_format($invoice->non_taxable) }}</td>
                 <td colspan="2"></td>
-                <td class="text-right" colspan="2" style="text-align: right;">Total Tax</td>
-                <td class="text-right font-bold" colspan="2">{{ number_format($invoice->tax_amount) }}</td>
-            </tr>
-
-            {{-- Row 4: Grand Total --}}
-            <tr class="summary-row total-final-row">
-                <td colspan="5"></td>
-                <td class="text-right" colspan="2" style="text-align: right; font-size: 10pt; color: #3b5998;">GRAND TOTAL</td>
-                <td class="text-right font-bold" colspan="2" style="font-size: 11pt; color: #3b5998;">{{ number_format($invoice->total_amount) }}</td>
+                <td class="text-right" colspan="2" style="text-align: right;">GRAND TOTAL</td>
+                <td class="text-right font-bold" colspan="2">{{ number_format($invoice->total_amount) }}</td>
             </tr>
 
         </tbody>
@@ -280,7 +277,8 @@
         @endif
 
         <div class="bank-info">
-            <div class="bank-title">Bank Details/div>
+            <!-- 已修复拼写错误: Bank Details/div> -> Bank Details</div> -->
+            <div class="bank-title">Bank Details</div>
             <div class="bank-content">
                 @foreach($bank as $line)
                     <div class="bank-line">{{ $line }}</div>
