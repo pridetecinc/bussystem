@@ -91,7 +91,7 @@
                 <thead class="table-secondary">
                     <tr>
                         <th class="text-center" style="width: 60px;">ID</th>
-                        <th class="text-center" style="width: 60px;">区分</th>
+                        <th class="text-center" style="width: 100px;">区分</th>
                         <th class="text-center" style="width: 60px;">区分ID</th>
                         <th class="text-center" style="width: 120px;">科目コード</th>
                         <th class="text-center" style="width: 250px;">科目名</th>
