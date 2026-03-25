@@ -37,6 +37,12 @@ use App\Http\Controllers\Masters\CurrencyController;
 use App\Http\Controllers\Masters\InvoiceController;
 use App\Http\Controllers\Masters\PaymentController;
 use App\Http\Controllers\Masters\ProductController;
+use App\Http\Controllers\Masters\AccountCategoryController;
+use App\Http\Controllers\Masters\AccountTaxController;
+use App\Http\Controllers\Masters\AccountDepartmentController;
+use App\Http\Controllers\Masters\AccountPartnerController;
+use App\Http\Controllers\Masters\AccountController;
+use App\Http\Controllers\Masters\AccountSubController;
 
 Route::get('/', function() {
     return redirect('/masters');
@@ -131,6 +137,14 @@ Route::prefix('masters')->name('masters.')->group(function () {
         Route::get('invoices/{invoice}/duplicate', [InvoiceController::class, 'duplicate'])->name('invoices.duplicate');
         Route::resource('payments', PaymentController::class)->names('payments');
         Route::resource('products', ProductController::class)->names('products');
+
+        Route::resource('account-categories', AccountCategoryController::class)->names('account-categories');//财务类别
+        Route::resource('account-taxs', AccountTaxController::class)->names('account-taxs');//财务类别
+        Route::resource('account-departments', AccountDepartmentController::class)->names('account-departments');//部门
+        Route::resource('account_partners', AccountPartnerController::class)->names('account_partners');//取引先
+        Route::resource('accounts', AccountController::class)->names('accounts');//勘定科目
+        Route::resource('account-subs', AccountSubController::class)->names('account-subs');//勘定科目
+
     });
 });
 

@@ -17,6 +17,8 @@
             $canViewSales = $isAdmin || $isOperationsManager || $isManager;
             $canViewResults = $isAdmin || $isOperationsManager || $isManager;
             $canViewMaster = $isAdmin || $isOperationsManager;
+            $canViewPayment = $isAdmin || $isManager; 
+            $canViewAccounting = $isAdmin || $isManager; 
         @endphp
 
         @if($canViewOperations)
@@ -60,7 +62,7 @@
         </div>
         @endif
         
-        @if($canViewSales)
+        @if($canViewPayment)
         <div class="col-md-3 mb-3">
             <div class="card shadow-sm">
                 <div class="card-header bg-secondary text-white py-2">
@@ -77,6 +79,103 @@
             </div>
         </div>
         @endif
+
+        @if($canViewAccounting)
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary text-white py-2">
+                    <h6 class="mb-0"><i class="bi bi-calculator me-1"></i>会計システム</h6>
+                </div>
+                <div class="card-body p-2">
+                    @if($canViewAccounting)
+                        <!-- 仕訳帳 -->
+                        <a href="{{ route('masters.products.index') }}" class="btn btn-outline-secondary btn-sm w-100 mb-1 text-start">仕訳帳</a>
+                        
+                        <!-- 現金出納帳 -->
+                        <a href="{{ route('masters.products.index') }}" class="btn btn-outline-secondary btn-sm w-100 mb-1 text-start">現金出納帳</a>
+                        
+                        <!-- 預金出納帳 -->
+                        <a href="{{ route('masters.products.index') }}" class="btn btn-outline-secondary btn-sm w-100 mb-1 text-start">預金出納帳</a>
+                        
+                        <!-- 売掛帳 -->
+                        <a href="{{ route('masters.products.index') }}" class="btn btn-outline-secondary btn-sm w-100 mb-1 text-start">売掛帳</a>
+                        
+                        <!-- 買掛帳 -->
+                        <a href="{{ route('masters.products.index') }}" class="btn btn-outline-secondary btn-sm w-100 mb-1 text-start">買掛帳</a>
+                        
+                        <!-- 勘定元帳 -->
+                        <a href="{{ route('masters.products.index') }}" class="btn btn-outline-secondary btn-sm w-100 mb-1 text-start">勘定元帳</a>
+                        
+                        <!-- 貸借対照表 -->
+                        <a href="{{ route('masters.products.index') }}" class="btn btn-outline-secondary btn-sm w-100 mb-1 text-start">貸借対照表</a>
+                        
+                        <!-- 損益計算書 -->
+                        <a href="{{ route('masters.products.index') }}" class="btn btn-outline-secondary btn-sm w-100 mb-1 text-start">損益計算書</a>
+                        
+                        <!-- キャッシュ・フロー計算書 -->
+                        <a href="{{ route('masters.products.index') }}" class="btn btn-outline-secondary btn-sm w-100 mb-1 text-start">キャッシュ・フロー計算書</a>
+                        
+                        <!-- マスタ管理 (会计专用) -->
+                                            <button class="btn btn-outline-secondary btn-sm w-100 mb-1 text-start d-flex justify-content-between align-items-center" 
+                            type="button" 
+                            data-bs-toggle="collapse" 
+                            data-bs-target="#accountingMasterCollapse" 
+                            aria-expanded="false" 
+                            aria-controls="accountingMasterCollapse">
+                        <span><i class="bi bi-folder2-open me-2"></i>マスタ管理</span>
+                        <i class="bi bi-chevron-down small transition-icon"></i>
+                    </button>
+
+                    <!-- 2. 折叠内容区域 (默认隐藏) -->
+                    <div class="collapse" id="accountingMasterCollapse">
+                        <div class="ps-3 border-start ms-2 my-1">
+                            <a href="{{ route('masters.account-categories.index') }}" class="btn btn-light btn-sm w-100 mb-1 text-start" style="font-size: 0.85rem; border: 1px solid #dee2e6;">
+                                区分
+                            </a>
+
+                            <!-- 税区分 -->
+                            <a href="{{ route('masters.account-taxs.index') }}" class="btn btn-light btn-sm w-100 mb-1 text-start" style="font-size: 0.85rem; border: 1px solid #dee2e6;">
+                                税区分
+                            </a>
+                            <!-- 税区分 -->
+                            <a href="{{ route('masters.account-departments.index') }}" class="btn btn-light btn-sm w-100 mb-1 text-start" style="font-size: 0.85rem; border: 1px solid #dee2e6;">
+                                部门
+                            </a>
+
+                            <!-- 取引先 -->
+                            <a href="{{ route('masters.account_partners.index') }}" class="btn btn-light btn-sm w-100 mb-1 text-start" style="font-size: 0.85rem; border: 1px solid #dee2e6;">
+                                取引先
+                            </a>
+                            <!-- 勘定科目 -->
+                            <a href="{{ route('masters.accounts.index') }}" class="btn btn-light btn-sm w-100 mb-1 text-start" style="font-size: 0.85rem; border: 1px solid #dee2e6;">
+                                勘定科目
+                            </a>
+                            
+                            <!-- 補助科目 -->
+                            <a href="{{ route('masters.account-subs.index') }}" class="btn btn-light btn-sm w-100 mb-1 text-start" style="font-size: 0.85rem; border: 1px solid #dee2e6;">
+                                補助科目
+                            </a>
+                            
+
+                            <!-- 固定仕訳 -->
+                            <a href="{{ route('masters.products.index') }}" class="btn btn-light btn-sm w-100 mb-1 text-start" style="font-size: 0.85rem; border: 1px solid #dee2e6;">
+                                固定仕訳
+                            </a>
+                            
+
+                            
+                            <!-- 部署 -->
+                            <a href="{{ route('masters.products.index') }}" class="btn btn-light btn-sm w-100 mb-1 text-start" style="font-size: 0.85rem; border: 1px solid #dee2e6;">
+                                部署
+                            </a>
+                        </div>
+                    </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+        @endif
+
         
         @if($canViewResults)
         <div class="col-md-3 mb-3">
