@@ -128,8 +128,13 @@
                                     <div class="d-flex align-items-center" style="flex: 1;">
                                         <span class="span-label" style="white-space: nowrap;">業務分類</span>
                                         <div class="position-relative" style="flex: 1;">
-                                            <input type="text" class="form-control form-control-sm border search-input" id="category_search" value="{{ old('business_category', $groupInfo->business_category) }}" placeholder="業務分類を入力" autocomplete="off" style="width: 100%;">
-                                            <input type="hidden" name="business_category" id="business_category" value="{{ old('business_category', $groupInfo->business_category) }}">
+                                            <input type="text" class="form-control form-control-sm border search-input" 
+                                                   id="category_search" 
+                                                   value="{{ old('business_category', $groupInfo->reservationCategory ? $groupInfo->reservationCategory->category_name : '') }}" 
+                                                   placeholder="業務分類を入力" autocomplete="off" 
+                                                   style="width: 100%;">
+                                            <input type="hidden" name="reservation_categories_id" id="business_category_id" 
+                                                   value="{{ old('reservation_categories_id', $groupInfo->reservation_categories_id) }}">
                                             <div class="suggestions-container" id="category_suggestions" style="display: none;"></div>
                                         </div>
                                     </div>
@@ -2148,8 +2153,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 const branchInput = document.getElementById('vehicle_branch');
                 if (branchInput) branchInput.value = data.display;
             } else if (type === 'category') {
-                const categoryInput = document.getElementById('business_category');
-                if (categoryInput) categoryInput.value = data.display;
+                const categoryIdInput = document.getElementById('business_category_id');
+                const categorySearchInput = document.getElementById('category_search');
+                if (categoryIdInput) categoryIdInput.value = id;
+                if (categorySearchInput) categorySearchInput.value = data.display;
             }
         });
 

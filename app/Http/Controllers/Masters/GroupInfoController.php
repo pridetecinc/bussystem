@@ -63,7 +63,7 @@ class GroupInfoController extends Controller
         return view('masters.group-infos.show', compact('groupInfo', 'busAssignments', 'dailyItineraries'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
         $agencies = Agency::where('is_active', true)
                          ->orderBy('display_order', 'asc')
@@ -91,8 +91,14 @@ class GroupInfoController extends Controller
         $reservationCategories = ReservationCategory::where('is_active', true)
             ->orderBy('display_order')
             ->get();
+            
+            
+        $selectedVehicleId = $request->input('vehicle_id');
+        $selectedVehicleName = $request->input('vehicle_name');
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
         
-        return view('masters.group-infos.create', compact('agencies', 'vehicles', 'drivers', 'guides', 'reservationCategories'));
+        return view('masters.group-infos.create', compact('agencies', 'vehicles', 'drivers', 'guides', 'reservationCategories','selectedVehicleId', 'selectedVehicleName', 'startDate', 'endDate'));
     }
 
     private function checkConflict($vehicleId, $driverId, $startDate, $startTime, $endDate, $endTime, $excludeBusAssignmentId = null, $excludeGroupInfoId = null)
@@ -816,6 +822,7 @@ class GroupInfoController extends Controller
             'driver' => 'nullable|string|max:100',
             'reservation_status' => 'nullable|string|max:50',
             'business_category' => 'nullable|string|max:100',
+            'reservation_categories_id' => 'nullable|exists:reservation_categories,id',
             'vehicle_type_selection' => 'nullable|string|max:200',
             'adult_count' => 'nullable|integer|min:0',
             'child_count' => 'nullable|integer|min:0',
@@ -1759,6 +1766,7 @@ class GroupInfoController extends Controller
                 'remarks' => $validated['remarks'] ?? null,
                 'agt_tour_id' => $validated['agt_tour_id'] ?? null,
                 'business_category' => $validated['business_category'] ?? null,
+                'reservation_categories_id' => $validated['reservation_categories_id'] ?? null,
                 'adult_count' => $validated['adult_count'] ?? 0,
                 'child_count' => $validated['child_count'] ?? 0,
                 'other_count' => $validated['other_count'] ?? 0,

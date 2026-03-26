@@ -328,7 +328,7 @@ class BusAssignment extends Model
                 $result['vehicle'] = false;
                 $vehicle = Vehicle::find($data['vehicle_id']);
                 $vehicleName = $vehicle ? $vehicle->registration_number : '#' . $data['vehicle_id'];
-                $result['message'] .= "车辆 {$vehicleName} 在指定时间段已被占用。";
+                $result['message'] .= "車両 {$vehicleName} は指定された期間ですでに予約されています。";
             }
         }
 
@@ -346,7 +346,7 @@ class BusAssignment extends Model
                 $result['driver'] = false;
                 $driver = Driver::find($data['driver_id']);
                 $driverName = $driver ? $driver->name : '#' . $data['driver_id'];
-                $result['message'] .= ($result['message'] ? ' ' : '') . "司机 {$driverName} 在指定时间段已被占用。";
+                $result['message'] .= ($result['message'] ? ' ' : '') . "ドライバー {$driverName} は指定された期間ですでに予約されています。";
             }
         }
 
