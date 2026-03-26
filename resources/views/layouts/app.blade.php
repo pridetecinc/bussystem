@@ -139,7 +139,7 @@
                         </a>
                         <ul class="dropdown-menu shadow">
                             @if($isAdmin || $isOperationsManager || $isCoordinator || $isManager)
-                            <li><a class="dropdown-item" href="{{ route('masters.itineraries.index') }}">運行台帳</a></li>
+                            <li><a class="dropdown-item" href="{{ route('masters.operation-ledger.index') }}">運行台帳</a></li>
                             @endif
                             @if($isAdmin || $isOperationsManager || $isCoordinator || $isManager)
                             <li><a class="dropdown-item" href="{{ route('masters.drivers.index') }}">運転手台帳</a></li>

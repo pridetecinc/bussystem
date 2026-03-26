@@ -25,6 +25,7 @@ class GroupInfo extends Model
         'remarks',
         'itinerary_id',
         'business_category',
+        'reservation_categories_id',
         'itinerary_name',
         'adult_count',
         'child_count',
@@ -79,5 +80,26 @@ class GroupInfo extends Model
     public function guide()
     {
         return $this->belongsTo(Guide::class, 'guide_id', 'id');
+    }
+    
+    public function agencyInfo()
+    {
+        return $this->belongsTo(Agency::class, 'agency_id', 'id');
+    }
+    
+    
+    public function getReservationCategoriesIdAttribute($value)
+    {
+        return $value ?? 0;
+    }
+    
+    public function setReservationCategoriesIdAttribute($value)
+    {
+        $this->attributes['reservation_categories_id'] = $value == 0 ? null : $value;
+    }
+    
+    public function reservationCategory()
+    {
+        return $this->belongsTo(ReservationCategory::class, 'reservation_categories_id');
     }
 }

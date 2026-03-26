@@ -28,6 +28,7 @@ use App\Http\Controllers\Masters\UserCompanyInfoController;
 use App\Http\Controllers\Masters\DailyItineraryController;
 use App\Http\Controllers\Masters\GroupInfoController;
 use App\Http\Controllers\Masters\BusAssignmentController;
+use App\Http\Controllers\Masters\OperationLedgerController;
 
 use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -98,6 +99,8 @@ Route::prefix('masters')->name('masters.')->group(function () {
         Route::post('group-infos/{id}/update-bus-assignment', [GroupInfoController::class, 'updateBusAssignment'])->name('group-infos.update-bus-assignment');
         Route::put('group-infos/{id}', [GroupInfoController::class, 'update'])->name('group-infos.update');
         Route::post('group-infos/{id}/delete-itinerary', [GroupInfoController::class, 'deleteItinerary'])->name('group-infos.delete-itinerary');
+        
+        Route::get('operation-ledger', [OperationLedgerController::class, 'index'])->name('operation-ledger.index');
         
         
         Route::prefix('daily-itineraries')->name('daily-itineraries.')->group(function () {

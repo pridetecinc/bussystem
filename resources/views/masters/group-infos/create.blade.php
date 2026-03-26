@@ -768,5 +768,34 @@ document.addEventListener('DOMContentLoaded', function() {
 document.addEventListener('DOMContentLoaded', function() {
     initDateRangePicker('input[name="start_date"]', 'input[name="end_date"]');
 });
+
+
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const vehicleId = urlParams.get('vehicle_id');
+    const vehicleName = urlParams.get('vehicle_name');
+    const startDate = urlParams.get('start_date');
+    const endDate = urlParams.get('end_date');
+    
+    if (startDate) {
+        document.getElementById('start_date').value = startDate;
+    }
+    if (endDate) {
+        document.getElementById('end_date').value = endDate;
+    }
+    
+    if (vehicleId && vehicleName) {
+        const vehicleSearchInput = document.getElementById('vehicle_search');
+        const vehicleIdInput = document.getElementById('vehicle_id');
+        
+        if (vehicleSearchInput && vehicleIdInput) {
+            vehicleSearchInput.value = vehicleName;
+            vehicleIdInput.value = vehicleId;
+            
+            const event = new Event('change', { bubbles: true });
+            vehicleSearchInput.dispatchEvent(event);
+        }
+    }
+});
 </script>
 @endpush

@@ -236,7 +236,7 @@
                     <div class="col-md-12">
                         <table class="table table-bordered table-sm" style="font-size: 0.8rem; background-color: white;" data-vehicle-table="{{ $index }}">
                             <thead style="background-color: #f3f4f6; text-align: center;">
-                                <tr>
+                                32
                                     <th style="width: 10%; text-align: center; background-color: #f3f4f6;">運行日</th>
                                     <th style="width: 10%; text-align: center; background-color: #f3f4f6;">開始時刻/場所</th>
                                     <th style="width: 10%; text-align: center; background-color: #f3f4f6;">終了時刻/場所</th>
@@ -250,7 +250,7 @@
                                 @php
                                     $globalIndex = ($index - 1) * 100 + $itineraryIndex;
                                 @endphp
-                                <tr class="itinerary-row" data-vehicle="{{ $index }}" data-index="{{ $globalIndex }}" data-bus-id="{{ $busAssignment->id }}" data-itinerary-id="{{ $itinerary->id }}">
+                                <tr class="itinerary-row" data-vehicle="{{ $index }}" data-index="{{ $globalIndex }}" data-bus-id="{{ $busAssignment->id }}" data-itinerary-id="{{ $itinerary->id }}" data-group-info-id="{{ $busAssignment->group_info_id }}">
                                     <td style="vertical-align: middle; text-align: center; background-color: #f9f9f9; position: relative;">
                                         <span class="row-number" style="position: absolute; top: 2px; left: 2px; color: #2563eb; font-size: 10px; font-weight: bold;">{{ $itineraryIndex + 1 }}</span>
                                         <input type="hidden" name="daily_itineraries[{{ $globalIndex }}][id]" value="{{ $itinerary->id }}">
@@ -346,10 +346,19 @@
                 </div>
             </div>
         </div>
-    </div>
 
         <div class="d-flex justify-content-between align-items-center mt-3">
-            <div class="d-flex gap-2">
+            <div class="d-flex gap-2 align-items-center">
+                <div class="d-flex align-items-center me-3" style="gap: 15px;">
+                    <div class="form-check d-flex align-items-center">
+                        <input type="checkbox" class="form-check-input me-1" id="ignore_operation" name="ignore_operation" value="1" {{ $busAssignment->ignore_operation ? 'checked' : '' }} style="margin: 0;">
+                        <label class="form-check-label me-2" for="ignore_operation" style="font-size: 0.85rem;">運行無視</label>
+                    </div>
+                    <div class="form-check d-flex align-items-center">
+                        <input type="checkbox" class="form-check-input me-1" id="ignore_driver" name="ignore_driver" value="1" {{ $busAssignment->ignore_driver ? 'checked' : '' }} style="margin: 0;">
+                        <label class="form-check-label me-2" for="ignore_driver" style="font-size: 0.85rem;">勤怠無視</label>
+                    </div>
+                </div>
                 <button type="submit" class="btn btn-primary btn-sm px-3" id="saveBtn">
                     <i class="bi bi-check-circle"></i> 保存
                 </button>
@@ -372,7 +381,6 @@
     </form>
 </div>
 @endsection
-
 
 @push('styles')
 <style>
@@ -404,6 +412,7 @@
 .form-control-sm:focus, .form-select-sm:focus { border-color: #2563eb; box-shadow: 0 0 0 0.1rem rgba(37, 99, 235, 0.25); }
 .btn-sm { font-size: 0.8rem; }
 .form-check-input { margin-top: 0; }
+.form-check { padding-left: 0;}
 .gap-3 { gap: 1rem; }
 .gap-4 { gap: 1.5rem; }
 .bg-white { background-color: #ffffff !important; }
@@ -622,14 +631,16 @@ span.flatpickr-weekday {
 .flatpickr-calendar.multiMonth .flatpickr-rContainer {
     width: 514px !important;
 }
+.success-alert .btn-close {
+    padding: 0.75rem;
+}
 </style>
 @endpush
-
 
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    flatpickr('.datepicker-3months', {
+    const flatpickrConfig = {
         locale: 'ja',
         dateFormat: 'Y-m-d',
         showMonths: 3,
@@ -653,7 +664,53 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
         }
-    });
+    };
+
+    function initDatePickers(container) {
+        const dateInputs = container ? 
+            container.querySelectorAll('.datepicker-3months') : 
+            document.querySelectorAll('.datepicker-3months');
+        
+        dateInputs.forEach(input => {
+            if (input && !input._flatpickr) {
+                flatpickr(input, flatpickrConfig);
+            }
+        });
+    }
+
+    function attachRowEvents(row) {
+        const addBtn = row.querySelector('.add-row-btn');
+        const deleteBtn = row.querySelector('.delete-row-btn');
+        const upBtn = row.querySelector('.move-up-btn');
+        const downBtn = row.querySelector('.move-down-btn');
+
+        if (addBtn) {
+            addBtn.onclick = function(e) {
+                e.preventDefault();
+                addRowAfter(this);
+            };
+        }
+        if (deleteBtn) {
+            deleteBtn.onclick = function(e) {
+                e.preventDefault();
+                deleteRow(this);
+            };
+        }
+        if (upBtn) {
+            upBtn.onclick = function(e) {
+                e.preventDefault();
+                moveUp(this);
+            };
+        }
+        if (downBtn) {
+            downBtn.onclick = function(e) {
+                e.preventDefault();
+                moveDown(this);
+            };
+        }
+    }
+
+    initDatePickers();
 
     document.querySelectorAll('.tab-button2').forEach(button => {
         button.addEventListener('click', function() {
@@ -687,107 +744,59 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    document.querySelectorAll('.add-row-btn').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            addRowAfter(this);
-        });
-    });
-
-    document.querySelectorAll('.delete-row-btn').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            deleteRow(this);
-        });
-    });
-
-    document.querySelectorAll('.move-up-btn').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            moveUp(this);
-        });
-    });
-
-    document.querySelectorAll('.move-down-btn').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            moveDown(this);
-        });
-    });
-
     function addRowAfter(clickedButton) {
         const currentRow = clickedButton.closest('tr.itinerary-row');
         if (!currentRow) return;
 
         const table = currentRow.closest('table');
         const tbody = table.querySelector('tbody');
-
-        const dateInput = currentRow.querySelector('input[name*="[date]"]');
-        const date = dateInput ? dateInput.value : '';
-
-        const card = currentRow.closest('.card');
-        const cardBusId = card ? card.getAttribute('data-bus-id') || '' : '';
-        const vehicleGroup = card.getAttribute('data-vehicle-index') || '1';
-
-        const vehicleSelect = card.querySelector('.vehicle-select');
-        const driverSelect = card.querySelector('.driver-select');
-        const guideSelect = card.querySelector('.guide-select');
-
+        
+        const card = currentRow.closest('.vehicle-detail-card');
+        const vehicleGroup = card ? card.getAttribute('data-vehicle-index') || '1' : '1';
+        const busId = card ? card.getAttribute('data-bus-id') || '' : '';
+        
+        const vehicleSelect = card ? card.querySelector('.vehicle-select') : null;
+        const driverSelect = card ? card.querySelector('.driver-select') : null;
+        const guideSelect = card ? card.querySelector('.guide-select') : null;
+        
         const vehicleId = vehicleSelect ? vehicleSelect.value : '';
         const driverId = driverSelect ? driverSelect.value : '';
         const guideId = guideSelect ? guideSelect.value : '';
-
-        const allRows = Array.from(tbody.querySelectorAll('tr.itinerary-row:not(.no-data-row)'));
-        let newIndex = allRows.length;
-
-        const newRow = createNewRow(date, newIndex, vehicleGroup, cardBusId, vehicleId, driverId, guideId);
-
-        const nextRow = currentRow.nextElementSibling;
+        
+        const dateInput = currentRow.querySelector('input[name*="[date]"]');
+        const date = dateInput ? dateInput.value : '';
+        
+        const visibleRows = Array.from(tbody.querySelectorAll('tr.itinerary-row')).filter(row => {
+            return row.style.display !== 'none' && !row.classList.contains('no-data-row');
+        });
+        const newIndex = visibleRows.length;
+        
+        const newRow = createNewRow(date, newIndex, vehicleGroup, busId, vehicleId, driverId, guideId);
+        
+        let nextRow = currentRow.nextElementSibling;
+        while (nextRow && (nextRow.style.display === 'none' || nextRow.classList.contains('no-data-row'))) {
+            nextRow = nextRow.nextElementSibling;
+        }
+        
         if (nextRow && !nextRow.classList.contains('no-data-row')) {
             tbody.insertBefore(newRow, nextRow);
         } else {
             tbody.appendChild(newRow);
         }
-
+        
         const noDataRow = tbody.querySelector('.no-data-row');
         if (noDataRow) {
             noDataRow.remove();
         }
-
+        
         reindexRows(table);
         updateMoveButtons(table);
-
-        const newDateInput = newRow.querySelector('.datepicker-3months');
-        if (newDateInput && !newDateInput._flatpickr) {
-            flatpickr(newDateInput, {
-                locale: 'ja',
-                dateFormat: 'Y-m-d',
-                showMonths: 3,
-                allowInput: true,
-                clickOpens: true,
-                mode: 'single',
-                disableMobile: true,
-                wrap: false,
-                onOpen: function(selectedDates, dateStr, instance) {
-                    instance.calendarContainer.style.zIndex = '9999';
-                },
-                onReady: function(selectedDates, dateStr, instance) {
-                    const daysContainer = instance.daysContainer;
-                    if (daysContainer) {
-                        const dayContainers = daysContainer.querySelectorAll('.dayContainer');
-                        dayContainers.forEach(function(dayContainer) {
-                            const wrapper = document.createElement('div');
-                            wrapper.className = 'month-wrapper';
-                            dayContainer.parentNode.insertBefore(wrapper, dayContainer);
-                            wrapper.appendChild(dayContainer);
-                        });
-                    }
-                }
-            });
-        }
+        
+        initDatePickers(newRow);
+        attachRowEvents(newRow);
     }
 
-    function createNewRow(date, index, vehicleGroup = '1', busId = '', vehicleId = '', driverId = '', guideId = '') {
+    function createNewRow(date, index, vehicleGroup, busId, vehicleId, driverId, guideId) {
         const newRow = document.createElement('tr');
         newRow.className = 'itinerary-row';
         newRow.setAttribute('data-vehicle', vehicleGroup);
@@ -806,7 +815,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <input type="hidden" name="daily_itineraries[${index}][guide_id]" value="${guideId}" class="itinerary-guide-id">
                 <input type="text" class="form-control form-control-sm border datepicker-3months" name="daily_itineraries[${index}][date]" value="${date}" style="width: 100%; text-align: center;" placeholder="YYYY-MM-DD">
                 <input type="hidden" name="daily_itineraries[${index}][vehicle_group]" value="${vehicleGroup}">
-            </td>
+                </td>
             <td style="padding: 2px;">
                 <div class="d-flex flex-column" style="gap: 2px;">
                     <input type="time" class="form-control form-control-sm border"
@@ -816,7 +825,7 @@ document.addEventListener('DOMContentLoaded', function() {
                            name="daily_itineraries[${index}][start_location]" value=""
                            placeholder="開始場所" style="width: 100%;">
                 </div>
-            </td>
+                </td>
             <td style="padding: 2px;">
                 <div class="d-flex flex-column" style="gap: 2px;">
                     <input type="time" class="form-control form-control-sm border"
@@ -826,19 +835,19 @@ document.addEventListener('DOMContentLoaded', function() {
                            name="daily_itineraries[${index}][end_location]" value=""
                            placeholder="終了場所" style="width: 100%;">
                 </div>
-            </td>
+                </td>
             <td style="vertical-align: middle; padding: 2px;">
                 <textarea name="daily_itineraries[${index}][itinerary]" rows="2"
                           class="form-control form-control-sm border"
                           style="width: 100%; height: 100%; min-height: 60px;"></textarea>
-            </td>
+                </td>
             <td style="padding: 2px; text-align: center; vertical-align: middle;">
                 <div style="display: flex; justify-content: center; align-items: center; height: 100%;">
                     <input type="checkbox" class="form-check-input itinerary-select"
                            id="select_itinerary_${index}"
                            style="margin: 0; width: 18px; height: 18px; cursor: pointer;">
                 </div>
-            </td>
+                </td>
             <td style="padding: 2px; text-align: center; vertical-align: middle;">
                 <div class="d-flex justify-content-center gap-1">
                     <button type="button" class="btn btn-outline-secondary btn-sm move-up-btn" title="上へ移動">
@@ -854,43 +863,133 @@ document.addEventListener('DOMContentLoaded', function() {
                         <i class="bi bi-dash-lg"></i>
                     </button>
                 </div>
-            </td>
+                </td>
         `;
 
         return newRow;
     }
 
-    function deleteRow(clickedButton) {
-        if (!confirm('この行程を削除してもよろしいですか？')) {
-            return;
+function deleteRow(clickedButton) {
+    if (!confirm('この行程を削除してもよろしいですか？')) {
+        return;
+    }
+
+    const row = clickedButton.closest('tr.itinerary-row');
+    if (!row) return;
+
+    const table = row.closest('table');
+    const tbody = table.querySelector('tbody');
+
+    const itineraryId = row.getAttribute('data-itinerary-id');
+    
+    // 从行中获取 group_info_id
+    let groupInfoId = row.getAttribute('data-group-info-id');
+    
+    // 如果行上没有，从卡片中获取
+    if (!groupInfoId) {
+        const card = row.closest('.vehicle-detail-card');
+        const busId = card ? card.getAttribute('data-bus-id') : '';
+        if (busId) {
+            // 通过 busId 获取 group_info_id，需要从页面其他地方获取
+            // 或者从隐藏字段中获取
+            const groupInfoInput = document.querySelector('input[name="group_info_id"]');
+            if (groupInfoInput) {
+                groupInfoId = groupInfoInput.value;
+            }
         }
-
-        const row = clickedButton.closest('tr.itinerary-row');
-        if (!row) return;
-
-        const table = row.closest('table');
-        const tbody = table.querySelector('tbody');
-
+    }
+    
+    if (itineraryId && itineraryId !== '') {
+        const deleteBtn = clickedButton;
+        const originalHtml = deleteBtn.innerHTML;
+        deleteBtn.disabled = true;
+        deleteBtn.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+        
+        // 构建请求数据
+        const formData = new FormData();
+        formData.append('itinerary_id', itineraryId);
+        formData.append('_token', document.querySelector('input[name="_token"]').value);
+        
+        // 使用现有的路由
+        const url = `/masters/group-infos/${groupInfoId}/delete-itinerary`;
+        
+        console.log('发送删除请求:', {
+            url: url,
+            itinerary_id: itineraryId,
+            group_info_id: groupInfoId
+        });
+        
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+                'Accept': 'application/json'
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('服务器响应:', data);
+            if (data.success) {
+                row.remove();
+                
+                const visibleRows = Array.from(tbody.querySelectorAll('tr.itinerary-row')).filter(r => {
+                    return r.style.display !== 'none' && !r.classList.contains('no-data-row');
+                });
+                
+                if (visibleRows.length === 0) {
+                    tbody.innerHTML = `
+                        <tr class="no-data-row">
+                            <td colspan="6" class="text-center py-4" style="color: #6c757d; background-color: #f9f9f9;">
+                                <i class="bi bi-info-circle me-1"></i> 旅程データがありません。「+」ボタンを押して追加してください。
+                            <\/td>
+                        <\/tr>
+                    `;
+                } else {
+                    reindexRows(table);
+                    updateMoveButtons(table);
+                }
+            } else {
+                alert('削除に失敗しました: ' + (data.message || '不明なエラー'));
+                deleteBtn.disabled = false;
+                deleteBtn.innerHTML = originalHtml;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('削除中にエラーが発生しました: ' + error.message);
+            deleteBtn.disabled = false;
+            deleteBtn.innerHTML = originalHtml;
+        });
+    } else {
         row.remove();
-
-        const rows = tbody.querySelectorAll('tr.itinerary-row:not(.no-data-row)');
-        if (rows.length === 0) {
+        reindexRows(table);
+        updateMoveButtons(table);
+        
+        const visibleRows = Array.from(tbody.querySelectorAll('tr.itinerary-row')).filter(r => {
+            return r.style.display !== 'none' && !r.classList.contains('no-data-row');
+        });
+        
+        if (visibleRows.length === 0) {
             tbody.innerHTML = `
                 <tr class="no-data-row">
                     <td colspan="6" class="text-center py-4" style="color: #6c757d; background-color: #f9f9f9;">
                         <i class="bi bi-info-circle me-1"></i> 旅程データがありません。「+」ボタンを押して追加してください。
-                    </td>
-                </tr>
+                    <\/td>
+                <\/tr>
             `;
-        } else {
-            reindexRows(table);
-            updateMoveButtons(table);
         }
     }
+}
 
     function moveUp(clickedButton) {
         const row = clickedButton.closest('tr.itinerary-row');
-        const prevRow = row.previousElementSibling;
+        if (!row) return;
+        
+        let prevRow = row.previousElementSibling;
+        while (prevRow && (prevRow.style.display === 'none' || prevRow.classList.contains('no-data-row'))) {
+            prevRow = prevRow.previousElementSibling;
+        }
 
         if (prevRow && !prevRow.classList.contains('no-data-row')) {
             const table = row.closest('table');
@@ -902,7 +1001,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function moveDown(clickedButton) {
         const row = clickedButton.closest('tr.itinerary-row');
-        const nextRow = row.nextElementSibling;
+        if (!row) return;
+        
+        let nextRow = row.nextElementSibling;
+        while (nextRow && (nextRow.style.display === 'none' || nextRow.classList.contains('no-data-row'))) {
+            nextRow = nextRow.nextElementSibling;
+        }
 
         if (nextRow && !nextRow.classList.contains('no-data-row')) {
             const table = row.closest('table');
@@ -913,9 +1017,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function reindexRows(table) {
-        const rows = table.querySelectorAll('tbody tr.itinerary-row:not(.no-data-row)');
+        const tbody = table.querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr.itinerary-row')).filter(row => {
+            return row.style.display !== 'none' && !row.classList.contains('no-data-row');
+        });
+        
         rows.forEach((row, idx) => {
             row.querySelectorAll('input, select, textarea').forEach(input => {
+                if (input.name === 'deleted_itineraries[]') {
+                    return;
+                }
                 const name = input.getAttribute('name');
                 if (name && name.includes('daily_itineraries[')) {
                     const newName = name.replace(/daily_itineraries\[\d+\]/, `daily_itineraries[${idx}]`);
@@ -943,24 +1054,90 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function updateMoveButtons(table) {
-        const rows = table.querySelectorAll('tbody tr.itinerary-row:not(.no-data-row)');
+        const tbody = table.querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr.itinerary-row')).filter(row => {
+            return row.style.display !== 'none' && !row.classList.contains('no-data-row');
+        });
+        
         rows.forEach((row, index) => {
             const upBtn = row.querySelector('.move-up-btn');
             const downBtn = row.querySelector('.move-down-btn');
 
             if (upBtn) {
                 upBtn.disabled = index === 0;
+                if (index === 0) {
+                    upBtn.classList.add('disabled');
+                } else {
+                    upBtn.classList.remove('disabled');
+                }
             }
             if (downBtn) {
                 downBtn.disabled = index === rows.length - 1;
+                if (index === rows.length - 1) {
+                    downBtn.classList.add('disabled');
+                } else {
+                    downBtn.classList.remove('disabled');
+                }
             }
         });
     }
+
+    // 为现有行绑定事件
+    document.querySelectorAll('.add-row-btn').forEach(btn => {
+        btn.onclick = function(e) {
+            e.preventDefault();
+            addRowAfter(this);
+        };
+    });
+
+    document.querySelectorAll('.delete-row-btn').forEach(btn => {
+        btn.onclick = function(e) {
+            e.preventDefault();
+            deleteRow(this);
+        };
+    });
+
+    document.querySelectorAll('.move-up-btn').forEach(btn => {
+        btn.onclick = function(e) {
+            e.preventDefault();
+            moveUp(this);
+        };
+    });
+
+    document.querySelectorAll('.move-down-btn').forEach(btn => {
+        btn.onclick = function(e) {
+            e.preventDefault();
+            moveDown(this);
+        };
+    });
 
     const tables = document.querySelectorAll('table');
     tables.forEach(table => {
         updateMoveButtons(table);
     });
+
+    const form = document.getElementById('editForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const formData = new FormData(this);
+            console.log('=== 提交数据调试 ===');
+            console.log('deleted_itineraries:', formData.getAll('deleted_itineraries[]'));
+            
+            const itineraryIds = [];
+            for (let pair of formData.entries()) {
+                if (pair[0].includes('daily_itineraries') && pair[0].includes('[id]')) {
+                    itineraryIds.push(pair[1]);
+                }
+            }
+            console.log('提交的行程ID:', itineraryIds);
+            
+            const saveBtn = document.getElementById('saveBtn');
+            if (saveBtn) {
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> 保存中...';
+            }
+        });
+    }
 });
 </script>
 @endpush
