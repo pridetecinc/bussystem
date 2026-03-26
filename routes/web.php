@@ -43,6 +43,7 @@ use App\Http\Controllers\Masters\AccountDepartmentController;
 use App\Http\Controllers\Masters\AccountPartnerController;
 use App\Http\Controllers\Masters\AccountController;
 use App\Http\Controllers\Masters\AccountSubController;
+use App\Http\Controllers\Masters\AccountJournalEntryController;
 
 Route::get('/', function() {
     return redirect('/masters');
@@ -144,6 +145,9 @@ Route::prefix('masters')->name('masters.')->group(function () {
         Route::resource('account_partners', AccountPartnerController::class)->names('account_partners');//取引先
         Route::resource('accounts', AccountController::class)->names('accounts');//勘定科目
         Route::resource('account-subs', AccountSubController::class)->names('account-subs');//勘定科目
+        Route::resource('journal_entries', AccountJournalEntryController::class)->names('journal_entries');//
+        Route::get('/account/account-subs/{accountId}', [AccountJournalEntryController::class, 'getAccountSubs'])->name('account.account-subs');
+
 
     });
 });
