@@ -75,7 +75,7 @@
                                 <label for="type" class="form-label">类别</label>
                                 <select class="form-select @error('type') is-invalid @enderror" 
                                         id="type" name="type">
-                                    <option value="" disabled>選択してください</option>
+                                    <option value="">選択してください</option>
                                     <option value="PL" {{ old('type', $category->type) == 'PL' ? 'selected' : '' }}>PL</option>
                                     <option value="BS" {{ old('type', $category->type) == 'BS' ? 'selected' : '' }}>BS</option>
                                 </select>
@@ -120,7 +120,7 @@
                                 <label for="level" class="form-label">レベル (階層)</label>
                                 <select class="form-select @error('level') is-invalid @enderror" 
                                         id="level" name="level">
-                                    <option value="0" disabled>選択してください</option>
+                                    <option value="0" >選択してください</option>
                                     <option value="1" {{ old('level', $category->level) == '1' ? 'selected' : '' }}>五大要素</option>
                                     <option value="2" {{ old('level', $category->level) == '2' ? 'selected' : '' }}>大分類</option>
                                     <option value="3" {{ old('level', $category->level) == '3' ? 'selected' : '' }}>中分類</option>
