@@ -105,6 +105,7 @@
                         <th class="text-center" style="width: 50px;">ID</th>
                         <th class="text-start" style="width: 100px;">区分名称</th>   
                         <th class="text-center" style="width: 80px;">貸借</th>
+                        <th class="text-center" style="width: 80px;">类别</th>
                         <th class="text-center" style="width: 100px;">レベル</th>
                         <th class="text-center" style="width: 160px;">操作</th>
                     </tr>
@@ -120,6 +121,7 @@
                         <td class="text-center">
                              <span class="badge bg-light text-dark border">{{ $category->mark }}</span>
                         </td>
+                         <td class="text-start fw-bold">{{ $category->type }}</td>
                         
                         <!-- 层级显示 -->
                         <td class="text-center">

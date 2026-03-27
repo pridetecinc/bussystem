@@ -29,7 +29,7 @@
                 </div>
                 <div class="card-body p-2">
                     @if($isAdmin || $isOperationsManager || $isCoordinator || $isManager)
-                    <a href="{{ route('masters.itineraries.index') }}" class="btn btn-outline-secondary btn-sm w-100 mb-1">運行台帳</a>
+                    <a href="{{ route('masters.operation-ledger.index') }}" class="btn btn-outline-secondary btn-sm w-100 mb-1">運行台帳</a>
                     @endif
                     
                     @if($isAdmin || $isOperationsManager || $isCoordinator || $isManager)
@@ -158,16 +158,16 @@
                             
 
                             <!-- 固定仕訳 -->
-                            <a href="{{ route('masters.products.index') }}" class="btn btn-light btn-sm w-100 mb-1 text-start" style="font-size: 0.85rem; border: 1px solid #dee2e6;">
-                                固定仕訳
+                            <a href="{{ route('masters.journal_entries.index') }}" class="btn btn-light btn-sm w-100 mb-1 text-start" style="font-size: 0.85rem; border: 1px solid #dee2e6;">
+                                仕訳
                             </a>
                             
 
                             
                             <!-- 部署 -->
-                            <a href="{{ route('masters.products.index') }}" class="btn btn-light btn-sm w-100 mb-1 text-start" style="font-size: 0.85rem; border: 1px solid #dee2e6;">
+                            <!-- <a href="{{ route('masters.products.index') }}" class="btn btn-light btn-sm w-100 mb-1 text-start" style="font-size: 0.85rem; border: 1px solid #dee2e6;">
                                 部署
-                            </a>
+                            </a> -->
                         </div>
                     </div>
                     @endif
