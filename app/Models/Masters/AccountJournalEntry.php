@@ -90,20 +90,20 @@ class AccountJournalEntry extends Model
         $html = '';
         foreach ($lines as $line) {
             // 构建科目显示名
-            $accName = $line->account ? "{$line->account->name}" : '未設定';
+            $accName = $line->account ? "{$line->account->name}" : '未设定';
             
             // 构建辅助信息 (辅助科目 / 取引先 / 税)
             $subs = [];
             if ($line->sub_account_id && $line->subAccount) {
-                $subs[] = $line->subAccount->name; // 或者 code-name
+                $subs[] = $line->subAccount->name; 
             } elseif ($line->account_sub_name) {
-                $subs[] = $line->account_sub_name; // 自由输入的文本
+                $subs[] = $line->account_sub_name; 
             }
 
             if ($line->partner_id && $line->partner) {
                 $subs[] = $line->partner->name;
             } elseif ($line->partner_name) {
-                $subs[] = $line->partner_name; // 自由输入的文本
+                $subs[] = $line->partner_name; 
             }
 
             if ($line->tax_type_id && $line->taxType) {
@@ -113,12 +113,18 @@ class AccountJournalEntry extends Model
             $subText = !empty($subs) ? ' <small class="text-muted">(' . implode('/', $subs) . ')</small>' : '';
             
             // 金额格式化
-            $amount = number_format($line->amount);
+            $formattedAmount = number_format($line->amount);
 
-            // 拼接一行 HTML
-            $html .= "<div class='mb-1 border-bottom pb-1' style='font-size:0.75rem; line-height:1.3;'>";
+            // 拼接一行 HTML：内容与金额在同一行
+            // 使用 flexbox 或 float 来实现左右布局
+            $html .= "<div class='d-flex justify-content-between align-items-start' style='font-size:0.75rem; line-height:1.3;'>";
+            
+            // 左侧：科目名 + 辅助信息
             $html .= "<div class='fw-bold'>{$accName}{$subText}</div>";
-            $html .= "<div class='text-end text-primary'>{$amount}</div>";
+            
+            // 右侧：金额 (使用 text-primary 和 fw-bold 可选)
+            $html .= "<div class='text-primary fw-bold'>{$formattedAmount}</div>";
+            
             $html .= "</div>";
         }
 

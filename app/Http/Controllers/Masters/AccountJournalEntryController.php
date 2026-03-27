@@ -55,11 +55,20 @@ class AccountJournalEntryController extends Controller
         $departments = AccountDepartment::get();
         $staffs = Staff::where("is_active", 1)->get();
 
-        $accounts = Account::where('is_active', 1)->orderBy('code')->get();
+        $accounts = Account::where('is_active', 1)->get();
         $partners = AccountPartner::get(); // 交易伙伴
         $taxes = AccountTax::get();       // 税区分
 
-        return view('masters.journal_entries.index', compact('entries',  'departments', 'staffs','accounts','partners','taxes'));
+        $accountsJie = Account::where('is_active', 1)
+            ->whereHas('category', function ($query) {
+                $query->where('mark', '借');
+            })->get();
+        $accountsDai = Account::where('is_active', 1)
+            ->whereHas('category', function ($query) {
+                $query->where('mark', '貸');
+            })->get();
+
+        return view('masters.journal_entries.index', compact('entries',  'departments', 'staffs','accounts','partners','taxes','accountsJie','accountsDai'));
     }
 
     public function create(Request $request)
@@ -100,7 +109,8 @@ class AccountJournalEntryController extends Controller
         $validated = $request->validate([
             'posting_date' => 'required|date',
             'description' => 'nullable|string|max:255',
-            'department_id' => 'nullable|string',
+            'department_id' => 'nullable',
+            'department_name' => 'nullable|string',
             'source_type' => 'nullable|string|max:50',
             'source_id' => 'nullable|integer',
             
@@ -108,9 +118,9 @@ class AccountJournalEntryController extends Controller
             'lines.*.account_id' => 'required|integer|exists:accounts,id', // 强制要求科目ID
             'lines.*.side' => 'required', // 【关键】强制验证，必须是这两个字
             'lines.*.amount' => 'required|numeric|min:0.01', // 金额必须大于0
-            'lines.*.account_sub_id' => 'nullable|exists:account_subs,id', // 允许为空
+            'lines.*.account_sub_id' => 'nullable', // 允许为空
             'lines.*.account_sub_name' => 'nullable|string|max:255',      // 新增：允许接收文本
-            'lines.*.partner_id' => 'nullable|exists:partners,id',        // 允许为空
+            'lines.*.partner_id' => 'nullable',        // 允许为空
             'lines.*.partner_name' => 'nullable|string|max:255',          // 新增：允许接收文本
             'lines.*.tax_type_id' => 'nullable|integer|exists:account_taxs,id',
             'lines.*.remark' => 'nullable|string|max:255',
@@ -158,13 +168,13 @@ class AccountJournalEntryController extends Controller
         try {
 
             $department_id = 0;
-            if($validated['department_id']){
-                $department = AccountDepartment::where("name",$validated['department_id'])->first();
+            if($validated['department_name']){
+                $department = AccountDepartment::where("name",$validated['department_name'])->first();
                 if($department){
                     $department_id = $department->id;
                 }else{
                     $newDepartment = AccountDepartment::create([
-                        'name' => $validated['department_id'],
+                        'name' => $validated['department_name'],
                     ]);
                     $department_id = $newDepartment->id;
 
@@ -195,7 +205,7 @@ class AccountJournalEntryController extends Controller
                         $account_sub_id = $account_sub->id;
                     }else{
                         $newSub = AccountSub::create([
-                            'name' => $validated['department_id'],
+                            'name' => $validated['department_name'],
                             'is_active'=>1,
                             'account_id'=>$line['account_id']
                         ]);
@@ -268,151 +278,208 @@ class AccountJournalEntryController extends Controller
         }
     }
 
-    public function show(Request $request, $id)
+    public function show($id)
     {
-        $groupId = $request->query('group_id');
-        $entry = AccountJournalEntry::with('lines.account', 'lines.partner', 'lines.taxType')->findOrFail($id);
-        
-        // 计算合计用于显示
-        $debitSum = $entry->lines->where('side', '借')->sum('amount');
-        $creditSum = $entry->lines->where('side', '貸')->sum('amount');
+        $entry = AccountJournalEntry::with([
+            'department',
+            'lines' => function ($query) {
+                $query->with(['account', 'subAccount', 'partner', 'taxType']);
+            }
+        ])->findOrFail($id);
 
-        $departments = AccountDepartment::where('is_active', 1)->get();
-        $staffs = Staff::where('is_active', 1)->get();
+        // 如果是 AJAX 请求，返回 JSON
+        if (request()->wantsJson() || request()->header('Accept') === 'application/json') {
+            return response()->json([
+                'id' => $entry->id,
+                'posting_date' => $entry->posting_date->format('Y-m-d'),
+                'source_type' => $entry->source_type,
+                'description' => $entry->description, // 如果有描述字段
+                'department_id' => $entry->department_id,
+                'department' => $entry->department ? ['id' => $entry->department->id, 'name' => $entry->department->name] : null,
+                'lines' => $entry->lines->map(function ($line) {
+                    return [
+                        'id' => $line->id,
+                        'side' => $line->side,
+                        'amount' => $line->amount,
+                        'account_id' => $line->account_id,
+                        // 关键：返回格式化好的名称，方便前端直接赋值
+                        'account_full_text' => $line->account ? $line->account->code . ' - ' . $line->account->name : '', 
+                        
+                        'account_sub_id' => $line->account_sub_id,
+                        'account_sub' => $line->subAccount ? [
+                            'id' => $line->subAccount->id ?? '',
+                            'name' => $line->subAccount->name ?? '',
+                            'display_name' => $line->subAccount->name ?? '',
+                        ] : null,
 
-        return view('masters.journal_entries.show', compact('entry', 'groupId', 'debitSum', 'creditSum', 'departments', 'staffs'));
+                        'partner_id' => $line->partner_id,
+                        'partner' => $line->partner ? ['id' => $line->partner->id, 'name' => $line->partner->name] : null,
+
+                        'tax_type_id' => $line->tax_type_id,
+                        'tax_type' => $line->taxType ? ['id' => $line->taxType->id, 'name' => $line->taxType->name] : null,
+                    ];
+                })
+            ]);
+        }
+
+        // 如果不是 AJAX，可以返回视图（如果需要单独详情页），或者 abort 404
+        // 既然你是单页应用模式，这里可以直接 abort 或者返回空视图
+        return abort(404); 
     }
 
-    public function edit(Request $request, $id)
-    {
-        $groupId = $request->query('group_id');
-        $entry = AccountJournalEntry::with('lines')->findOrFail($id);
-
-        // 如果已过账/锁定，禁止编辑 (假设有个 is_posted 字段，或者你可以自定义逻辑)
-        // if ($entry->is_posted) { ... }
-
-        $accounts = Account::where('is_active', 1)->orderBy('code')->get();
-        $departments = AccountDepartment::where('is_active', 1)->get();
-        $partners = AccountPartner::where('is_active', 1)->get();
-        $taxes = AccountTax::where('is_active', 1)->get();
-        $staffs = Staff::where('is_active', 1)->get();
-
-        return view('masters.journal_entries.edit', compact('entry', 'groupId', 'accounts', 'departments', 'partners', 'taxes', 'staffs'));
-    }
 
     public function update(Request $request, int $id)
     {
-        $entry = AccountJournalEntry::findOrFail($id);
+        // 1. 查找记录
+        $entry = AccountJournalEntry::find($id);
+        if (!$entry) {
+            if ($request->wantsJson()) {
+                return response()->json(['message' => '伝票が見つかりません。'], 404);
+            }
+            abort(404);
+        }
 
-        // 简单的锁定检查 (可根据实际需求扩展)
-        // if ($entry->is_locked) { ... }
-
+        // 2. 验证数据 (与 store 基本一致)
         $validated = $request->validate([
-            'group_id' => 'nullable|integer',
             'posting_date' => 'required|date',
-            'description' => 'nullable|string|max:255',
-            'department_id' => 'nullable|integer',
+            'department_id' => 'nullable',
+            'department_name' => 'nullable|string',
             'source_type' => 'nullable|string|max:50',
-            'source_id' => 'nullable|integer',
             
-            'lines' => 'required|array',
-            'lines.*.id' => 'nullable|integer|exists:account_journal_lines,id', // 用于判断是更新还是新增
-            'lines.*.account_id' => 'nullable|integer',
-            'lines.*.side' => 'nullable|in:借，貸',
-            'lines.*.amount' => 'nullable|numeric|min:0',
-            'lines.*.partner_id' => 'nullable|integer',
-            'lines.*.tax_type_id' => 'nullable|integer',
-            'lines.*.remark' => 'nullable|string|max:255',
-            'lines.*._delete' => 'nullable|boolean', // 前端标记删除的行
+            'lines' => 'required|array|min:1',
+            'lines.*.account_id' => 'required|integer|exists:accounts,id',
+            'lines.*.side' => 'required', // 依然验证 '借' 或 '贷'
+            'lines.*.amount' => 'required|numeric|min:0.01',
+            'lines.*.account_sub_id' => 'nullable',
+            'lines.*.account_sub_name' => 'nullable|string|max:255',
+            'lines.*.partner_id' => 'nullable',
+            'lines.*.partner_name' => 'nullable|string|max:255',
+            'lines.*.tax_type_id' => 'required|integer|exists:account_taxs,id',
         ], [
-            'lines.*.side.in' => '借貸方向は「借」または「貸」にしてください。',
+            'lines.*.amount.min' => '金額は 0 より大きい値にしてください。',
         ]);
 
-        // 1. 过滤空行和被标记删除的行
-        $validLines = [];
-        foreach ($validated['lines'] as $line) {
-            // 如果标记了删除，跳过
-            if (!empty($line['_delete'])) {
-                continue;
-            }
-            // 如果科目和金额都为空，跳过
-            if (empty($line['account_id']) && empty($line['amount'])) {
-                continue;
-            }
-            // 完整性检查
-            if (!empty($line['account_id'])) {
-                if (empty($line['amount']) || $line['amount'] <= 0 || empty($line['side'])) {
-                    return back()->withErrors(['lines' => '科目が入力されている場合、金額と借貸方向は必須です。'])->withInput();
-                }
-                $validLines[] = $line;
-            }
-        }
-
-        if (count($validLines) === 0) {
-            return back()->withErrors(['lines' => '伝票明細は最低1行必要です。'])->withInput();
-        }
-
-        // 2. 借贷平衡校验
+        // 3. 借贷平衡校验
         $debitTotal = 0;
         $creditTotal = 0;
-        foreach ($validLines as $line) {
+
+        foreach ($validated['lines'] as $line) {
             $amount = (float)$line['amount'];
-            if ($line['side'] === '借') $debitTotal += $amount;
-            elseif ($line['side'] === '貸') $creditTotal += $amount;
+            if ($line['side'] === '借') {
+                $debitTotal += $amount;
+            } elseif ($line['side'] === '贷') { // 注意：如果前端传的是汉字
+                $creditTotal += $amount;
+            }
         }
 
-        if (abs($debitTotal - $creditTotal) > 0) {
-            return back()->withErrors([
-                'lines' => "借貸合計が一致しません。<br>借方: " . number_format($debitTotal) . ", 貸方: " . number_format($creditTotal)
-            ])->withInput();
+        if (abs($debitTotal - $creditTotal) > 0.01) {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '借貸合計が一致しません。',
+                    'errors' => ['lines' => ["借方: " . number_format($debitTotal, 2) . " / 貸方: " . number_format($creditTotal, 2)]]
+                ], 422);
+            }
+            return back()->withErrors(['lines' => '借貸合計が一致しません。'])->withInput();
         }
 
         DB::beginTransaction();
         try {
-            // A. 更新主表
+            // 4. 处理部门逻辑 (查找或创建)
+            $department_id = 0;
+            if ($validated['department_name']) {
+                $department = AccountDepartment::where("name", $validated['department_name'])->first();
+                if ($department) {
+                    $department_id = $department->id;
+                } else {
+                    $newDepartment = AccountDepartment::create(['name' => $validated['department_name']]);
+                    $department_id = $newDepartment->id;
+                }
+            }
+
+            // 5. 更新主表
             $entry->update([
                 'posting_date'  => $validated['posting_date'],
-                'description'   => $validated['description'] ?? null,
-                'department_id' => $validated['department_id'] ?? null,
-                'source_type'   => $validated['source_type'] ?? 'manual',
-                'source_id'     => $validated['source_id'] ?? null,
+                'department_id' => $department_id,
+                'source_type'   => $validated['source_type'],
                 'updated_by'    => Auth::id(),
+                'updated_at'    => now(),
             ]);
 
-            // B. 处理明细 (简单策略：删除旧的所有明细，重新插入新的)
-            // 对于高频大交易量系统，可以优化为对比差异更新，但此策略逻辑最稳健且不易出错
+            // 6. 处理明细 (先删后增策略)
+            // 删除该凭证下原有的所有明细行
             AccountJournalLine::where('journal_entry_id', $entry->id)->delete();
 
             $linesData = [];
-            foreach ($validLines as $index => $line) {
+            foreach ($validated['lines'] as $line) {
+                $account_sub_id = 0;
+                $partner_id = 0;
+
+                // 处理辅助科目
+                if (!empty($line['account_sub_name'])) {
+                    $account_sub = AccountSub::where("account_id", $line['account_id'])
+                        ->where("name", $line['account_sub_name'])
+                        ->first();
+                    
+                    if ($account_sub) {
+                        $account_sub_id = $account_sub->id;
+                    } else {
+                        $newSub = AccountSub::create([
+                            'name' => $line['account_sub_name'], // 注意这里是用 line 里的名字
+                            'is_active' => 1,
+                            'account_id' => $line['account_id']
+                        ]);
+                        $account_sub_id = $newSub->id;
+                    }
+                }
+
+                // 处理往来单位
+                if (!empty($line['partner_name'])) {
+                    $partner = AccountPartner::where("name", $line['partner_name'])->first();
+                    if ($partner) {
+                        $partner_id = $partner->id;
+                    } else {
+                        $newPartner = AccountPartner::create(['name' => $line['partner_name']]);
+                        $partner_id = $newPartner->id;
+                    }
+                }
+
                 $linesData[] = [
                     'journal_entry_id' => $entry->id,
                     'side'             => $line['side'],
                     'account_id'       => (int)$line['account_id'],
-                    'sub_account_id'   => $line['sub_account_id'] ?? null,
-                    'partner_id'       => $line['partner_id'] ?? null,
+                    'sub_account_id'   => $account_sub_id,
+                    'partner_id'       => $partner_id,
                     'amount'           => (float)$line['amount'],
                     'tax_type_id'      => $line['tax_type_id'] ?? null,
-                    'remark'           => $line['remark'] ?? null,
                     'created_at'       => now(),
                     'updated_at'       => now(),
                 ];
             }
+
             AccountJournalLine::insert($linesData);
 
             DB::commit();
 
-            return redirect()->route('masters.journal-entries.edit', [
-                'entry' => $entry->id,
-                'group_id' => $validated['group_id'] ?? null
-            ])->with('success', '仕訳伝票を更新しました。');
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => '仕訳伝票を更新しました。',
+                    'data' => ['id' => $entry->id]
+                ]);
+            }
+
+            return redirect()->route('masters.journal_entries.index')
+                ->with('success', '仕訳伝票を更新しました。');
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('仕訳伝票更新エラー (ID: ' . $id . '): ' . $e->getMessage());
-            return redirect()->back()
-                ->withInput()
-                ->withErrors(['error' => '更新中にエラーが発生しました。']);
+            Log::error('仕訳伝票更新エラー: ' . $e->getMessage());
+            
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'システムエラーが発生しました。'], 500);
+            }
+            return back()->withErrors(['error' => 'システムエラーが発生しました。'])->withInput();
         }
     }
 
@@ -431,7 +498,7 @@ class AccountJournalEntryController extends Controller
             $entry->delete();
 
             return redirect()
-                ->route('masters.journal-entries.index', ['group_id' => $groupId])
+                ->route('masters.journal_entries.index')
                 ->with([
                     'success' => '仕訳伝票を削除しました。',
                     'alert-type' => 'success'
@@ -440,7 +507,7 @@ class AccountJournalEntryController extends Controller
         } catch (\Exception $e) {
             Log::error('Journal Entry delete error: ' . $e->getMessage());
             return redirect()
-                ->route('masters.journal-entries.index', ['group_id' => $groupId])
+                ->route('masters.journal_entries.index')
                 ->with([
                     'error' => '削除に失敗しました。',
                     'alert-type' => 'danger'

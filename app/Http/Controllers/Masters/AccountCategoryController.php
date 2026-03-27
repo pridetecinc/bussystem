@@ -67,6 +67,7 @@ class AccountCategoryController extends Controller
             'name'      => 'required|string|max:50|unique:account_categories,name',
             'mark'      => 'required|in:借,貸',
             'level'     => 'nullable|integer',
+            'type'     => 'nullable|string|max:50',
         ];
 
         $messages = [
@@ -78,9 +79,6 @@ class AccountCategoryController extends Controller
         ];
 
         $validated = $request->validate($rules, $messages);
-
-        // 数据预处理
-        $validated['level'] = (int)$validated['level'];
         
 
         try {
@@ -131,6 +129,7 @@ class AccountCategoryController extends Controller
             'name'      => 'required|string|max:50|unique:account_categories,name,' . $category->id,
             'mark'      => 'required|in:借,貸',
             'level'     => 'nullable|integer',
+            'type'     => 'nullable|string|max:50',
         ];
 
         $messages = [

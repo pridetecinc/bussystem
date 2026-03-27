@@ -36,7 +36,7 @@ class AccountJournalLine extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
-
+    
     /**
      * 关联：所属传票 (Belongs To)
      */

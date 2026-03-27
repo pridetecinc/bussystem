@@ -150,6 +150,7 @@ Route::prefix('masters')->name('masters.')->group(function () {
         Route::resource('account-subs', AccountSubController::class)->names('account-subs');//勘定科目
         Route::resource('journal_entries', AccountJournalEntryController::class)->names('journal_entries');//
         Route::get('/account/account-subs/{accountId}', [AccountJournalEntryController::class, 'getAccountSubs'])->name('account.account-subs');
+        Route::get('/account/journal-entries/{id}', [AccountJournalEntryController::class, 'show'])->name('masters.journal_entries.show');
 
 
     });
