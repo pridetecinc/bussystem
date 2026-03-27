@@ -60,7 +60,7 @@ class OperationLedgerController extends Controller
             ->orderBy('vehicle_code', 'asc')
             ->get();
         
-        $itineraries = DailyItinerary::with(['busAssignment', 'groupInfo', 'busAssignment.driver', 'busAssignment.guide'])
+        $allItineraries = DailyItinerary::with(['busAssignment', 'groupInfo', 'busAssignment.driver', 'busAssignment.guide'])
             ->whereBetween('date', [$startDate, $endDate])
             ->whereNotNull('vehicle_id')
             ->when($agencyId, function($query) use ($agencyId) {
@@ -89,6 +89,32 @@ class OperationLedgerController extends Controller
         
         $reservationCategories = ReservationCategory::pluck('color_code', 'id')->toArray();
         
+        // 预先计算每个 bus_assignment_id 的颜色
+        $busColors = [];
+        foreach ($allItineraries as $itinerary) {
+            $busId = $itinerary->bus_assignment_id;
+            if (!isset($busColors[$busId])) {
+                $groupInfo = $itinerary->groupInfo;
+                if ($groupInfo) {
+                    $statusColor = $this->getReservationStatusColor($groupInfo->reservation_status ?? '');
+                    $categoryId = $groupInfo->reservation_categories_id;
+                    $categoryColor = 'transparent';
+                    if ($categoryId && $categoryId != 0 && isset($reservationCategories[$categoryId])) {
+                        $categoryColor = $reservationCategories[$categoryId];
+                    }
+                    $busColors[$busId] = [
+                        'status_color' => $statusColor,
+                        'category_color' => $categoryColor,
+                    ];
+                } else {
+                    $busColors[$busId] = [
+                        'status_color' => '#ffffff',
+                        'category_color' => 'transparent',
+                    ];
+                }
+            }
+        }
+        
         $vehicleTypes = VehicleType::orderBy('type_name')->get();
         
         $agencies = Agency::orderBy('agency_name')->get();
@@ -101,13 +127,13 @@ class OperationLedgerController extends Controller
             foreach ($dates as $dateInfo) {
                 $dateStr = $dateInfo['date']->format('Y-m-d');
                 
-                $dayItineraries = $itineraries->filter(function($itinerary) use ($dateStr, $vehicleId) {
+                $dayItineraries = $allItineraries->filter(function($itinerary) use ($dateStr, $vehicleId) {
                     $itineraryDate = Carbon::parse($itinerary->date)->format('Y-m-d');
                     return $itineraryDate == $dateStr && $itinerary->vehicle_id == $vehicleId;
                 });
                 
                 if ($dayItineraries->count() > 0) {
-                    $vehicleSchedule[$dateStr] = $this->formatItineraries($dayItineraries, $reservationCategories);
+                    $vehicleSchedule[$dateStr] = $this->formatItineraries($dayItineraries, $busColors);
                 } else {
                     $vehicleSchedule[$dateStr] = null;
                 }
@@ -136,17 +162,18 @@ class OperationLedgerController extends Controller
         return $days[$dayOfWeek];
     }
     
-    private function formatItineraries($itineraries, $reservationCategories)
+    private function formatItineraries($itineraries, $busColors)
     {
         $result = [];
         foreach ($itineraries as $itinerary) {
             $busAssignment = $itinerary->busAssignment;
             $groupInfo = $itinerary->groupInfo;
             
-            $reservationStatus = $groupInfo->reservation_status ?? '';
-            if ($reservationStatus === '見積' || $reservationStatus === 'キャンセル') {
-                continue;
-            }
+            $busId = $itinerary->bus_assignment_id;
+            $colors = $busColors[$busId] ?? [
+                'status_color' => '#ffffff',
+                'category_color' => 'transparent',
+            ];
             
             $agency = $groupInfo ? $groupInfo->agencyInfo : null;
             $driver = $busAssignment ? $busAssignment->driver : null;
@@ -159,21 +186,13 @@ class OperationLedgerController extends Controller
             $duration = $endMinutes - $startMinutes;
             
             if ($duration > 0) {
-                $statusColor = $this->getReservationStatusColor($reservationStatus);
-                
-                $categoryId = $groupInfo ? $groupInfo->reservation_categories_id : null;
-                $categoryColor = 'transparent';
-                if ($categoryId && $categoryId != 0 && isset($reservationCategories[$categoryId])) {
-                    $categoryColor = $reservationCategories[$categoryId];
-                }
-                
                 $result[] = [
                     'start_minutes' => $startMinutes,
                     'end_minutes' => $endMinutes,
                     'duration' => $duration,
                     'group_info_id' => $groupInfo->id ?? '?',
                     'bus_assignment_id' => $busAssignment->id ?? '?',
-                    'driver_name' => $driver->name ?? ($itinerary->driver ?? '未割当'),
+                    'driver_name' => $driver->name ?? ($itinerary->driver ?? ''),
                     'driver_name_kana' => $driver->name_kana ?? '',
                     'driver_phone' => $driver->phone_number ?? '',
                     'is_temporary_driver' => $busAssignment->temporary_driver ?? false,
@@ -183,10 +202,10 @@ class OperationLedgerController extends Controller
                     'agency_code' => $agency->agency_code ?? '',
                     'group_name' => $groupInfo->group_name ?? '',
                     'remarks' => $itinerary->remarks ?? '',
-                    'reservation_status' => $reservationStatus,
-                    'status_color' => $statusColor,
-                    'category_color' => $categoryColor,
-                    'category_id' => $categoryId,
+                    'reservation_status' => $groupInfo->reservation_status ?? '',
+                    'status_color' => $colors['status_color'],
+                    'category_color' => $colors['category_color'],
+                    'category_id' => $groupInfo->reservation_categories_id ?? null,
                 ];
             }
         }
