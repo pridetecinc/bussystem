@@ -96,8 +96,8 @@
                 <div class="label-width text-gray">運転手</div>
                 <div class="flex-1 position-relative">
                     <input type="text" name="driver_name_input" class="form-input search-input" id="driver_search" 
-                           value="{{ old('driver_name_input') }}" placeholder="運転手名を入力" autocomplete="off">
-                    <input type="hidden" name="driver_id" id="driver_id" value="{{ old('driver_id') }}">
+                           value="{{ old('driver_name_input', $selectedDriverName ?? '') }}" placeholder="運転手名を入力" autocomplete="off">
+                    <input type="hidden" name="driver_id" id="driver_id" value="{{ old('driver_id', $selectedDriverId ?? '') }}">
                     <div class="suggestions-container" id="driver_suggestions" style="display: none;"></div>
                 </div>
             </div>
@@ -408,15 +408,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const cancelBtn = document.getElementById('cancelBtn');
     const detailBtn = document.getElementById('detailBtn');
     const savedIdInput = document.getElementById('saved_id');
-
+    
     cancelBtn.addEventListener('click', function() {
         if (isInIframe) {
-            window.parent.postMessage('close-iframe', '*');
+            window.parent.postMessage({
+                action: 'close-iframe-and-reload'
+            }, '*');
         } else {
             window.location.href = '{{ route('masters.group-infos.index') }}';
         }
     });
-
+    
     detailBtn.addEventListener('click', function() {
         const id = savedIdInput.value;
         if (id) {
@@ -681,7 +683,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!validateDateRange()) {
             return;
         }
-
+    
         const adultCount = parseInt(document.getElementById('adult_count')?.value) || 0;
         const childCount = parseInt(document.querySelector('input[name="child_count"]')?.value) || 0;
         const guideCount = parseInt(document.querySelector('input[name="guide_count"]')?.value) || 0;
@@ -694,14 +696,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
         }
-
+    
         const formData = new FormData(this);
         
         const submitBtn = this.querySelector('button[type="submit"]');
         const originalText = submitBtn.textContent;
         submitBtn.textContent = '保存中...';
         submitBtn.disabled = true;
-
+    
         fetch(this.action, {
             method: 'POST',
             body: formData,
@@ -723,26 +725,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
                 const editUrl = '{{ route("masters.group-infos.edit", ":id") }}'.replace(':id', data.id);
-                window.top.location.href = editUrl;
                 
+                const newWindow = window.open(editUrl, '_blank');
                 
-                detailBtn.style.display = 'block';
+                if (window.parent && window.parent !== window) {
+                    window.parent.location.reload();
+                } else {
+                    window.location.reload();
+                }
+                
+                setTimeout(() => {
+                    if (window.parent && window.parent !== window) {
+                        window.parent.postMessage('close-iframe', '*');
+                    } else {
+                        window.close();
+                    }
+                }, 1000);
                 
                 submitBtn.textContent = '作成';
-                
-                const form = document.getElementById('createForm');
-                form.action = '{{ route("masters.group-infos.update", ":id") }}'.replace(':id', data.id);
-                
-                let methodField = document.querySelector('input[name="_method"]');
-                if (!methodField) {
-                    methodField = document.createElement('input');
-                    methodField.type = 'hidden';
-                    methodField.name = '_method';
-                    form.appendChild(methodField);
-                }
-                methodField.value = 'PUT';
-                
-                console.log('保存成功しました。ID:', data.id);
                 
             } else {
                 alert(data.message || '保存に失敗しました');

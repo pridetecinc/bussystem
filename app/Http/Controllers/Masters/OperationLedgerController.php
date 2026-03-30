@@ -8,6 +8,9 @@ use App\Models\Masters\DailyItinerary;
 use App\Models\Masters\ReservationCategory;
 use App\Models\Masters\VehicleType;
 use App\Models\Masters\Agency;
+use App\Models\Masters\Branch;
+use App\Models\Masters\GroupInfoDateRemark;
+use App\Helpers\HolidayHelper;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -24,14 +27,28 @@ class OperationLedgerController extends Controller
         $reservationStatus = $request->input('reservation_status');
         $hasGuide = $request->input('has_guide');
         
+        $reservationId = $request->input('reservation_id');
+        $groupName = $request->input('group_name');
+        $branchIds = $request->input('branch_ids', []);
+        
+        $displayDays = $request->input('display_days', 7);
+        
         if ($period && !$startDate && !$endDate) {
             $startDate = Carbon::today()->format('Y-m-d');
             $endDate = Carbon::today()->addDays($period * 7 - 1)->format('Y-m-d');
+            $displayDays = $period * 7;
         }
         
         if (!$startDate && !$endDate && !$period) {
             $startDate = Carbon::today()->format('Y-m-d');
             $endDate = Carbon::today()->addDays(6)->format('Y-m-d');
+            $displayDays = 7;
+        }
+        
+        if ($request->has('start_date') && !$request->has('end_date') && !$request->has('period')) {
+            $start = Carbon::parse($startDate);
+            $end = $start->copy()->addDays($displayDays - 1);
+            $endDate = $end->format('Y-m-d');
         }
         
         $startDate = $startDate ?? Carbon::today()->format('Y-m-d');
@@ -39,25 +56,59 @@ class OperationLedgerController extends Controller
         
         $start = Carbon::parse($startDate);
         $end = Carbon::parse($endDate);
+        $displayDays = $start->diffInDays($end) + 1;
         
         $dates = [];
         $current = clone $start;
         while ($current <= $end) {
+            $holidayInfo = HolidayHelper::getHolidayInfo($current);
+            
             $dates[] = [
                 'date' => $current->copy(),
                 'day_of_week' => $this->getJapaneseDayOfWeek($current->dayOfWeek),
-                'display' => $current->format('n/j') . '（' . $this->getJapaneseDayOfWeek($current->dayOfWeek) . '）'
+                'display' => $current->format('n/j') . '（' . $this->getJapaneseDayOfWeek($current->dayOfWeek) . '）',
+                'is_saturday' => $current->dayOfWeek == 6,
+                'is_sunday' => $current->dayOfWeek == 0,
+                'is_holiday' => $holidayInfo['is_holiday'],
+                'holiday_name' => $holidayInfo['name'],
             ];
             $current->addDay();
         }
+        
+        $dateRemarks = GroupInfoDateRemark::getRemarksByDateRange($startDate, $endDate);
         
         $vehicles = Vehicle::with(['vehicleModel', 'branch'])
             ->where('is_active', true)
             ->when($vehicleTypeId, function($query) use ($vehicleTypeId) {
                 $query->where('vehicle_type_id', $vehicleTypeId);
             })
+            ->when($branchIds, function($query) use ($branchIds) {
+                if (is_array($branchIds) && !empty($branchIds)) {
+                    $query->whereIn('branch_id', $branchIds);
+                }
+            })
+            ->orderByRaw("FIELD(ownership_type, 'company', 'rental', 'personal')")
             ->orderBy('display_order', 'asc')
             ->orderBy('vehicle_code', 'asc')
+            ->get();
+        
+        $ownershipMap = [
+            'company' => '会社所有',
+            'rental' => 'レンタル',
+            'personal' => '個人所有',
+        ];
+        
+        $groupedVehicles = [];
+        foreach ($vehicles as $index => $vehicle) {
+            $groupedVehicles[] = [
+                'vehicle' => $vehicle,
+                'group_name' => $ownershipMap[$vehicle->ownership_type] ?? 'その他',
+                'is_first_in_group' => ($index == 0 || $vehicles[$index - 1]->ownership_type != $vehicle->ownership_type),
+            ];
+        }
+        
+        $branches = Branch::orderBy('display_order', 'asc')
+            ->orderBy('branch_code', 'asc')
             ->get();
         
         $allItineraries = DailyItinerary::with(['busAssignment', 'groupInfo', 'busAssignment.driver', 'busAssignment.guide'])
@@ -68,9 +119,23 @@ class OperationLedgerController extends Controller
                     $q->where('agency_id', $agencyId);
                 });
             })
+            ->when($reservationId, function($query) use ($reservationId) {
+                $query->whereHas('groupInfo', function($q) use ($reservationId) {
+                    $q->where('id', $reservationId);
+                });
+            })
+            ->when($groupName, function($query) use ($groupName) {
+                $query->whereHas('groupInfo', function($q) use ($groupName) {
+                    $q->where('group_name', 'like', '%' . $groupName . '%');
+                });
+            })
             ->when($reservationStatus, function($query) use ($reservationStatus) {
                 $query->whereHas('groupInfo', function($q) use ($reservationStatus) {
                     $q->where('reservation_status', $reservationStatus);
+                });
+            }, function($query) {
+                $query->whereHas('groupInfo', function($q) {
+                    $q->whereNotIn('reservation_status', ['見積', 'キャンセル']);
                 });
             })
             ->when($hasGuide, function($query) {
@@ -89,7 +154,6 @@ class OperationLedgerController extends Controller
         
         $reservationCategories = ReservationCategory::pluck('color_code', 'id')->toArray();
         
-        // 预先计算每个 bus_assignment_id 的颜色
         $busColors = [];
         foreach ($allItineraries as $itinerary) {
             $busId = $itinerary->bus_assignment_id;
@@ -146,13 +210,19 @@ class OperationLedgerController extends Controller
         }
         
         return view('masters.operation-ledger.index', compact(
-            'dates', 
-            'vehicles', 
-            'scheduleData', 
-            'startDate', 
+            'dates',
+            'groupedVehicles',
+            'scheduleData',
+            'startDate',
             'endDate',
             'vehicleTypes',
-            'agencies'
+            'agencies',
+            'dateRemarks',
+            'branches',
+            'displayDays',
+            'reservationId',
+            'groupName',
+            'branchIds'
         ));
     }
     
@@ -186,26 +256,32 @@ class OperationLedgerController extends Controller
             $duration = $endMinutes - $startMinutes;
             
             if ($duration > 0) {
+                $groupInfoId = $groupInfo ? $groupInfo->id : ($itinerary->group_info_id ?? null);
+                $busAssignmentId = $busAssignment ? $busAssignment->id : ($itinerary->bus_assignment_id ?? null);
+                $driverName = $driver ? $driver->name : ($busAssignment ? $busAssignment->driver_name : ($itinerary->driver ?? ''));
+                $guideName = $guide ? $guide->name : ($busAssignment ? $busAssignment->guide_name : ($itinerary->guide ?? ''));
+                $groupName = $groupInfo ? $groupInfo->group_name : '';
+                
                 $result[] = [
                     'start_minutes' => $startMinutes,
                     'end_minutes' => $endMinutes,
                     'duration' => $duration,
-                    'group_info_id' => $groupInfo->id ?? '?',
-                    'bus_assignment_id' => $busAssignment->id ?? '?',
-                    'driver_name' => $driver->name ?? ($itinerary->driver ?? ''),
+                    'group_info_id' => $groupInfoId,
+                    'bus_assignment_id' => $busAssignmentId,
+                    'driver_name' => $driverName,
                     'driver_name_kana' => $driver->name_kana ?? '',
                     'driver_phone' => $driver->phone_number ?? '',
-                    'is_temporary_driver' => $busAssignment->temporary_driver ?? false,
-                    'vehicle_type_spec_check' => $busAssignment->vehicle_type_spec_check ?? false,
-                    'status_finalized' => $busAssignment->status_finalized ?? false,
-                    'guide_name' => $guide->name ?? ($itinerary->guide ?? ''),
-                    'agency_code' => $agency->agency_code ?? '',
-                    'group_name' => $groupInfo->group_name ?? '',
+                    'is_temporary_driver' => $busAssignment ? $busAssignment->temporary_driver : false,
+                    'vehicle_type_spec_check' => $busAssignment ? $busAssignment->vehicle_type_spec_check : false,
+                    'status_finalized' => $busAssignment ? $busAssignment->status_finalized : false,
+                    'guide_name' => $guideName,
+                    'agency_code' => $agency ? $agency->agency_code : '',
+                    'group_name' => $groupName,
                     'remarks' => $itinerary->remarks ?? '',
-                    'reservation_status' => $groupInfo->reservation_status ?? '',
+                    'reservation_status' => $groupInfo ? $groupInfo->reservation_status : '',
                     'status_color' => $colors['status_color'],
                     'category_color' => $colors['category_color'],
-                    'category_id' => $groupInfo->reservation_categories_id ?? null,
+                    'category_id' => $groupInfo ? $groupInfo->reservation_categories_id : null,
                 ];
             }
         }
