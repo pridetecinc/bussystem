@@ -2,76 +2,192 @@
 
 @section('content')
 <style>
-    body { font-size: 0.9rem; }
-    .table-compact th, .table-compact td {
+    /* === 1. 全局基础样式 === */
+    body {
+        font-size: 0.9rem;
+    }
+
+    /* === 2. 表格紧凑模式 === */
+    .table-compact th,
+    .table-compact td {
         padding: 0.25rem 0.5rem !important;
         font-size: 0.85rem;
         vertical-align: middle;
         line-height: 1.2;
     }
+
     .table-compact th {
         background-color: #f8f9fa;
         font-weight: 600;
         white-space: nowrap;
     }
-    .search-form .form-control, .search-form .form-select {
-        height: 31px; font-size: 0.875rem; padding: 0.25rem 0.5rem;
+
+    /* === 3. 搜索表单紧凑化 === */
+    .search-form .form-control,
+    .search-form .form-select {
+        height: 31px;
+        font-size: 0.875rem;
+        padding: 0.25rem 0.5rem;
     }
+
     .search-form .btn {
-        height: 31px; font-size: 0.75rem; padding: 0.35rem 0.6rem;
-        display: inline-flex; align-items: center; justify-content: center;
+        height: 31px;
+        font-size: 0.75rem;
+        padding: 0.35rem 0.6rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
     }
-    .editor-compact .form-control, .editor-compact .form-select {
-        height: 28px; font-size: 0.8rem; padding: 0.1rem 0.4rem;
+
+    /* === 4. 底部编辑器紧凑化 (关键：高度调整) === */
+    /* 调整底部编辑器总高度 (原330px -> 260px) */
+    .fixed-bottom {
+        height: 260px !important; 
+        padding: 0.5rem 0.5rem 0.25rem 0.5rem; /* 减少内边距 */
+        z-index: 1000;
+        border-top: 1px solid #dee2e6;
+        background-color: #fff;
+        display: flex;
+        flex-direction: column;
     }
-    .editor-compact table th, .editor-compact table td {
-        padding: 0.2rem 0.3rem !important; font-size: 0.8rem;
+
+    /* 编辑器头部样式 */
+    .editor-header {
+        padding: 0.2rem 0.4rem !important;
+        font-size: 0.85rem;
+        border-bottom: 1px solid #dee2e6;
     }
-    .editor-header { padding: 0.25rem 0.5rem !important; font-size: 0.85rem; }
-    
-    /* 只针对勘定科目的红色边框 */
-    .account-input.is-invalid { 
-        border-color: #dc3545 !important; 
+
+    /* 编辑器内部输入框紧凑化 */
+    .editor-compact .form-control,
+    .editor-compact .form-select {
+        height: 28px;
+        font-size: 0.8rem;
+        padding: 0.1rem 0.4rem;
+    }
+
+    /* 编辑器表格紧凑化 */
+    .editor-compact table th,
+    .editor-compact table td {
+        padding: 0.15rem 0.3rem !important;
+        font-size: 0.75rem;
+        height: 26px;
+    }
+
+    /* 勘定科目红色边框错误样式 */
+    .account-input.is-invalid {
+        border-color: #dc3545 !important;
         background-repeat: no-repeat;
         background-position: right calc(0.375em + 0.1875rem) center;
         background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
         padding-right: calc(1.5em + 0.75rem);
     }
 
-    .editor-compact .input-group .form-control,
-    .editor-compact .input-group .btn {
-        height: 28px;
-        line-height: 1.2;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0;
-    }
-
-    .editor-compact .input-group .btn-outline-danger {
-        padding: 0 0.25rem;
-        border-left: 0 !important;
-        font-size: 0.9rem;
-    }
-
+    /* 按钮组样式修正 */
     .editor-compact .input-group .form-control {
         border-top-right-radius: 0;
         border-bottom-right-radius: 0;
+        height: 28px;
     }
     .editor-compact .input-group .btn {
         border-top-left-radius: 0;
         border-bottom-left-radius: 0;
+        height: 28px;
+        padding: 0 0.25rem;
+        display: flex;
+        align-items: center;
     }
-    .editor-compact .form-select.is-invalid {
-        border-color: #dc3545 !important;
-        padding-right: calc(1.5em + 0.75rem);
-        background-repeat: no-repeat;
-        background-position: right calc(0.375em + 0.1875rem) center;
-        background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+
+    /* === 5. 分页样式重写 (解决混乱问题) === */
+    /* 分页容器微调 */
+    .pagination-container {
+        margin: 0.5rem 0;
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+    }
+
+    /* 分页列表基础样式 */
+    .pagination {
+        --bs-pagination-padding-x: 0.5rem;
+        --bs-pagination-padding-y: 0.25rem;
+        --bs-pagination-font-size: 0.875rem; /* 统一字体大小，防止过小 */
+        --bs-pagination-border-radius: 0.25rem;
+        margin: 0;
+        display: flex;
+        align-items: center;
+    }
+
+    /* 分页按钮通用样式 */
+    .page-item .page-link {
+        padding: 0.25rem 0.5rem;
+        margin: 0 0.1rem;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+        color: #007bff;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.15s ease;
+    }
+
+    /* 悬停效果 */
+    .page-item .page-link:hover {
+        background-color: #007bff;
+        color: #fff;
+        border-color: #007bff;
+    }
+
+    /* 当前选中页 */
+    .page-item.active .page-link {
+        z-index: 3;
+        color: #fff;
+        background-color: #007bff;
+        border-color: #007bff;
+        font-weight: bold;
+    }
+
+    /* 禁用状态 (如首页/末页不可点) */
+    .page-item.disabled .page-link {
+        color: #6c757d;
+        background-color: #fff;
+        border-color: #dee2e6;
+        cursor: not-allowed;
+    }
+
+    /* 行数选择器样式 */
+    .page-control-select {
+        min-width: 80px;
+        font-size: 0.875rem;
+        padding: 0.25rem 0.5rem;
+        height: auto;
+        border: 1px solid #ced4da;
+    }
+
+    /* 统计信息文字 */
+    .pagination-info {
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin: 0 0.5rem;
+        white-space: nowrap;
+    }
+
+    /* 响应式适配：小屏幕下堆叠排列 */
+    @media (max-width: 576px) {
+        .pagination {
+            flex-direction: column;
+            align-items: center;
+        }
+        .page-item .page-link {
+            margin: 0.1rem 0;
+        }
+        .pagination-info {
+            margin: 0.25rem 0;
+        }
     }
 </style>
 
-<div class="container-fluid py-2" style="padding-bottom: 340px;">
+<div class="container-fluid py-2" style="padding-bottom: 280px;">
     <div class="card shadow-sm mb-2 border-0">
         <div class="card-header bg-dark py-2 d-flex justify-content-between align-items-center">
             <h6 class="mb-0 text-white fw-bold"><i class="bi bi-list-ul"></i> 仕訳伝票一覧</h6>
@@ -132,9 +248,77 @@
                     </tbody>
                 </table>
             </div>
-            <div class="d-flex justify-content-center mt-2">
-                {{ $entries->appends(request()->query())->links() }}
+            <!-- 分页区域 -->
+            @if($entries->hasPages() || $entries->total() > 0)
+            <div class="mt-3">
+                <!-- 使用 flex 容器 -->
+                <div class="d-flex flex-wrap justify-content-center align-items-center gap-2 p-2 bg-light rounded">
+                    
+                    <!-- 1. 左侧：行数选择器 -->
+                    <div class="d-flex align-items-center">
+                        <label for="per_page_select" class="form-label small text-muted mb-0 me-2">
+                            表示件数:
+                        </label>
+                        <select id="per_page_select" class="form-select form-select-sm page-control-select">
+                            <option value="20" {{ request('per_page', 20) == 20 ? 'selected' : '' }}>20 行</option>
+                            <option value="30" {{ request('per_page') == 30 ? 'selected' : '' }}>30 行</option>
+                            <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50 行</option>
+                        </select>
+                    </div>
+
+                    <!-- 2. 中间：分页链接 -->
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination pagination-sm mb-0">
+                            <!-- 上一页 -->
+                            <li class="page-item {{ $entries->onFirstPage() ? 'disabled' : '' }}">
+                                <a class="page-link" href="{{ $entries->previousPageUrl() }}" aria-label="Previous">
+                                    <span>&laquo;</span>
+                                </a>
+                            </li>
+
+                            @php 
+                                $current = $entries->currentPage();
+                                $last = $entries->lastPage();
+                                $start = max(1, $current - 2);
+                                $end = min($last, $current + 2);
+                            @endphp
+
+                            @if($start > 1)
+                                <li class="page-item"><a class="page-link" href="{{ $entries->url(1) }}">1</a></li>
+                                @if($start > 2)
+                                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                                @endif
+                            @endif
+
+                            @for($i = $start; $i <= $end; $i++)
+                                <li class="page-item {{ $i == $current ? 'active' : '' }}">
+                                    <a class="page-link" href="{{ $entries->url($i) }}">{{ $i }}</a>
+                                </li>
+                            @endfor
+
+                            @if($end < $last)
+                                @if($end < $last - 1)
+                                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                                @endif
+                                <li class="page-item"><a class="page-link" href="{{ $entries->url($last) }}">{{ $last }}</a></li>
+                            @endif
+
+                            <!-- 下一页 -->
+                            <li class="page-item {{ !$entries->hasMorePages() ? 'disabled' : '' }}">
+                                <a class="page-link" href="{{ $entries->nextPageUrl() }}" aria-label="Next">
+                                    <span>&raquo;</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+
+                <!-- 3. 底部：统计信息 -->
+                <div class="text-center text-muted mt-2">
+                    表示中：{{ $entries->firstItem() ?? 0 }} - {{ $entries->lastItem() ?? 0 }} / 全 {{ $entries->total() }} 件
+                </div>
             </div>
+            @endif
         </div>
     </div>
 </div>
@@ -179,7 +363,7 @@
             <div class="card h-100 border-danger border-1">
                 <div class="card-header bg-danger text-white py-0 d-flex justify-content-between align-items-center editor-header">
                     <span><i class="bi bi-arrow-down-right"></i> 借方</span>
-                    <button type="button" class="btn btn-sm btn-light text-danger py-0" style="height: 22px;" onclick="addLine(1)"><i class="bi bi-plus"></i> 行追加</button>
+                    <!-- <button type="button" class="btn btn-sm btn-light text-danger py-0" style="height: 22px;" onclick="addLine(1)"><i class="bi bi-plus"></i> 行追加</button> -->
                 </div>
                 <div class="card-body p-1 overflow-auto" style="max-height: 220px;">
                     <table class="table table-sm table-bordered mb-0" id="table-debit">
@@ -203,7 +387,7 @@
             <div class="card h-100 border-primary border-1">
                 <div class="card-header bg-primary text-white py-0 d-flex justify-content-between align-items-center editor-header">
                     <span><i class="bi bi-arrow-up-right"></i> 貸方</span>
-                    <button type="button" class="btn btn-sm btn-light text-primary py-0" style="height: 22px;" onclick="addLine(2)"><i class="bi bi-plus"></i> 行追加</button>
+                    <!-- <button type="button" class="btn btn-sm btn-light text-primary py-0" style="height: 22px;" onclick="addLine(2)"><i class="bi bi-plus"></i> 行追加</button> -->
                 </div>
                 <div class="card-body p-1 overflow-auto" style="max-height: 220px;">
                     <table class="table table-sm table-bordered mb-0" id="table-credit">
@@ -342,7 +526,7 @@
                 <div class="input-group input-group-sm">
                     <input type="number" step="0.01" class="form-control amount-input text-end" 
                            value="${data.amount || ''}" oninput="calculateTotals(); this.classList.remove('is-invalid');" placeholder="0">
-                    <button type="button" class="btn btn-outline-danger" onclick="removeRow(this)" style="border-left:0;"><i class="bi bi-x-lg"></i></button>
+                
                 </div>
             </td>
         `;
