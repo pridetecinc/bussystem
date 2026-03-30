@@ -12,6 +12,7 @@ use App\Models\Masters\Guide;
 use App\Models\Masters\Agency;
 use App\Models\Masters\ReservationCategory;
 use App\Models\Masters\Branch;
+use App\Models\Masters\GroupInfoDateRemark;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -92,13 +93,26 @@ class GroupInfoController extends Controller
             ->orderBy('display_order')
             ->get();
             
-            
         $selectedVehicleId = $request->input('vehicle_id');
         $selectedVehicleName = $request->input('vehicle_name');
+        $selectedDriverId = $request->input('driver_id');
+        $selectedDriverName = $request->input('driver_name');
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
         
-        return view('masters.group-infos.create', compact('agencies', 'vehicles', 'drivers', 'guides', 'reservationCategories','selectedVehicleId', 'selectedVehicleName', 'startDate', 'endDate'));
+        return view('masters.group-infos.create', compact(
+            'agencies', 
+            'vehicles', 
+            'drivers', 
+            'guides', 
+            'reservationCategories',
+            'selectedVehicleId', 
+            'selectedVehicleName',
+            'selectedDriverId',
+            'selectedDriverName',
+            'startDate', 
+            'endDate'
+        ));
     }
 
     private function checkConflict($vehicleId, $driverId, $startDate, $startTime, $endDate, $endTime, $excludeBusAssignmentId = null, $excludeGroupInfoId = null)
@@ -188,6 +202,13 @@ class GroupInfoController extends Controller
     {
         if (empty($resourceId)) {
             return;
+        }
+        
+        if ($excludeGroupId) {
+            $groupInfo = GroupInfo::find($excludeGroupId);
+            if ($groupInfo && in_array($groupInfo->reservation_status, ['見積', 'キャンセル'])) {
+                return;
+            }
         }
         
         $query = DailyItinerary::whereDate('date', $date)
@@ -428,6 +449,37 @@ class GroupInfoController extends Controller
     
         $validated['ignore_operation'] = $request->has('ignore_operation');
         $validated['ignore_attendance'] = $request->has('ignore_attendance');
+        
+        
+        $startDate = $validated['start_date'];
+        $endDate = $validated['end_date'];
+        $reservationStatus = $validated['reservation_status'] ?? null;
+        if (!in_array($reservationStatus, ['見積', 'キャンセル'])) {
+            $stopOrderDates = GroupInfoDateRemark::getStopOrderDates($startDate, $endDate);
+            
+            if ($stopOrderDates->isNotEmpty()) {
+                $dateList = $stopOrderDates->map(function($date) {
+                    return Carbon::parse($date)->format('Y/m/d');
+                })->implode('、');
+                
+                $errorMessage = "以下の日付は受注停止のため、予約できません：{$dateList}";
+                
+                if ($request->ajax() || $request->wantsJson() || $request->input('iframe') == '1') {
+                    return response()->json([
+                        'success' => false,
+                        'message' => $errorMessage,
+                        'errors' => [
+                            'stop_order' => [$errorMessage]
+                        ]
+                    ], 422);
+                }
+                
+                return back()->withInput()->withErrors([
+                    'stop_order' => $errorMessage
+                ]);
+            }
+        }
+        
     
         try {
             DB::beginTransaction();
@@ -459,14 +511,15 @@ class GroupInfoController extends Controller
             }
     
             if (!$validated['ignore_operation'] && (!empty($request->vehicle_id) || !empty($request->driver_id))) {
-                $this->checkConflict(
+                $this->checkConflictsByItinerary(
                     $request->vehicle_id,
                     $request->driver_id,
                     $validated['start_date'],
                     $startTime,
                     $validated['end_date'],
                     $endTime,
-                    null
+                    null,
+                    $validated['reservation_status']
                 );
             }
     
@@ -822,7 +875,6 @@ class GroupInfoController extends Controller
             'driver' => 'nullable|string|max:100',
             'reservation_status' => 'nullable|string|max:50',
             'business_category' => 'nullable|string|max:100',
-            // 'reservation_categories_id' => 'nullable|exists:reservation_categories,id',
             'reservation_categories_id' => 'nullable|integer',
             'vehicle_type_selection' => 'nullable|string|max:200',
             'adult_count' => 'nullable|integer|min:0',
@@ -951,6 +1003,37 @@ class GroupInfoController extends Controller
     
         $validated['ignore_operation'] = $request->has('ignore_operation');
         $validated['ignore_attendance'] = $request->has('ignore_attendance');
+    
+    
+        $startDate = $validated['start_date'] ?? $groupInfo->start_date;
+        $endDate = $validated['end_date'] ?? $groupInfo->end_date;
+        $reservationStatus = $validated['reservation_status'] ?? $groupInfo->reservation_status;
+        if (!in_array($reservationStatus, ['見積', 'キャンセル'])) {
+            $stopOrderDates = GroupInfoDateRemark::getStopOrderDates($startDate, $endDate);
+            
+            if ($stopOrderDates->isNotEmpty()) {
+                $dateList = $stopOrderDates->map(function($date) {
+                    return Carbon::parse($date)->format('Y/m/d');
+                })->implode('、');
+                
+                $errorMessage = "以下の日付は受注停止のため、予約できません：{$dateList}";
+                
+                if ($request->ajax() || $request->wantsJson() || $request->input('iframe') == '1') {
+                    return response()->json([
+                        'success' => false,
+                        'message' => $errorMessage,
+                        'errors' => [
+                            'stop_order' => [$errorMessage]
+                        ]
+                    ], 422);
+                }
+                
+                return back()->withInput()->withErrors([
+                    'stop_order' => $errorMessage
+                ]);
+            }
+        }
+        
     
         try {
             DB::beginTransaction();
@@ -2366,17 +2449,19 @@ class GroupInfoController extends Controller
             
             $ignoreOperation = $groupInfo->ignore_operation ?? false;
             
+            $groupInfo->refresh();
+            
             if (!$ignoreOperation) {
                 if (!empty($busAssignment->vehicle_id) || !empty($busAssignment->driver_id)) {
-                    $this->checkConflict(
+                    $this->checkConflictsByItinerary(
                         $busAssignment->vehicle_id,
                         $busAssignment->driver_id,
                         $startDate,
                         $startTime,
                         $endDate,
                         $endTime,
-                        $busAssignment->id,
-                        null
+                        $groupInfo->id,
+                        $groupInfo->reservation_status
                     );
                 }
             }
@@ -2741,6 +2826,150 @@ class GroupInfoController extends Controller
                 'success' => false,
                 'message' => $e->getMessage()
             ], 500);
+        }
+    }
+    
+    
+    
+    /**
+     * 基于每日行程表的冲突检查
+     * 排除 reservation_status 为「見積」和「キャンセル」的行程
+     */
+    private function checkConflictsByItinerary($vehicleId, $driverId, $startDate, $startTime, $endDate, $endTime, $excludeGroupId = null, $currentReservationStatus = null)
+    {
+        
+    \Log::info('checkConflictsByItinerary 被调用', [
+        'currentReservationStatus' => $currentReservationStatus,
+        'vehicleId' => $vehicleId,
+        'driverId' => $driverId,
+        'startDate' => $startDate,
+        'endDate' => $endDate
+    ]);
+        
+        if (in_array($currentReservationStatus, ['見積', 'キャンセル'])) {
+            return;
+        }
+        
+        if (empty($vehicleId) && empty($driverId)) {
+            return;
+        }
+        
+        $start = Carbon::parse($startDate);
+        $end = Carbon::parse($endDate);
+        $startTimeStr = $startTime ?? '08:00:00';
+        $endTimeStr = $endTime ?? '18:00:00';
+        
+        $itineraries = [];
+        $current = $start->copy();
+        while ($current <= $end) {
+            $itineraries[] = [
+                'date' => $current->format('Y-m-d'),
+                'time_start' => $startTimeStr,
+                'time_end' => $endTimeStr,
+            ];
+            $current->addDay();
+        }
+        
+        $schedules = [];
+        if (!empty($vehicleId)) {
+            foreach ($itineraries as $itinerary) {
+                $schedules[] = [
+                    'type' => 'vehicle',
+                    'id' => $vehicleId,
+                    'date' => $itinerary['date'],
+                    'start' => $itinerary['time_start'],
+                    'end' => $itinerary['time_end'],
+                ];
+            }
+        }
+        
+        if (!empty($driverId)) {
+            foreach ($itineraries as $itinerary) {
+                $schedules[] = [
+                    'type' => 'driver',
+                    'id' => $driverId,
+                    'date' => $itinerary['date'],
+                    'start' => $itinerary['time_start'],
+                    'end' => $itinerary['time_end'],
+                ];
+            }
+        }
+        
+        $groupedSchedules = [];
+        foreach ($schedules as $schedule) {
+            $key = $schedule['type'] . '_' . $schedule['id'] . '_' . $schedule['date'];
+            if (!isset($groupedSchedules[$key])) {
+                $groupedSchedules[$key] = [];
+            }
+            $groupedSchedules[$key][] = $schedule;
+        }
+        
+        foreach ($groupedSchedules as $daySchedules) {
+            $firstSchedule = $daySchedules[0];
+            $resourceType = $firstSchedule['type'];
+            $resourceId = $firstSchedule['id'];
+            $date = $firstSchedule['date'];
+            
+            $query = DailyItinerary::where('date', $date);
+            
+            if ($resourceType === 'vehicle') {
+                $query->where('vehicle_id', $resourceId);
+            } else {
+                $query->where('driver_id', $resourceId);
+            }
+            
+            if ($excludeGroupId) {
+                $query->where('group_info_id', '!=', $excludeGroupId);
+            }
+            
+            $query->whereHas('groupInfo', function($q) {
+                $q->whereNotIn('reservation_status', ['見積', 'キャンセル']);
+            });
+            
+            $existingItineraries = $query->get();
+            
+            if ($existingItineraries->isEmpty()) {
+                continue;
+            }
+            
+            foreach ($daySchedules as $schedule) {
+                $newStart = Carbon::parse($schedule['start']);
+                $newEnd = Carbon::parse($schedule['end']);
+                
+                foreach ($existingItineraries as $existing) {
+                    $otherBus = $existing->busAssignment;
+                    if ($otherBus && $otherBus->ignore_operation) {
+                        continue;
+                    }
+                    
+                    $existingStart = Carbon::parse($existing->time_start);
+                    $existingEnd = Carbon::parse($existing->time_end);
+                    
+                    if ($newStart->lt($existingEnd) && $newEnd->gt($existingStart)) {
+                        $conflictGroup = GroupInfo::find($existing->group_info_id);
+                        $conflictGroupName = $conflictGroup ? $conflictGroup->group_name : '不明';
+                        $otherBusId = $existing->bus_assignment_id;
+                        
+                        if ($resourceType === 'vehicle') {
+                            $vehicle = Vehicle::find($resourceId);
+                            $resourceName = $vehicle ? $vehicle->registration_number : '不明';
+                            throw new \Exception(
+                                "車両「{$resourceName}」は日付「{$date}」 " . 
+                                substr($schedule['start'], 0, 5) . "～" . substr($schedule['end'], 0, 5) . 
+                                " に他のグループ「{$conflictGroupName}」(運行ID: {$otherBusId})の運行で既に使用されています。"
+                            );
+                        } else {
+                            $driver = Driver::find($resourceId);
+                            $resourceName = $driver ? $driver->name : '不明';
+                            throw new \Exception(
+                                "運転手「{$resourceName}」は日付「{$date}」 " . 
+                                substr($schedule['start'], 0, 5) . "～" . substr($schedule['end'], 0, 5) . 
+                                " に他のグループ「{$conflictGroupName}」(運行ID: {$otherBusId})の運行で既に使用されています。"
+                            );
+                        }
+                    }
+                }
+            }
         }
     }
 }
