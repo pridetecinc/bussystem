@@ -1,646 +1,368 @@
-@extends('layouts.app')
+@extends('layouts.win')
 
 @section('title', '運行割当編集')
 
 @section('content')
-<div class="container-fluid px-4 py-0">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="mb-0 page-title">運行割当編集</h5>
-        <a href="{{ route('masters.bus-assignments.index') }}" class="btn btn-outline-secondary btn-sm px-3">
-            <i class="bi bi-arrow-left"></i> 一覧に戻る
-        </a>
-    </div>
-
-    @if(session('success'))
-    <div class="alert alert-success alert-dismissible fade show py-2 mb-3 success-alert" role="alert">
-        <i class="bi bi-check-circle"></i> {{ session('success') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-    @endif
-
-    @if(session('error') || $errors->any())
-    <div class="alert alert-danger alert-dismissible fade show py-2 mb-3 error-alert" role="alert">
-        <i class="bi bi-exclamation-triangle"></i> {{ session('error') ?? '入力エラーがあります' }}
-        @if($errors->any())
-        <ul class="mb-0 ps-3 mt-1">
-            @foreach($errors->all() as $error)
-                <li>{{ $error }}</li>
-            @endforeach
-        </ul>
-        @endif
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-    @endif
-
+<div class="container-fluid">
     <form method="POST" action="{{ route('masters.bus-assignments.update', $busAssignment->id) }}" id="editForm">
         @csrf
         @method('PUT')
+        <input type="hidden" name="iframe" value="1" id="isIframe">
 
-        <div id="operation-details-container">
-            @php $index = 1; @endphp
-            <div class="card shadow-sm mb-1 vehicle-detail-card" data-vehicle-index="{{ $index }}" data-bus-id="{{ $busAssignment->id }}">
-                <div class="card-header py-1 px-3 d-flex align-items-center" style="background-color: #141c28; border-bottom: 1px solid #aaa;">
-                    <h6 class="mb-0 me-3" style="color: #fff; font-size: 0.875rem; font-weight: 500;">
-                        運行詳細-{{ sprintf('%02d', $index) }}
-                    </h6>
-                    <div class="d-flex align-items-center ms-auto" style="gap: 15px;">
-                        <div class="form-check d-flex align-items-center">
-                            <label class="form-check-label me-2" for="lock_arrangement" style="font-size: 0.8rem; color: #fff;">操作ロック</label>
-                            <input type="checkbox" class="form-check-input" id="lock_arrangement" name="lock_arrangement" value="1" {{ $busAssignment->lock_arrangement ? 'checked' : '' }} style="margin: 0;">
+        <div class="m-2">
+            <div class="d-flex flex-wrap align-items-center">
+                <div class="d-flex align-items-center">
+                    <label for="status" class="label-text mr-2">車種指定</label>
+                    <input type="checkbox" id="status" class="checkbox mr-5" name="vehicle_type_spec_check" value="1" {{ $busAssignment->vehicle_type_spec_check ? 'checked' : '' }}>
+                </div>
+                
+                <div class="d-flex align-items-center mx-3">
+                    <label for="yoyaku" class="label-text mr-2">予約状況</label>
+                        <select id="yoyaku" class="form-input-small" name="reservation_status">
+                            <option value="予約" style="background-color: #ccf5ff; color: black;" {{ ($busAssignment->groupInfo->reservation_status ?? '') == '予約' ? 'selected' : '' }}>予約</option>
+                            <option value="仮押さえ" style="background-color: #ffff99; color: black;" {{ ($busAssignment->groupInfo->reservation_status ?? '') == '仮押さえ' ? 'selected' : '' }}>仮押さえ</option>
+                            <option value="見積" style="background-color: #ccffcc; color: black;" {{ ($busAssignment->groupInfo->reservation_status ?? '') == '見積' ? 'selected' : '' }}>見積</option>
+                            <option value="危ない" style="background-color: #ffcccc; color: black;" {{ ($busAssignment->groupInfo->reservation_status ?? '') == '危ない' ? 'selected' : '' }}>危ない</option>
+                            <option value="確定待ち" style="background-color: #ffd9b3; color: black;" {{ ($busAssignment->groupInfo->reservation_status ?? '') == '確定待ち' ? 'selected' : '' }}>確定待ち</option>
+                            <option value="確定" style="background-color: #cbb87c; color: black;" {{ ($busAssignment->groupInfo->reservation_status ?? '') == '確定' ? 'selected' : '' }}>確定</option>
+                            <option value="送信済" style="background-color: #e6e6fa; color: black;" {{ ($busAssignment->groupInfo->reservation_status ?? '') == '送信済' ? 'selected' : '' }}>送信済</option>
+                            <option value="実績待ち" style="background-color: #e0b0ff; color: black;" {{ ($busAssignment->groupInfo->reservation_status ?? '') == '実績待ち' ? 'selected' : '' }}>実績待ち</option>
+                            <option value="運行済" style="background-color: #c0c0c0; color: black;" {{ ($busAssignment->groupInfo->reservation_status ?? '') == '運行済' ? 'selected' : '' }}>運行済</option>
+                            <option value="請求済" style="background-color: #b0e0e6; color: black;" {{ ($busAssignment->groupInfo->reservation_status ?? '') == '請求済' ? 'selected' : '' }}>請求済</option>
+                            <option value="キャンセル" style="background-color: #d3d3d3; color: black;" {{ ($busAssignment->groupInfo->reservation_status ?? '') == 'キャンセル' ? 'selected' : '' }}>キャンセル</option>
+                            <option value="稼働不可" style="background-color: #2c2c2c; color: white;" {{ ($busAssignment->groupInfo->reservation_status ?? '') == '稼働不可' ? 'selected' : '' }}>稼働不可</option>
+                        </select>
+                </div>
+                
+                <div class="d-flex align-items-center">
+                    <label for="category" class="label-text mr-2">業務分類</label>
+                        <select id="category" name="business_category" class="form-input" style="width: 100px;">
+                            <option value="">-- 選択 --</option>
+                            @foreach($reservationCategories ?? [] as $category)
+                                <option value="{{ $category->category_name }}" 
+                                        {{ ($busAssignment->groupInfo->business_category ?? '') == $category->category_name ? 'selected' : '' }}>
+                                    {{ $category->category_name }}
+                                </option>
+                            @endforeach
+                        </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="d-flex align-items-center mb-1 position-relative">
+                <div class="label-width text-gray">車両名</div>
+                <div class="flex-1 position-relative">
+                    <input type="text" name="vehicle_name_input" class="form-input search-input" id="vehicle_search" 
+                           value="{{ $busAssignment->vehicle ? $busAssignment->vehicle->registration_number . ($busAssignment->vehicle->vehicleModel ? ' (' . $busAssignment->vehicle->vehicleModel->model_name . ')' : '') : '' }}" 
+                           placeholder="車両名を入力" autocomplete="off">
+                    <input type="hidden" name="vehicle_id" id="vehicle_id" value="{{ $busAssignment->vehicle_id }}">
+                    <div class="suggestions-container" id="vehicle_suggestions" style="display: none;"></div>
+                </div>
+            </div>
+
+            <div class="d-flex mb-1">
+                <div class="label-width text-gray">開始日</div>
+                <div class="d-flex align-items-center" style="flex: 1;">
+                    <input type="text" name="start_date" value="{{ $busAssignment->start_date ? \Carbon\Carbon::parse($busAssignment->start_date)->format('Y-m-d') : '' }}" class="form-input-small input-width-date datepicker-3months" id="start_date" style="flex: 1; min-width: 0;" placeholder="YYYY-MM-DD" autocomplete="off">
+                    <span class="mx-2">
+                        <input type="time" name="start_time" value="{{ $busAssignment->start_time ? \Carbon\Carbon::parse($busAssignment->start_time)->format('H:i') : '08:00' }}" class="form-input-small input-width-time" step="60" style="width: 90px;">
+                    </span>
+                    <span class="label-text mx-2" style="margin-left:0 !important;">~</span>
+                    <input type="text" name="end_date" value="{{ $busAssignment->end_date ? \Carbon\Carbon::parse($busAssignment->end_date)->format('Y-m-d') : '' }}" class="form-input-small input-width-date datepicker-3months" id="end_date" style="flex: 1; min-width: 0;" placeholder="YYYY-MM-DD" autocomplete="off">
+                    <span class="ms-2">
+                        <input type="time" name="end_time" value="{{ $busAssignment->end_time ? \Carbon\Carbon::parse($busAssignment->end_time)->format('H:i') : '18:00' }}" class="form-input-small input-width-time" step="60" style="width: 90px;">
+                    </span>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center mb-1">
+                <div class="label-width text-gray">号車</div>
+                <div class="input-width-100 mr-4">
+                    <input type="text" name="vehicle_number" value="{{ $busAssignment->vehicle_number ?? '' }}" class="form-input" id="vehicle_number" placeholder="号車">
+                </div>
+                
+                <div class="label-width text-gray">ガイド</div>
+                <div class="flex-1 position-relative">
+                    <input type="text" name="guide_name_input" class="form-input search-input" id="guide_search" 
+                           value="{{ $busAssignment->guide ? $busAssignment->guide->name . ($busAssignment->guide->guide_code ? ' (' . $busAssignment->guide->guide_code . ')' : '') : '' }}" 
+                           placeholder="ガイド名を入力" autocomplete="off">
+                    <input type="hidden" name="guide_id" id="guide_id" value="{{ $busAssignment->guide_id }}">
+                    <div class="suggestions-container" id="guide_suggestions" style="display: none;"></div>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center mb-1">
+                <div class="label-width text-gray">運転手</div>
+                <div class="flex-1 position-relative">
+                    <input type="text" name="driver_name_input" class="form-input search-input" id="driver_search" 
+                           value="{{ $busAssignment->driver ? $busAssignment->driver->name . ($busAssignment->driver->driver_code ? ' (' . $busAssignment->driver->driver_code . ')' : '') : '' }}" 
+                           placeholder="運転手名を入力" autocomplete="off">
+                    <input type="hidden" name="driver_id" id="driver_id" value="{{ $busAssignment->driver_id }}">
+                    <div class="suggestions-container" id="driver_suggestions" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="tab-container">
+                <div class="tab-wrapper">
+                    <span class="tab-item active" data-tab="basic">基本</span>
+                    <span class="tab-item inactive" data-tab="customer" style="margin-left: -1px;">顧客</span>
+                    <span class="tab-item inactive" data-tab="vehicle" style="margin-left: -1px;">車両</span>
+                    <span class="tab-item inactive" data-tab="history" style="margin-left: -1px;">履歴</span>
+                    <span class="tab-item inactive" data-tab="copy" style="margin-left: -1px;">複製</span>
+                </div>
+                <div class="tab-line"></div>
+            </div>
+
+            <div id="tabContent" class="tab-content">
+                <div class="tab-pane active" id="basic-tab">
+                    <div class="d-flex align-items-center mb-1 position-relative">
+                        <div class="label-width text-gray">代理店</div>
+                        <div class="flex-1 position-relative">
+                            <input type="text" name="agency_name_input" class="form-input search-input" id="agency_search" 
+                                   value="{{ $busAssignment->groupInfo->agency ?? '' }}" placeholder="代理店名を入力" autocomplete="off">
+                            <input type="hidden" name="agency_id" id="agency_id" value="{{ $busAssignment->groupInfo->agency_id ?? '' }}">
+                            <input type="hidden" name="agency_code" id="agency_code" value="{{ $busAssignment->groupInfo->agency_code ?? '' }}">
+                            <input type="hidden" name="agency_branch" id="agency_branch" value="{{ $busAssignment->groupInfo->agency_branch ?? '' }}">
+                            <input type="hidden" name="agency_phone" id="agency_phone" value="{{ $busAssignment->groupInfo->agency_phone ?? '' }}">
+                            <div class="suggestions-container" id="agency_suggestions" style="display: none;"></div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center mb-1">
+                        <div class="label-width text-gray">大人</div>
+                        <div class="input-width-number mr-4">
+                            <input type="number" name="adult_count" id="adult_count" value="{{ $busAssignment->adult_count ?? 0 }}" class="form-input" min="0">
+                        </div>
+                        <div class="label-width text-gray mr-2">小人</div>
+                        <div class="input-width-number mr-4">
+                            <input type="number" name="child_count" value="{{ $busAssignment->child_count ?? 0 }}" class="form-input" min="0">
+                        </div>
+                        <div class="label-width text-gray mr-2">ガイド</div>
+                        <div class="input-width-number mr-4">
+                            <input type="number" name="guide_count" value="{{ $busAssignment->guide_count ?? 0 }}" class="form-input" min="0">
+                        </div>
+                        <div class="label-width text-gray mr-2">その他</div>
+                        <div class="input-width-number">
+                            <input type="number" name="other_count" value="{{ $busAssignment->other_count ?? 0 }}" class="form-input" min="0">
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-start">
+                        <div class="label-width text-gray">備考</div>
+                        <div class="flex-1">
+                            <textarea name="operation_remarks" rows="5" class="form-input" style="resize: vertical; height: auto;">{{ $busAssignment->operation_remarks ?? '' }}</textarea>
                         </div>
                     </div>
                 </div>
-                <div class="card-body p-2">
-                    
-                <div class="row" style="margin-right: -5px; margin-left: -5px;">
-                    <div class="col-md-6" style="width:60%; padding-right: 5px; padding-left: 5px;">
-                        <input type="hidden" name="id" value="{{ $busAssignment->id }}">
-                        <input type="hidden" name="vehicle_index" value="{{ $index }}">
-    
-                        <div class="row mb-1">
-                            <div class="col-md-12">
-                                <div class="d-flex align-items-center w-100" style="gap: 8px; justify-content: space-between;">
-                                    <div class="d-flex align-items-center" style="gap: 8px;">
-                                        <span class="span-label" style="white-space: nowrap;">運行ID</span>
-                                        <span class="border px-2 py-1 bg-white rounded" style="min-width: 338px; color: #2563eb;">
-                                            {{ $busAssignment->id ?? '' }}
-                                        </span>
-                                    </div>
-    
-                                    <div class="d-flex align-items-center" style="gap: 8px;">
-                                        <span class="span-label" style="white-space: nowrap;">号車</span>
-                                        <input type="text" class="form-control form-control-sm border" name="vehicle_number" value="{{ $busAssignment->vehicle_number ?? sprintf('%02d', $index) }}" style="width: 60px;">
-                                    </div>
-    
-                                    <div class="d-flex align-items-center" style="gap: 8px;">
-                                        <span class="span-label" style="white-space: nowrap;">最終確認</span>
-                                        <input type="checkbox" class="form-check-input" name="status_finalized" value="1" {{ $busAssignment->status_finalized ? 'checked' : '' }} style="margin: 0;">
-                                    </div>
-    
-                                    <div class="d-flex align-items-center" style="gap: 8px;">
-                                        <span class="span-label" style="white-space: nowrap;">送信</span>
-                                        <input type="checkbox" class="form-check-input" name="status_sent" value="1" {{ $busAssignment->status_sent ? 'checked' : '' }} style="margin: 0;">
-                                    </div>
-                                </div>
-                            </div>
+
+                <div class="tab-pane" id="customer-tab" style="display: none;">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="label-width-large text-gray">担当</div>
+                        <div class="flex-1">
+                            <input type="text" name="representative" value="{{ $busAssignment->representative ?? '' }}" class="form-input" id="representative">
                         </div>
-                        
-                        <div class="row mb-1">
-                            <div class="col-md-12">
-                                <div class="d-flex align-items-center w-100" style="gap: 15px;">
-                                    <div class="d-flex align-items-center" style="flex: 1; gap: 8px;">
-                                        <span class="span-label" style="white-space: normal; word-break: break-all; line-height: 1.2; min-width: 70px;">ステップカー</span>
-                                        <input type="text" class="form-control form-control-sm border" name="step_car" value="{{ $busAssignment->step_car ?? '' }}" placeholder="ステップカー情報" style="flex: 1; min-width: 338px;">
-                                    </div>
-    
-                                    <div class="d-flex align-items-center" style="flex: 2; gap: 5px; justify-content: flex-end;">
-                                        <span class="span-label" style="white-space: nowrap; line-height: 29px;">人数</span>
-                                        <input type="number" class="form-control form-control-sm border" name="adult_count" value="{{ $busAssignment->adult_count ?? 1 }}" placeholder="大人" style="width: 58px;" min="0">
-                                        <input type="number" class="form-control form-control-sm border" name="child_count" value="{{ $busAssignment->child_count ?? 1 }}" placeholder="小人" style="width: 58px;" min="0">
-                                        <input type="number" class="form-control form-control-sm border" name="guide_count" value="{{ $busAssignment->guide_count ?? 2 }}" placeholder="Guide" style="width: 60px;" min="0">
-                                        <input type="number" class="form-control form-control-sm border" name="other_count" value="{{ $busAssignment->other_count ?? 0 }}" placeholder="その他" style="width: 60px;" min="0">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-    
-                        <div class="row mb-1">
-                            <div class="col-md-12">
-                                <div class="d-flex align-items-center w-100" style="gap: 10px;">
-                                    <div class="d-flex align-items-center" style="gap: 8px;">
-                                        <span class="span-label" style="white-space: nowrap;">車両</span>
-                                        <select class="form-select form-select-sm border vehicle-select"
-                                                id="vehicle_select"
-                                                name="vehicle_id"
-                                                style="width: 338px;">
-                                            <option value="">-- 車両を選択 --</option>
-                                            @foreach($vehicles as $vehicle)
-                                                <option value="{{ $vehicle->id }}" {{ $busAssignment->vehicle_id == $vehicle->id ? 'selected' : '' }}>
-                                                    {{ $vehicle->registration_number }} {{ $vehicle->vehicleModel ? '(' . $vehicle->vehicleModel->model_name . ')' : '' }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-    
-                                    <div class="d-flex align-items-center" style="margin-left: auto; gap: 8px;">
-                                        <span class="span-label" style="white-space: nowrap;">車種指定</span>
-                                        <input type="checkbox" class="form-check-input" name="vehicle_type_spec_check" value="1" {{ $busAssignment->vehicle_type_spec_check ? 'checked' : '' }} style="margin: 0;">
-                                    </div>
-    
-                                    <div class="d-flex align-items-center" style="gap: 8px;">
-                                        <span class="span-label" style="white-space: nowrap;">荷物</span>
-                                        <input type="number" class="form-control form-control-sm border" name="luggage_count" value="{{ $busAssignment->luggage_count ?? 0 }}" style="width: 60px;" min="0">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-    
-                        <div class="row mb-1">
-                            <div class="col-md-12">
-                                <div class="d-flex align-items-center w-100" style="gap: 8px;">
-                                    <div class="d-flex align-items-center" style="gap: 8px;">
-                                        <span class="span-label" style="white-space: nowrap;">運転手</span>
-                                        <select class="form-select form-select-sm border driver-select"
-                                                id="driver_select"
-                                                name="driver_id"
-                                                style="width: 150px;">
-                                            <option value="">-- 選択 --</option>
-                                            @foreach($drivers as $driver)
-                                                <option value="{{ $driver->id }}" {{ $busAssignment->driver_id == $driver->id ? 'selected' : '' }}>
-                                                    {{ $driver->name }} {{ $driver->driver_code ? '(' . $driver->driver_code . ')' : '' }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-    
-                                    <div class="d-flex align-items-center" style="gap: 8px;">
-                                        <span class="span-label" style="white-space: nowrap; width: 20px !important; min-width: 20px !important; margin-right: 0;">仮</span>
-                                        <input type="checkbox" class="form-check-input" name="temporary_driver" value="1" {{ $busAssignment->temporary_driver ? 'checked' : '' }} style="margin: 0;">
-                                    </div>
-    
-                                    <div class="d-flex align-items-center" style="gap: 8px;">
-                                        <span class="span-label" style="white-space: nowrap; width: 33px !important; min-width: 33px !important; margin-right: 0;">添乗</span>
-                                        <select class="form-select form-select-sm border guide-select"
-                                                id="guide_select"
-                                                name="guide_id"
-                                                style="width: 90px;">
-                                            <option value="">-- 選択 --</option>
-                                            @foreach($guides as $guide)
-                                                <option value="{{ $guide->id }}" {{ $busAssignment->guide_id == $guide->id ? 'selected' : '' }}>
-                                                    {{ $guide->name }} {{ $guide->guide_code ? '(' . $guide->guide_code . ')' : '' }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-    
-                                    <div class="d-flex align-items-center" style="margin-left: auto; gap: 8px;">
-                                        <span class="span-label" style="white-space: nowrap;">代表</span>
-                                        <input type="text" class="form-control form-control-sm border" name="representative" value="{{ $busAssignment->representative ?? '' }}" placeholder="Name" style="width: 100px;">
-                                        <input type="text" class="form-control form-control-sm border" name="representative_phone" value="{{ $busAssignment->representative_phone ?? '' }}" placeholder="Tel/Cell">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
                     </div>
                     
-                    <div class="col-md-6" style="width:40%; padding-right: 5px; padding-left: 5px;">
-                        <div class="row mt-2" style="margin-right: -5px; margin-left: -5px;">
-                            <div class="col-md-12" style="padding-right: 5px; padding-left: 5px;">
-                                <div class="tab-container-{{ $index }}">
-                                    <div class="d-flex w-100" style="border-bottom: 1px solid #aaa;">
-                                        <span class="tab-button2 active flex-fill text-center px-2 py-1" data-container="{{ $index }}" data-tab2="basic2-{{ $index }}" style="background-color: white; border: 1px solid #aaa; border-bottom-color: white; border-top-left-radius: 4px; border-top-right-radius: 4px; margin-bottom: -1px; color: #374151; font-size: 0.8rem; cursor: pointer;">基本</span>
-                                        <span class="tab-button2 flex-fill text-center px-2 py-1" data-container="{{ $index }}" data-tab2="doc-{{ $index }}" style="background-color: #F3F4F6; border: 1px solid #aaa; border-bottom-color: #aaa; border-top-left-radius: 4px; border-top-right-radius: 4px; margin-bottom: -1px; color: #6B7280; font-size: 0.8rem; cursor: pointer; margin-left: -1px;">DOC</span>
-                                        <span class="tab-button2 flex-fill text-center px-2 py-1" data-container="{{ $index }}" data-tab2="history2-{{ $index }}" style="background-color: #F3F4F6; border: 1px solid #aaa; border-bottom-color: #aaa; border-top-left-radius: 4px; border-top-right-radius: 4px; margin-bottom: -1px; color: #6B7280; font-size: 0.8rem; cursor: pointer; margin-left: -1px;">履歴</span>
-                                    </div>
-    
-                                    <div id="basic2-{{ $index }}" class="tab-content2" style="border: 1px solid #aaa; border-top: 0; background-color: #fff; padding: 10px; height: 100px; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px;">
-                                        <div class="row">
-                                            <div class="col-md-12">
-                                                <div class="d-flex align-items-start">
-                                                    <span class="span-label">備考</span>
-                                                    <textarea name="operation_basic_remarks" rows="3" class="form-control form-control-sm border" style="height: 80px;" placeholder="備考を入力...">{{ $busAssignment->operation_basic_remarks ?? '' }}</textarea>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-    
-                                    <div id="doc-{{ $index }}" class="tab-content2" style="display: none; border: 1px solid #aaa; border-top: 0; background-color: #fff; padding: 10px; height: 100px;">
-                                        <div class="row">
-                                            <div class="col-md-12">
-                                                <div class="d-flex align-items-start">
-                                                    <span class="span-label">備考</span>
-                                                    <textarea name="doc_remarks" rows="3" class="form-control form-control-sm border" style="height: 80px;" placeholder="DOC備考...">{{ $busAssignment->doc_remarks ?? '' }}</textarea>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-    
-                                    <div id="history2-{{ $index }}" class="tab-content2" style="display: none; border: 1px solid #aaa; border-top: 0; background-color: #fff; padding: 10px; height: 100px;">
-                                        <div class="row">
-                                            <div class="col-md-12">
-                                                <div class="d-flex align-items-start">
-                                                    <span class="span-label">備考</span>
-                                                    <textarea name="history_remarks" rows="3" class="form-control form-control-sm border" style="height: 80px;" placeholder="履歴備考...">{{ $busAssignment->history_remarks ?? '' }}</textarea>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="label-width-large text-gray">電話</div>
+                        <div class="flex-1">
+                            <input type="text" name="representative_phone" value="{{ $busAssignment->representative_phone ?? '' }}" class="form-input" id="representative_phone">
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="label-width-large text-gray">AGT予約ID</div>
+                        <div class="flex-1">
+                            <input type="text" name="agt_tour_id" class="form-input" value="{{ $busAssignment->groupInfo->agt_tour_id ?? '' }}">
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="label-width-large text-gray">荷物数</div>
+                        <div class="flex-1">
+                            <input type="number" name="luggage_count" value="{{ $busAssignment->luggage_count ?? 0 }}" class="form-input" min="0">
                         </div>
                     </div>
                 </div>
-                    
-                <div class="row mt-2">
-                    <div class="col-md-12">
-                        <table class="table table-bordered table-sm" style="font-size: 0.8rem; background-color: white;" data-vehicle-table="{{ $index }}">
-                            <thead style="background-color: #f3f4f6; text-align: center;">
-                                32
-                                    <th style="width: 10%; text-align: center; background-color: #f3f4f6;">運行日</th>
-                                    <th style="width: 10%; text-align: center; background-color: #f3f4f6;">開始時刻/場所</th>
-                                    <th style="width: 10%; text-align: center; background-color: #f3f4f6;">終了時刻/場所</th>
-                                    <th style="text-align: center; background-color: #f3f4f6;">行程</th>
-                                    <th style="width: 5%; text-align: center; background-color: #f3f4f6;">選択</th>
-                                    <th style="width: 180px; text-align: center; background-color: #f3f4f6;">操作</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($busAssignment->dailyItineraries ?? [] as $itineraryIndex => $itinerary)
-                                @php
-                                    $globalIndex = ($index - 1) * 100 + $itineraryIndex;
-                                @endphp
-                                <tr class="itinerary-row" data-vehicle="{{ $index }}" data-index="{{ $globalIndex }}" data-bus-id="{{ $busAssignment->id }}" data-itinerary-id="{{ $itinerary->id }}" data-group-info-id="{{ $busAssignment->group_info_id }}">
-                                    <td style="vertical-align: middle; text-align: center; background-color: #f9f9f9; position: relative;">
-                                        <span class="row-number" style="position: absolute; top: 2px; left: 2px; color: #2563eb; font-size: 10px; font-weight: bold;">{{ $itineraryIndex + 1 }}</span>
-                                        <input type="hidden" name="daily_itineraries[{{ $globalIndex }}][id]" value="{{ $itinerary->id }}">
-                                        <input type="hidden" name="daily_itineraries[{{ $globalIndex }}][display_order]" value="{{ $globalIndex + 1 }}">
-                                        <input type="hidden" name="daily_itineraries[{{ $globalIndex }}][bus_assignment_id]" value="{{ $busAssignment->id }}" class="itinerary-bus-id">
-                                        <input type="hidden" name="daily_itineraries[{{ $globalIndex }}][vehicle_id]" value="{{ $busAssignment->vehicle_id }}" class="itinerary-vehicle-id">
-                                        <input type="hidden" name="daily_itineraries[{{ $globalIndex }}][driver_id]" value="{{ $busAssignment->driver_id }}" class="itinerary-driver-id">
-                                        <input type="hidden" name="daily_itineraries[{{ $globalIndex }}][guide_id]" value="{{ $busAssignment->guide_id }}" class="itinerary-guide-id">
-                                        <input type="text" class="form-control form-control-sm border datepicker-3months" name="daily_itineraries[{{ $globalIndex }}][date]" value="{{ $itinerary->date ? \Carbon\Carbon::parse($itinerary->date)->format('Y-m-d') : '' }}" style="width: 100%; text-align: center;" placeholder="YYYY-MM-DD">
-                                        <input type="hidden" name="daily_itineraries[{{ $globalIndex }}][vehicle_group]" value="{{ $index }}">
-                                    </td>
-                                    <td style="padding: 2px;">
-                                        <div class="d-flex flex-column" style="gap: 2px;">
-                                            <input type="time" class="form-control form-control-sm border"
-                                                   name="daily_itineraries[{{ $globalIndex }}][time_start]"
-                                                   value="{{ $itinerary->time_start ? \Carbon\Carbon::parse($itinerary->time_start)->format('H:i') : '08:00' }}"
-                                                   style="width: 100%;" step="60">
-                                            <input type="text" class="form-control form-control-sm border"
-                                                   name="daily_itineraries[{{ $globalIndex }}][start_location]"
-                                                   value="{{ $itinerary->start_location ?? '' }}"
-                                                   placeholder="開始場所" style="width: 100%;">
-                                        </div>
-                                    </td>
-                                    <td style="padding: 2px;">
-                                        <div class="d-flex flex-column" style="gap: 2px;">
-                                            <input type="time" class="form-control form-control-sm border"
-                                                   name="daily_itineraries[{{ $globalIndex }}][time_end]"
-                                                   value="{{ $itinerary->time_end ? \Carbon\Carbon::parse($itinerary->time_end)->format('H:i') : '18:00' }}"
-                                                   style="width: 100%;" step="60">
-                                            <input type="text" class="form-control form-control-sm border"
-                                                   name="daily_itineraries[{{ $globalIndex }}][end_location]"
-                                                   value="{{ $itinerary->end_location ?? '' }}"
-                                                   placeholder="終了場所" style="width: 100%;">
-                                        </div>
-                                    </td>
-                                    <td style="vertical-align: middle; padding: 2px;">
-                                        <textarea name="daily_itineraries[{{ $globalIndex }}][itinerary]" rows="2"
-                                                  class="form-control form-control-sm border"
-                                                  style="width: 100%; height: 100%; min-height: 60px;">{{ $itinerary->itinerary ?? '' }}</textarea>
-                                    </td>
-                                    <td style="padding: 2px; text-align: center; vertical-align: middle;">
-                                        <div style="display: flex; justify-content: center; align-items: center; height: 100%;">
-                                            <input type="checkbox" class="form-check-input itinerary-select"
-                                                   id="select_itinerary_{{ $globalIndex }}"
-                                                   style="margin: 0; width: 18px; height: 18px; cursor: pointer;">
-                                        </div>
-                                    </td>
-                                    <td style="padding: 2px; text-align: center; vertical-align: middle;">
-                                        <div class="d-flex justify-content-center gap-1">
-                                            <button type="button" class="btn btn-outline-secondary btn-sm move-up-btn" title="上へ移動">
-                                                <i class="bi bi-arrow-up"></i>
-                                            </button>
-                                            <button type="button" class="btn btn-outline-secondary btn-sm move-down-btn" title="下へ移動">
-                                                <i class="bi bi-arrow-down"></i>
-                                            </button>
-                                            <button type="button" class="btn btn-outline-success btn-sm add-row-btn" title="行を追加">
-                                                <i class="bi bi-plus-lg"></i>
-                                            </button>
-                                            <button type="button" class="btn btn-outline-danger btn-sm delete-row-btn" title="行を削除">
-                                                <i class="bi bi-dash-lg"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                @empty
-                                <tr class="no-data-row">
-                                    <td colspan="6" class="text-center py-4" style="color: #6c757d; background-color: #f9f9f9;">
-                                        <i class="bi bi-info-circle me-1"></i> 旅程データがありません。「+」ボタンを押して追加してください。
-                                    </td>
-                                </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
+
+                <div class="tab-pane" id="vehicle-tab" style="display: none;">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="label-width-large text-gray">車両分類</div>
+                        <div class="flex-1">
+                            <input type="text" name="vehicle_type" class="form-input" id="vehicle_type" value="{{ $busAssignment->vehicle->vehicleType->type_name ?? '' }}" readonly>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="label-width-large text-gray">車種</div>
+                        <div class="flex-1">
+                            <input type="text" name="vehicle_model" class="form-input" id="vehicle_model" value="{{ $busAssignment->vehicle->vehicleModel->model_name ?? '' }}" readonly>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="label-width-large text-gray">車両営業所</div>
+                        <div class="flex-1">
+                            <input type="text" name="vehicle_branch" class="form-input" id="vehicle_branch" value="{{ $busAssignment->vehicle->branch->branch_name ?? '' }}" readonly>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <div class="label-width-large text-gray">定員</div>
+                        <div class="flex-1">
+                            <input type="text" name="seating_capacity" class="form-input" id="seating_capacity" value="{{ $busAssignment->vehicle->seating_capacity ?? '' }}" readonly>
+                        </div>
                     </div>
                 </div>
 
-                <div class="row mt-2" style="margin-right: -5px; margin-left: -5px;">
-                    <div class="col-md-6" style="width:60%; padding-right: 5px; padding-left: 5px;">
-                        <div class="d-flex w-100 mb-1">
-                            <span class="span-label" style="min-width: 30px;">注意</span>
-                            <input type="text" name="attention" class="form-control form-control-sm border" value="{{ $busAssignment->attention ?? '' }}">
-                        </div>
-
-                        <div class="d-flex w-100">
-                            <span class="span-label" style="min-width: 30px;">備考</span>
-                            <textarea name="operation_remarks" rows="1" class="form-control form-control-sm border" placeholder="指示書に表示">{{ $busAssignment->operation_remarks ?? '' }}</textarea>
-                        </div>
+                <div class="tab-pane" id="history-tab" style="display: none;">
+                    <div class="dashed-box">
+                        履歴はありません
                     </div>
+                </div>
 
-                    <div class="col-md-6" style="width:40%; padding-right: 5px; padding-left: 5px;">
-                        <textarea name="operation_memo" rows="2" class="form-control form-control-sm border" style="height: 62px;" placeholder="手配メモ一">{{ $busAssignment->operation_memo ?? '' }}</textarea>
+                <div class="tab-pane" id="copy-tab" style="display: none;">
+                    <div class="dashed-box">
+                        複製機能はこちら
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="m-2">
+            <div class="d-flex gap-4">
+                <div class="d-flex align-items-center">
+                    <input type="checkbox" id="ignore_operation" class="checkbox-large" name="ignore_operation" value="1" {{ $busAssignment->ignore_operation ? 'checked' : '' }}>
+                    <label for="ignore_operation" class="label-text">運行無視</label>
+                </div>
+                <div class="d-flex align-items-center">
+                    <input type="checkbox" id="ignore_driver" class="checkbox-large" name="ignore_driver" value="1" {{ $busAssignment->ignore_driver ? 'checked' : '' }}>
+                    <label for="ignore_driver" class="label-text">勤怠無視</label>
                 </div>
             </div>
         </div>
 
         <div class="d-flex justify-content-between align-items-center mt-3">
-            <div class="d-flex gap-2 align-items-center">
-                <div class="d-flex align-items-center me-3" style="gap: 15px;">
-                    <div class="form-check d-flex align-items-center">
-                        <input type="checkbox" class="form-check-input me-1" id="ignore_operation" name="ignore_operation" value="1" {{ $busAssignment->ignore_operation ? 'checked' : '' }} style="margin: 0;">
-                        <label class="form-check-label me-2" for="ignore_operation" style="font-size: 0.85rem;">運行無視</label>
-                    </div>
-                    <div class="form-check d-flex align-items-center">
-                        <input type="checkbox" class="form-check-input me-1" id="ignore_driver" name="ignore_driver" value="1" {{ $busAssignment->ignore_driver ? 'checked' : '' }} style="margin: 0;">
-                        <label class="form-check-label me-2" for="ignore_driver" style="font-size: 0.85rem;">勤怠無視</label>
-                    </div>
-                </div>
-                <button type="submit" class="btn btn-primary btn-sm px-3" id="saveBtn">
-                    <i class="bi bi-check-circle"></i> 保存
-                </button>
-                <a href="{{ route('masters.bus-assignments.index') }}" class="btn btn-sm btn-outline-secondary px-3 ms-2">
-                    <i class="bi bi-x-circle"></i> キャンセル
-                </a>
-            </div>
-            <div>
-                <button type="button" class="btn btn-outline-danger btn-sm"
-                        onclick="if(confirm('本当にこの運行割当を削除しますか？\nこの操作は元に戻せません。')) { document.getElementById('deleteForm').submit(); }">
-                    <i class="bi bi-trash"></i> 運行割当削除
-                </button>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn-primary" id="saveBtn">更新</button>
+                <button type="button" class="btn-danger" id="cancelBtn">取消</button>
             </div>
         </div>
-    </form>
-
-    <form id="deleteForm" action="{{ route('masters.bus-assignments.destroy', $busAssignment->id) }}" method="POST" class="d-none">
-        @csrf
-        @method('DELETE')
     </form>
 </div>
 @endsection
 
+
 @push('styles')
 <style>
-.text-gray { color: #6b7280; font-size: 11px; }
-.form-input { width: 100%; border: 1px solid #aaa; border-radius: 4px; font-size: 11px; padding: 4px 6px; height: 28px; }
-.form-input-small { border: 1px solid #aaa; border-radius: 4px; padding: 4px; height: 28px; font-size: 11px; }
-.checkbox { width: 12px; height: 12px; margin-right: 2px; }
-.checkbox-large { width: 14px; height: 14px; margin-right: 4px; }
-.label-text { color: #374151; font-size: 11px; }
-.label-text-gray { color: #6b7280; font-size: 11px; }
-.tab-container { position: relative; }
-.tab-wrapper { display: flex; margin-bottom: -1px; }
-.tab-item { font-size: 11px; padding: 6px 16px; border-radius: 4px 4px 0 0; cursor: pointer; }
-.tab-item.active { background-color: white; color: #374151; border-top: 1px solid #d1d5db; border-left: 1px solid #d1d5db; border-right: 1px solid #d1d5db; border-bottom: none; z-index: 2; }
-.tab-item.inactive { background-color: #f3f4f6; color: #374151; border: 1px solid #aaa; border-bottom: 1px solid #d1d5db; }
-.tab-line { height: 1px; background-color: #d1d5db; width: 100%; margin-top: -1px; z-index: 1; }
-.tab-content { padding-top: 4px; }
-.btn-primary { background-color: #2563eb; border: none; color: white; font-size: 12px; padding: 6px 24px; border-radius: 4px; cursor: pointer; }
-.btn-primary:hover { background-color: #1d4ed8; }
-.btn-primary:disabled { background-color: #93c5fd; cursor: not-allowed; }
-.btn-outline-danger { border-color: #dc2626; color: #dc2626; font-size: 12px; padding: 6px 16px; }
-.btn-outline-danger:hover { background-color: #dc2626; color: white; }
-.dashed-box { color: #6b7280; font-size: 11px; padding: 16px; background-color: #f9fafb; border-radius: 4px; text-align: center; border: 1px dashed #d1d5db; }
-.span-label { text-align: right; min-width: 50px !important; width: 50px !important; font-size: 0.8rem; margin-right: 10px; white-space: nowrap;}
-.card-body { background-color:#f3f4f6; font-size: 0.8rem;}
-.container-fluid { max-width: 1600px; }
-.page-title { color: #374151; font-size: 1rem; }
-.form-control-sm, .form-select-sm { border-color: #E5E7EB; font-size: 0.8rem; border-radius: 4px; }
-.form-control-sm:focus, .form-select-sm:focus { border-color: #2563eb; box-shadow: 0 0 0 0.1rem rgba(37, 99, 235, 0.25); }
-.btn-sm { font-size: 0.8rem; }
-.form-check-input { margin-top: 0; }
-.form-check { padding-left: 0;}
-.gap-3 { gap: 1rem; }
-.gap-4 { gap: 1.5rem; }
-.bg-white { background-color: #ffffff !important; }
-.rounded { border-radius: 4px !important; }
-.table { margin-bottom: 6px; }
-.table th { font-weight: 500; color: #aaa; border-color: #E5E7EB; }
-.table td { border-color: #E5E7EB; padding: 0.5rem; }
-.vehicle-detail-card { margin-bottom: 1rem; border: 1px solid #aaa; }
-.vehicle-detail-card .card-header { background-color: #141c28; }
-.vehicle-detail-card .card-header h6 span { color: #a0aec0; font-weight: normal; }
-.row-number { position: absolute; top: 2px; left: 2px; color: #2563eb; font-size: 10px; font-weight: bold; z-index: 1; }
-.tab-button2 { cursor: pointer; transition: all 0.2s; outline: none; }
-.tab-button2:hover { background-color: #f9fafb !important; }
-.tab-button2.active { background-color: white !important; border-bottom-color: white !important; color: #374151 !important; font-weight: 500; }
-.tab-button2:not(.active) { background-color: #F3F4F6 !important; border-bottom-color: #aaa !important; color: #6B7280 !important; }
-.tab-content2 { border: 1px #E5E7EB solid; border-top: 0; background-color: #fff; padding: 10px; height: 140px; }
+    .text-small { color: #374151; font-size: 11px; }
+    .text-gray { color: #6b7280; font-size: 11px; }
+    .card { background-color: white; border: 1px solid #E5E7EB; border-radius: 6px; padding: 4px 8px; margin-bottom: 8px; }
+    .form-input { width: 100%; border: 1px solid #E5E7EB; border-radius: 4px; font-size: 11px; padding: 4px 6px; height: 28px; }
+    .form-input-small { border: 1px solid #E5E7EB; border-radius: 4px; padding: 4px; height: 28px; font-size: 11px; }
+    .checkbox { width: 12px; height: 12px; margin-right: 2px; }
+    .checkbox-large { width: 14px; height: 14px; margin-right: 4px; }
+    .label-text { color: #374151; font-size: 11px; }
+    .label-text-gray { color: #6b7280; font-size: 11px; }
+    .tab-container { position: relative; }
+    .tab-wrapper { display: flex; margin-bottom: -1px; }
+    .tab-item { font-size: 11px; padding: 6px 16px; border-radius: 4px 4px 0 0; cursor: pointer; }
+    .tab-item.active { background-color: white; color: #374151; border-top: 1px solid #d1d5db; border-left: 1px solid #d1d5db; border-right: 1px solid #d1d5db; border-bottom: none; z-index: 2; }
+    .tab-item.inactive { background-color: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; border-bottom: 1px solid #d1d5db; }
+    .tab-line { height: 1px; background-color: #d1d5db; width: 100%; margin-top: -1px; z-index: 1; }
+    .tab-content { padding-top: 4px; }
+    .btn-primary { background-color: #2563eb; border: none; color: white; font-size: 12px; padding: 6px 24px; border-radius: 4px; cursor: pointer; }
+    .btn-primary:hover { background-color: #1d4ed8; }
+    .btn-primary:disabled { background-color: #93c5fd; cursor: not-allowed; }
+    .btn-danger { background-color: #dc2626; border: none; color: white; font-size: 12px; padding: 6px 24px; border-radius: 4px; cursor: pointer; }
+    .btn-danger:hover { background-color: #b91c1c; }
+    .dashed-box { color: #6b7280; font-size: 11px; padding: 16px; background-color: #f9fafb; border-radius: 4px; text-align: center; border: 1px dashed #d1d5db; }
+    .label-width { width: 50px; }
+    .label-width-large { width: 60px; }
+    .input-width-date { width: 120px; }
+    .input-width-time { width: 90px; }
+    .input-width-number { width: 60px; }
+    .input-width-100 { width: 100px; }
+    .mr-2 { margin-right: 8px; }
+    .mr-4 { margin-right: 4px; }
+    .mr-5 { margin-right: 8px; }
+    .mx-2 { margin: 0 2px; }
+    .mx-3 { margin: 0 4px; }
+    .mb-1 { margin-bottom: 4px; }
+    .mb-2 { margin-bottom: 8px; }
+    .mt-2 { margin-top: 8px; }
+    .mt-3 { margin-top: 12px; }
+    .gap-2 { gap: 8px; }
+    .gap-4 { gap: 16px; }
+    .flex-1 { flex: 1; }
+    .d-flex { display: flex; }
+    .flex-wrap { flex-wrap: wrap; }
+    .align-items-center { align-items: center; }
+    .align-items-start { align-items: flex-start; }
+    .justify-content-between { justify-content: space-between; }
+    .position-relative { position: relative; }
+    
+    .suggestions-container {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #E5E7EB;
+        border-radius: 4px;
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 1000;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .suggestion-item {
+        padding: 6px 8px;
+        cursor: pointer;
+        font-size: 11px;
+        border-bottom: 1px solid #f3f4f6;
+    }
+    
+    .suggestion-item:hover {
+        background-color: #f3f4f6;
+    }
+    
+    .suggestion-item:last-child {
+        border-bottom: none;
+    }
+    
+    .vehicle-selected { border-color: #2563eb; background-color: #f0f7ff; }
+    .warning-message { color: #f59e0b; font-size: 10px; margin-top: 2px; animation: fadeIn 0.3s ease; }
 
-.flatpickr-calendar {
-    border: 1px solid #ddd !important;
-    border-radius: 6px !important;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12) !important;
-    font-family: inherit !important;
-    font-size: 11px !important;
-    overflow: hidden !important;
-}
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+    
+    .is-invalid { border-color: #dc3545 !important; background-color: #fff8f8; }
+    .is-invalid:focus { border-color: #dc3545 !important; box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25); }
+    .error-message { color: #dc3545; font-size: 10px; margin-top: 2px; }
+    .is-invalid { animation: shake 0.2s ease-in-out; }
+    @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+    
+    input[readonly] { background-color: #f9fafb; cursor: default; }
+    input[readonly]:focus { outline: none; border-color: #E5E7EB; }
 
-.flatpickr-calendar.multiMonth {
-    width: 516px !important;
-    max-width: 95vw !important;
-}
-
-.flatpickr-calendar.multiMonth .flatpickr-innerContainer {
-    width: 100% !important;
-}
-
-.flatpickr-calendar.multiMonth .flatpickr-months {
-    display: flex !important;
-}
-
-.flatpickr-calendar.multiMonth .flatpickr-month {
-    flex: 1 !important;
-}
-
-.flatpickr-calendar.multiMonth .flatpickr-month:not(:last-child) {
-    border-right: 1px solid #e9ecef !important;
-}
-
-.flatpickr-months {
-    background: linear-gradient(135deg, #1f3241 0%, #2d4a5e 100%) !important;
-    border-radius: 6px 6px 0 0 !important;
-    display: flex !important;
-}
-
-.flatpickr-month {
-    height: 28px !important;
-    padding-right: 0 !important;
-}
-
-.flatpickr-current-month {
-    padding: 3px 0 0 0 !important;
-}
-
-.flatpickr-current-month .flatpickr-monthDropdown-months {
-    font-weight: 600 !important;
-    color: #fff !important;
-    font-size: 11px !important;
-}
-
-.flatpickr-current-month .numInputWrapper span {
-    color: #fff !important;
-}
-
-.flatpickr-current-month input.cur-year {
-    color: #fff !important;
-    font-weight: 600 !important;
-    font-size: 11px !important;
-}
-
-.flatpickr-months .flatpickr-month,
-.flatpickr-months .flatpickr-next-month,
-.flatpickr-months .flatpickr-prev-month {
-    color: #fff !important;
-    fill: #fff !important;
-}
-
-.flatpickr-months .flatpickr-next-month:hover svg,
-.flatpickr-months .flatpickr-prev-month:hover svg {
-    fill: #ffc107 !important;
-}
-
-.flatpickr-months .flatpickr-next-month,
-.flatpickr-months .flatpickr-prev-month {
-    width: 20px !important;
-    height: 20px !important;
-    padding: 2px !important;
-}
-
-.flatpickr-weekdays {
-    background: #f8f9fa !important;
-    border-bottom: 1px solid #e9ecef !important;
-    margin: 0 !important;
-}
-
-.flatpickr-weekday {
-    color: #495057 !important;
-    font-weight: 600 !important;
-    font-size: 10px !important;
-    padding: 1px 0 !important;
-}
-
-.flatpickr-days {
-    border: none !important;
-    padding: 0 !important;
-}
-
-.flatpickr-day {
-    color: #374151 !important;
-    border-radius: 2px !important;
-    margin: 0 !important;
-    border: 1px solid transparent !important;
-    max-width: 24px !important;
-    width: 24px !important;
-    height: 22px !important;
-    line-height: 20px !important;
-    font-size: 10px !important;
-}
-
-.flatpickr-day:hover {
-    background: #e0f2fe !important;
-    border-color: #2563eb !important;
-    color: #2563eb !important;
-}
-
-.flatpickr-day.selected {
-    background: #2563eb !important;
-    border-color: #2563eb !important;
-    color: #fff !important;
-    font-weight: 600 !important;
-}
-
-.flatpickr-day.selected:hover {
-    background: #1d4ed8 !important;
-}
-
-.flatpickr-day.startRange,
-.flatpickr-day.endRange {
-    background: #2563eb !important;
-    border-color: #2563eb !important;
-    color: #fff !important;
-}
-
-.flatpickr-day.inRange {
-    background: #dbeafe !important;
-    border-color: transparent !important;
-    color: #1e40af !important;
-}
-
-.flatpickr-day.today {
-    border-color: #ffc107 !important;
-    background: #fffbeb !important;
-    color: #374151 !important;
-}
-
-.flatpickr-day.today:hover {
-    background: #fef3c7 !important;
-    border-color: #f59e0b !important;
-    color: #374151 !important;
-}
-
-.flatpickr-months .flatpickr-month {
-    background: transparent !important;
-}
-
-span.flatpickr-weekday {
-    background: #f8f9fa !important;
-}
-
-.flatpickr-calendar.showTimeInput.hasTime .flatpickr-time {
-    border-top: 1px solid #e9ecef !important;
-}
-
-.flatpickr-calendar.multiMonth .dayContainer {
-    width: 168px !important;
-    min-width: 168px !important;
-    max-width: 168px !important;
-    position: relative !important;
-}
-
-.month-wrapper {
-    flex: 1 !important;
-    position: relative !important;
-    padding: 2px !important;
-    height: 135px !important;
-}
-
-.month-wrapper:not(:last-child)::after {
-    content: '';
-    position: absolute;
-    right: 0;
-    top: 0;
-    bottom: 0;
-    width: 1px;
-    background-color: #e9ecef;
-}
-
-.flatpickr-calendar.multiMonth .flatpickr-days {
-    display: flex !important;
-    position: relative;
-    width: 514px !important;
-}
-
-.flatpickr-calendar.multiMonth .flatpickr-days .dayContainer {
-    padding: 0 !important;
-}
-
-.flatpickr-calendar.multiMonth .flatpickr-rContainer {
-    width: 514px !important;
-}
-.success-alert .btn-close {
-    padding: 0.75rem;
-}
+    input[type="date"]::-webkit-calendar-picker-indicator,
+    input[type="time"]::-webkit-calendar-picker-indicator {
+        cursor: pointer;
+        opacity: 0.6;
+    }
+    
+    input[type="date"]::-webkit-calendar-picker-indicator:hover,
+    input[type="time"]::-webkit-calendar-picker-indicator:hover {
+        opacity: 1;
+    }
 </style>
 @endpush
+
 
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const flatpickrConfig = {
+    flatpickr('.datepicker-3months', {
         locale: 'ja',
         dateFormat: 'Y-m-d',
         showMonths: 3,
@@ -664,480 +386,321 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
         }
-    };
+    });
 
-    function initDatePickers(container) {
-        const dateInputs = container ? 
-            container.querySelectorAll('.datepicker-3months') : 
-            document.querySelectorAll('.datepicker-3months');
-        
-        dateInputs.forEach(input => {
-            if (input && !input._flatpickr) {
-                flatpickr(input, flatpickrConfig);
-            }
-        });
+    const isInIframe = window.self !== window.top;
+    if (isInIframe) {
+        document.getElementById('isIframe').value = '1';
     }
 
-    function attachRowEvents(row) {
-        const addBtn = row.querySelector('.add-row-btn');
-        const deleteBtn = row.querySelector('.delete-row-btn');
-        const upBtn = row.querySelector('.move-up-btn');
-        const downBtn = row.querySelector('.move-down-btn');
-
-        if (addBtn) {
-            addBtn.onclick = function(e) {
-                e.preventDefault();
-                addRowAfter(this);
-            };
+    const cancelBtn = document.getElementById('cancelBtn');
+    
+    cancelBtn.addEventListener('click', function() {
+        if (isInIframe) {
+            window.parent.postMessage('close-iframe', '*');
+        } else {
+            window.location.href = '{{ route('masters.bus-assignments.index') }}';
         }
-        if (deleteBtn) {
-            deleteBtn.onclick = function(e) {
-                e.preventDefault();
-                deleteRow(this);
-            };
-        }
-        if (upBtn) {
-            upBtn.onclick = function(e) {
-                e.preventDefault();
-                moveUp(this);
-            };
-        }
-        if (downBtn) {
-            downBtn.onclick = function(e) {
-                e.preventDefault();
-                moveDown(this);
-            };
-        }
-    }
+    });
 
-    initDatePickers();
-
-    document.querySelectorAll('.tab-button2').forEach(button => {
-        button.addEventListener('click', function() {
-            const container = this.getAttribute('data-container');
-            const tabId = this.getAttribute('data-tab2');
-
-            const parentContainer = document.querySelector(`.tab-container-${container}`);
-
-            if (parentContainer) {
-                const groupButtons = parentContainer.querySelectorAll('.tab-button2');
-                const groupContents = parentContainer.querySelectorAll('.tab-content2');
-
-                groupButtons.forEach(btn => {
-                    btn.classList.remove('active');
-                    btn.style.backgroundColor = '#F3F4F6';
-                    btn.style.borderBottomColor = '#E5E7EB';
-                    btn.style.color = '#6B7280';
-                });
-
-                this.classList.add('active');
-                this.style.backgroundColor = 'white';
-                this.style.borderBottomColor = 'white';
-                this.style.color = '#374151';
-
-                groupContents.forEach(content => {
-                    content.style.display = 'none';
-                });
-            }
-
-            document.getElementById(tabId).style.display = 'block';
+    const tabs = document.querySelectorAll('.tab-item');
+    const panes = document.querySelectorAll('.tab-pane');
+    
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            tabs.forEach(t => {
+                t.classList.remove('active');
+                t.classList.add('inactive');
+            });
+            
+            this.classList.add('active');
+            this.classList.remove('inactive');
+            
+            panes.forEach(pane => pane.style.display = 'none');
+            document.getElementById(this.getAttribute('data-tab') + '-tab').style.display = 'block';
         });
     });
 
-    function addRowAfter(clickedButton) {
-        const currentRow = clickedButton.closest('tr.itinerary-row');
-        if (!currentRow) return;
+    function validateDateRange() {
+        const startDate = document.getElementById('start_date').value;
+        const endDate = document.getElementById('end_date').value;
+        
+        if (!startDate || !endDate) {
+            return true;
+        }
+        
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        
+        if (start > end) {
+            alert('終了日は開始日以降の日付を入力してください');
+            return false;
+        }
+        return true;
+    }
 
-        const table = currentRow.closest('table');
-        const tbody = table.querySelector('tbody');
+    const vehicles = @json($vehicles ?? []);
+    const guides = @json($guides ?? []);
+    const drivers = @json($drivers ?? []);
+    const agencies = @json($agencies ?? []);
+
+    function setupSearch(type, items, formatter) {
+        const searchInput = document.getElementById(`${type}_search`);
+        const suggestionsDiv = document.getElementById(`${type}_suggestions`);
+        const hiddenId = document.getElementById(`${type}_id`);
         
-        const card = currentRow.closest('.vehicle-detail-card');
-        const vehicleGroup = card ? card.getAttribute('data-vehicle-index') || '1' : '1';
-        const busId = card ? card.getAttribute('data-bus-id') || '' : '';
-        
-        const vehicleSelect = card ? card.querySelector('.vehicle-select') : null;
-        const driverSelect = card ? card.querySelector('.driver-select') : null;
-        const guideSelect = card ? card.querySelector('.guide-select') : null;
-        
-        const vehicleId = vehicleSelect ? vehicleSelect.value : '';
-        const driverId = driverSelect ? driverSelect.value : '';
-        const guideId = guideSelect ? guideSelect.value : '';
-        
-        const dateInput = currentRow.querySelector('input[name*="[date]"]');
-        const date = dateInput ? dateInput.value : '';
-        
-        const visibleRows = Array.from(tbody.querySelectorAll('tr.itinerary-row')).filter(row => {
-            return row.style.display !== 'none' && !row.classList.contains('no-data-row');
+        if (!searchInput) return;
+
+        const vehicleTypeInput = document.getElementById('vehicle_type');
+        const vehicleModelInput = document.getElementById('vehicle_model');
+        const vehicleBranchInput = document.getElementById('vehicle_branch');
+        const seatingCapacityInput = document.getElementById('seating_capacity');
+
+        const agencyCodeInput = document.getElementById('agency_code');
+        const agencyBranchInput = document.getElementById('agency_branch');
+        const agencyPhoneInput = document.getElementById('agency_phone');
+
+        function showSuggestions(query = '') {
+            const filtered = items.filter(item => {
+                const searchable = formatter(item).display.toLowerCase();
+                return searchable.includes(query.toLowerCase());
+            }).slice(0, 10);
+
+            if (filtered.length === 0) {
+                suggestionsDiv.style.display = 'none';
+                return;
+            }
+
+            let html = '';
+            filtered.forEach(item => {
+                const formatted = formatter(item);
+                html += `<div class="suggestion-item" data-id="${formatted.id}" data-data='${JSON.stringify(formatted)}'>${formatted.display}</div>`;
+            });
+
+            suggestionsDiv.innerHTML = html;
+            suggestionsDiv.style.display = 'block';
+        }
+
+        searchInput.addEventListener('focus', function() {
+            showSuggestions('');
         });
-        const newIndex = visibleRows.length;
-        
-        const newRow = createNewRow(date, newIndex, vehicleGroup, busId, vehicleId, driverId, guideId);
-        
-        let nextRow = currentRow.nextElementSibling;
-        while (nextRow && (nextRow.style.display === 'none' || nextRow.classList.contains('no-data-row'))) {
-            nextRow = nextRow.nextElementSibling;
-        }
-        
-        if (nextRow && !nextRow.classList.contains('no-data-row')) {
-            tbody.insertBefore(newRow, nextRow);
-        } else {
-            tbody.appendChild(newRow);
-        }
-        
-        const noDataRow = tbody.querySelector('.no-data-row');
-        if (noDataRow) {
-            noDataRow.remove();
-        }
-        
-        reindexRows(table);
-        updateMoveButtons(table);
-        
-        initDatePickers(newRow);
-        attachRowEvents(newRow);
+
+        searchInput.addEventListener('input', function() {
+            showSuggestions(this.value);
+        });
+
+        suggestionsDiv.addEventListener('click', function(e) {
+            const suggestion = e.target.closest('.suggestion-item');
+            if (!suggestion) return;
+
+            const id = suggestion.dataset.id;
+            const data = JSON.parse(suggestion.dataset.data);
+            
+            searchInput.value = data.display;
+            hiddenId.value = id;
+            suggestionsDiv.style.display = 'none';
+
+            if (type === 'vehicle') {
+                if (vehicleTypeInput) vehicleTypeInput.value = data.type || '';
+                if (vehicleModelInput) vehicleModelInput.value = data.model || '';
+                if (vehicleBranchInput) vehicleBranchInput.value = data.branch || '';
+                if (seatingCapacityInput) seatingCapacityInput.value = data.seating || '';
+            } else if (type === 'agency') {
+                if (agencyCodeInput) agencyCodeInput.value = data.agency_code || '';
+                if (agencyBranchInput) agencyBranchInput.value = data.branch_name || '';
+                if (agencyPhoneInput) agencyPhoneInput.value = data.phone || '';
+            }
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!searchInput.contains(e.target) && !suggestionsDiv.contains(e.target)) {
+                suggestionsDiv.style.display = 'none';
+            }
+        });
+
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                suggestionsDiv.style.display = 'none';
+            }
+        });
     }
 
-    function createNewRow(date, index, vehicleGroup, busId, vehicleId, driverId, guideId) {
-        const newRow = document.createElement('tr');
-        newRow.className = 'itinerary-row';
-        newRow.setAttribute('data-vehicle', vehicleGroup);
-        newRow.setAttribute('data-index', index);
-        newRow.setAttribute('data-bus-id', busId);
-        newRow.setAttribute('data-itinerary-id', '');
+    setupSearch('vehicle', vehicles, (item) => {
+        return {
+            display: `${item.registration_number} ${item.vehicle_model?.model_name ? '(' + item.vehicle_model.model_name + ')' : ''}`,
+            id: item.id,
+            registration: item.registration_number,
+            type: item.vehicleType?.type_name || '',
+            model: item.vehicleModel?.model_name || '',
+            branch: item.branch?.branch_name || '',
+            seating: item.seating_capacity || ''
+        };
+    });
 
-        newRow.innerHTML = `
-            <td style="vertical-align: middle; text-align: center; background-color: #f9f9f9; position: relative;">
-                <span class="row-number" style="position: absolute; top: 2px; left: 2px; color: #2563eb; font-size: 10px; font-weight: bold;">${index + 1}</span>
-                <input type="hidden" name="daily_itineraries[${index}][id]" value="">
-                <input type="hidden" name="daily_itineraries[${index}][display_order]" value="${index + 1}">
-                <input type="hidden" name="daily_itineraries[${index}][bus_assignment_id]" value="${busId}" class="itinerary-bus-id">
-                <input type="hidden" name="daily_itineraries[${index}][vehicle_id]" value="${vehicleId}" class="itinerary-vehicle-id">
-                <input type="hidden" name="daily_itineraries[${index}][driver_id]" value="${driverId}" class="itinerary-driver-id">
-                <input type="hidden" name="daily_itineraries[${index}][guide_id]" value="${guideId}" class="itinerary-guide-id">
-                <input type="text" class="form-control form-control-sm border datepicker-3months" name="daily_itineraries[${index}][date]" value="${date}" style="width: 100%; text-align: center;" placeholder="YYYY-MM-DD">
-                <input type="hidden" name="daily_itineraries[${index}][vehicle_group]" value="${vehicleGroup}">
-                </td>
-            <td style="padding: 2px;">
-                <div class="d-flex flex-column" style="gap: 2px;">
-                    <input type="time" class="form-control form-control-sm border"
-                           name="daily_itineraries[${index}][time_start]" value="08:00"
-                           style="width: 100%;" step="60">
-                    <input type="text" class="form-control form-control-sm border"
-                           name="daily_itineraries[${index}][start_location]" value=""
-                           placeholder="開始場所" style="width: 100%;">
-                </div>
-                </td>
-            <td style="padding: 2px;">
-                <div class="d-flex flex-column" style="gap: 2px;">
-                    <input type="time" class="form-control form-control-sm border"
-                           name="daily_itineraries[${index}][time_end]" value="18:00"
-                           style="width: 100%;" step="60">
-                    <input type="text" class="form-control form-control-sm border"
-                           name="daily_itineraries[${index}][end_location]" value=""
-                           placeholder="終了場所" style="width: 100%;">
-                </div>
-                </td>
-            <td style="vertical-align: middle; padding: 2px;">
-                <textarea name="daily_itineraries[${index}][itinerary]" rows="2"
-                          class="form-control form-control-sm border"
-                          style="width: 100%; height: 100%; min-height: 60px;"></textarea>
-                </td>
-            <td style="padding: 2px; text-align: center; vertical-align: middle;">
-                <div style="display: flex; justify-content: center; align-items: center; height: 100%;">
-                    <input type="checkbox" class="form-check-input itinerary-select"
-                           id="select_itinerary_${index}"
-                           style="margin: 0; width: 18px; height: 18px; cursor: pointer;">
-                </div>
-                </td>
-            <td style="padding: 2px; text-align: center; vertical-align: middle;">
-                <div class="d-flex justify-content-center gap-1">
-                    <button type="button" class="btn btn-outline-secondary btn-sm move-up-btn" title="上へ移動">
-                        <i class="bi bi-arrow-up"></i>
-                    </button>
-                    <button type="button" class="btn btn-outline-secondary btn-sm move-down-btn" title="下へ移動">
-                        <i class="bi bi-arrow-down"></i>
-                    </button>
-                    <button type="button" class="btn btn-outline-success btn-sm add-row-btn" title="行を追加">
-                        <i class="bi bi-plus-lg"></i>
-                    </button>
-                    <button type="button" class="btn btn-outline-danger btn-sm delete-row-btn" title="行を削除">
-                        <i class="bi bi-dash-lg"></i>
-                    </button>
-                </div>
-                </td>
-        `;
+    setupSearch('guide', guides, (item) => {
+        return {
+            display: `${item.name} ${item.guide_code ? '(' + item.guide_code + ')' : ''}`,
+            id: item.id,
+            code: item.guide_code,
+            phone: item.phone_number,
+            branch: item.branch?.branch_name || '',
+            employment_type: item.employment_type
+        };
+    });
 
-        return newRow;
-    }
+    setupSearch('driver', drivers, (item) => {
+        return {
+            display: `${item.name} ${item.driver_code ? '(' + item.driver_code + ')' : ''}`,
+            id: item.id,
+            code: item.driver_code,
+            phone: item.phone_number
+        };
+    });
 
-function deleteRow(clickedButton) {
-    if (!confirm('この行程を削除してもよろしいですか？')) {
-        return;
-    }
+    setupSearch('agency', agencies, (item) => {
+        return {
+            display: `${item.agency_name} ${item.branch_name ? '(' + item.branch_name + ')' : ''}`,
+            id: item.id,
+            agency_code: item.agency_code,
+            branch_name: item.branch_name,
+            phone: item.phone_number,
+            manager: item.manager_name,
+            country: item.country,
+            email: item.email
+        };
+    });
 
-    const row = clickedButton.closest('tr.itinerary-row');
-    if (!row) return;
-
-    const table = row.closest('table');
-    const tbody = table.querySelector('tbody');
-
-    const itineraryId = row.getAttribute('data-itinerary-id');
-    
-    // 从行中获取 group_info_id
-    let groupInfoId = row.getAttribute('data-group-info-id');
-    
-    // 如果行上没有，从卡片中获取
-    if (!groupInfoId) {
-        const card = row.closest('.vehicle-detail-card');
-        const busId = card ? card.getAttribute('data-bus-id') : '';
-        if (busId) {
-            // 通过 busId 获取 group_info_id，需要从页面其他地方获取
-            // 或者从隐藏字段中获取
-            const groupInfoInput = document.querySelector('input[name="group_info_id"]');
-            if (groupInfoInput) {
-                groupInfoId = groupInfoInput.value;
+    function checkSeatingCapacity() {
+        const adultCount = parseInt(document.getElementById('adult_count')?.value) || 0;
+        const childCount = parseInt(document.querySelector('input[name="child_count"]')?.value) || 0;
+        const guideCount = parseInt(document.querySelector('input[name="guide_count"]')?.value) || 0;
+        const otherCount = parseInt(document.querySelector('input[name="other_count"]')?.value) || 0;
+        const totalPeople = adultCount + childCount + guideCount + otherCount;
+        const seatingCapacity = parseInt(document.getElementById('seating_capacity')?.value) || 0;
+        
+        const existingWarning = document.querySelector('.warning-message');
+        if (existingWarning) existingWarning.remove();
+        
+        if (seatingCapacity > 0 && totalPeople > seatingCapacity) {
+            const warningDiv = document.createElement('div');
+            warningDiv.className = 'warning-message';
+            warningDiv.innerText = `定員(${seatingCapacity}名)を超えています`;
+            
+            const adultCountParent = document.getElementById('adult_count')?.parentNode?.parentNode;
+            if (adultCountParent) {
+                adultCountParent.appendChild(warningDiv);
             }
         }
     }
+
+    const adultCountInput = document.getElementById('adult_count');
+    if (adultCountInput) {
+        adultCountInput.addEventListener('input', checkSeatingCapacity);
+    }
     
-    if (itineraryId && itineraryId !== '') {
-        const deleteBtn = clickedButton;
-        const originalHtml = deleteBtn.innerHTML;
-        deleteBtn.disabled = true;
-        deleteBtn.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+    const childCountInput = document.querySelector('input[name="child_count"]');
+    if (childCountInput) {
+        childCountInput.addEventListener('input', checkSeatingCapacity);
+    }
+    
+    const guideCountInput = document.querySelector('input[name="guide_count"]');
+    if (guideCountInput) {
+        guideCountInput.addEventListener('input', checkSeatingCapacity);
+    }
+    
+    const otherCountInput = document.querySelector('input[name="other_count"]');
+    if (otherCountInput) {
+        otherCountInput.addEventListener('input', checkSeatingCapacity);
+    }
+
+    function showErrors(errors) {
+        document.querySelectorAll('.error-message').forEach(el => el.remove());
+        document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
         
-        // 构建请求数据
-        const formData = new FormData();
-        formData.append('itinerary_id', itineraryId);
-        formData.append('_token', document.querySelector('input[name="_token"]').value);
+        for (const field in errors) {
+            const input = document.querySelector(`[name="${field}"]`);
+            if (input) {
+                input.classList.add('is-invalid');
+                
+                if (field === 'start_date' || field === 'end_date') {
+                    document.querySelector('[data-tab="basic"]').click();
+                }
+            }
+        }
+    }
+
+    document.getElementById('editForm').addEventListener('submit', function(e) {
+        e.preventDefault();
         
-        // 使用现有的路由
-        const url = `/masters/group-infos/${groupInfoId}/delete-itinerary`;
+        if (!validateDateRange()) {
+            return;
+        }
+    
+        const adultCount = parseInt(document.getElementById('adult_count')?.value) || 0;
+        const childCount = parseInt(document.querySelector('input[name="child_count"]')?.value) || 0;
+        const guideCount = parseInt(document.querySelector('input[name="guide_count"]')?.value) || 0;
+        const otherCount = parseInt(document.querySelector('input[name="other_count"]')?.value) || 0;
+        const totalPeople = adultCount + childCount + guideCount + otherCount;
+        const seatingCapacity = parseInt(document.getElementById('seating_capacity')?.value) || 0;
         
-        console.log('发送删除请求:', {
-            url: url,
-            itinerary_id: itineraryId,
-            group_info_id: groupInfoId
-        });
+        if (seatingCapacity > 0 && totalPeople > seatingCapacity) {
+            if (!confirm(`定員(${seatingCapacity}名)を超えています。このまま保存しますか？`)) {
+                return;
+            }
+        }
+    
+        const formData = new FormData(this);
+        formData.append('_method', 'PUT');
         
-        fetch(url, {
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = '保存中...';
+        submitBtn.disabled = true;
+    
+        fetch(this.action, {
             method: 'POST',
+            body: formData,
             headers: {
-                'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
-                'Accept': 'application/json'
-            },
-            body: formData
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value
+            }
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => { throw err; });
+            }
+            return response.json();
+        })
         .then(data => {
-            console.log('服务器响应:', data);
             if (data.success) {
-                row.remove();
-                
-                const visibleRows = Array.from(tbody.querySelectorAll('tr.itinerary-row')).filter(r => {
-                    return r.style.display !== 'none' && !r.classList.contains('no-data-row');
-                });
-                
-                if (visibleRows.length === 0) {
-                    tbody.innerHTML = `
-                        <tr class="no-data-row">
-                            <td colspan="6" class="text-center py-4" style="color: #6c757d; background-color: #f9f9f9;">
-                                <i class="bi bi-info-circle me-1"></i> 旅程データがありません。「+」ボタンを押して追加してください。
-                            <\/td>
-                        <\/tr>
-                    `;
+                // 关闭窗口并刷新父页面
+                if (window.parent) {
+                    window.parent.postMessage({
+                        action: 'close-iframe-and-reload'
+                    }, '*');
                 } else {
-                    reindexRows(table);
-                    updateMoveButtons(table);
+                    window.close();
+                    window.location.href = '{{ route('masters.operation-ledger.index') }}';
                 }
             } else {
-                alert('削除に失敗しました: ' + (data.message || '不明なエラー'));
-                deleteBtn.disabled = false;
-                deleteBtn.innerHTML = originalHtml;
+                alert(data.message || '更新に失敗しました');
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
             }
         })
         .catch(error => {
-            console.error('Error:', error);
-            alert('削除中にエラーが発生しました: ' + error.message);
-            deleteBtn.disabled = false;
-            deleteBtn.innerHTML = originalHtml;
-        });
-    } else {
-        row.remove();
-        reindexRows(table);
-        updateMoveButtons(table);
-        
-        const visibleRows = Array.from(tbody.querySelectorAll('tr.itinerary-row')).filter(r => {
-            return r.style.display !== 'none' && !r.classList.contains('no-data-row');
-        });
-        
-        if (visibleRows.length === 0) {
-            tbody.innerHTML = `
-                <tr class="no-data-row">
-                    <td colspan="6" class="text-center py-4" style="color: #6c757d; background-color: #f9f9f9;">
-                        <i class="bi bi-info-circle me-1"></i> 旅程データがありません。「+」ボタンを押して追加してください。
-                    <\/td>
-                <\/tr>
-            `;
-        }
-    }
-}
-
-    function moveUp(clickedButton) {
-        const row = clickedButton.closest('tr.itinerary-row');
-        if (!row) return;
-        
-        let prevRow = row.previousElementSibling;
-        while (prevRow && (prevRow.style.display === 'none' || prevRow.classList.contains('no-data-row'))) {
-            prevRow = prevRow.previousElementSibling;
-        }
-
-        if (prevRow && !prevRow.classList.contains('no-data-row')) {
-            const table = row.closest('table');
-            row.parentNode.insertBefore(row, prevRow);
-            reindexRows(table);
-            updateMoveButtons(table);
-        }
-    }
-
-    function moveDown(clickedButton) {
-        const row = clickedButton.closest('tr.itinerary-row');
-        if (!row) return;
-        
-        let nextRow = row.nextElementSibling;
-        while (nextRow && (nextRow.style.display === 'none' || nextRow.classList.contains('no-data-row'))) {
-            nextRow = nextRow.nextElementSibling;
-        }
-
-        if (nextRow && !nextRow.classList.contains('no-data-row')) {
-            const table = row.closest('table');
-            row.parentNode.insertBefore(nextRow, row);
-            reindexRows(table);
-            updateMoveButtons(table);
-        }
-    }
-
-    function reindexRows(table) {
-        const tbody = table.querySelector('tbody');
-        const rows = Array.from(tbody.querySelectorAll('tr.itinerary-row')).filter(row => {
-            return row.style.display !== 'none' && !row.classList.contains('no-data-row');
-        });
-        
-        rows.forEach((row, idx) => {
-            row.querySelectorAll('input, select, textarea').forEach(input => {
-                if (input.name === 'deleted_itineraries[]') {
-                    return;
-                }
-                const name = input.getAttribute('name');
-                if (name && name.includes('daily_itineraries[')) {
-                    const newName = name.replace(/daily_itineraries\[\d+\]/, `daily_itineraries[${idx}]`);
-                    input.setAttribute('name', newName);
-                }
-            });
-
-            const displayOrder = row.querySelector('input[name*="[display_order]"]');
-            if (displayOrder) {
-                displayOrder.value = idx + 1;
+            if (error.errors) {
+                showErrors(error.errors);
+                const errorMessages = Object.values(error.errors).flat().join('\n');
+                alert('入力内容に誤りがあります:\n' + errorMessages);
+            } else {
+                alert(error.message || 'エラーが発生しました');
             }
-
-            const rowNumber = row.querySelector('.row-number');
-            if (rowNumber) {
-                rowNumber.textContent = idx + 1;
-            }
-
-            const checkId = row.querySelector('[id^="select_itinerary_"]');
-            if (checkId) {
-                checkId.id = `select_itinerary_${idx}`;
-            }
-
-            row.setAttribute('data-index', idx);
-        });
-    }
-
-    function updateMoveButtons(table) {
-        const tbody = table.querySelector('tbody');
-        const rows = Array.from(tbody.querySelectorAll('tr.itinerary-row')).filter(row => {
-            return row.style.display !== 'none' && !row.classList.contains('no-data-row');
-        });
-        
-        rows.forEach((row, index) => {
-            const upBtn = row.querySelector('.move-up-btn');
-            const downBtn = row.querySelector('.move-down-btn');
-
-            if (upBtn) {
-                upBtn.disabled = index === 0;
-                if (index === 0) {
-                    upBtn.classList.add('disabled');
-                } else {
-                    upBtn.classList.remove('disabled');
-                }
-            }
-            if (downBtn) {
-                downBtn.disabled = index === rows.length - 1;
-                if (index === rows.length - 1) {
-                    downBtn.classList.add('disabled');
-                } else {
-                    downBtn.classList.remove('disabled');
-                }
-            }
-        });
-    }
-
-    // 为现有行绑定事件
-    document.querySelectorAll('.add-row-btn').forEach(btn => {
-        btn.onclick = function(e) {
-            e.preventDefault();
-            addRowAfter(this);
-        };
-    });
-
-    document.querySelectorAll('.delete-row-btn').forEach(btn => {
-        btn.onclick = function(e) {
-            e.preventDefault();
-            deleteRow(this);
-        };
-    });
-
-    document.querySelectorAll('.move-up-btn').forEach(btn => {
-        btn.onclick = function(e) {
-            e.preventDefault();
-            moveUp(this);
-        };
-    });
-
-    document.querySelectorAll('.move-down-btn').forEach(btn => {
-        btn.onclick = function(e) {
-            e.preventDefault();
-            moveDown(this);
-        };
-    });
-
-    const tables = document.querySelectorAll('table');
-    tables.forEach(table => {
-        updateMoveButtons(table);
-    });
-
-    const form = document.getElementById('editForm');
-    if (form) {
-        form.addEventListener('submit', function(e) {
-            const formData = new FormData(this);
-            console.log('=== 提交数据调试 ===');
-            console.log('deleted_itineraries:', formData.getAll('deleted_itineraries[]'));
             
-            const itineraryIds = [];
-            for (let pair of formData.entries()) {
-                if (pair[0].includes('daily_itineraries') && pair[0].includes('[id]')) {
-                    itineraryIds.push(pair[1]);
-                }
-            }
-            console.log('提交的行程ID:', itineraryIds);
-            
-            const saveBtn = document.getElementById('saveBtn');
-            if (saveBtn) {
-                saveBtn.disabled = true;
-                saveBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> 保存中...';
-            }
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
         });
-    }
+    });
 });
 </script>
 @endpush

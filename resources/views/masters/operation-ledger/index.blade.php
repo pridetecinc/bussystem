@@ -73,6 +73,13 @@
             </div>
             
             <div class="col-auto">
+                <select name="color_type" class="form-select form-select-sm" style="width: 140px;">
+                    <option value="status" {{ request('color_type') == 'status' ? 'selected' : '' }}>予約状態カラー</option>
+                    <option value="category" {{ request('color_type') == 'category' ? 'selected' : '' }}>予約分類カラー</option>
+                </select>
+            </div>
+            
+            <div class="col-auto">
                 <div class="form-check">
                     <input type="checkbox" class="form-check-input" id="has_guide" name="has_guide" value="1" {{ request('has_guide') == '1' ? 'checked' : '' }}>
                     <label class="form-check-label" for="has_guide" style="font-size: 0.8rem;">添乗員あり</label>
@@ -92,20 +99,80 @@
     <div class="table-responsive" style="overflow-x: auto;">
         <table class="table table-bordered table-sm ledger-table" style="font-size: 0.75rem; min-width: 800px;">
             <thead>
-                <tr>
+                32
                     <th class="text-center" style="position: sticky; left: 0; background-color: #f8f9fa; z-index: 10; min-width: 180px;">車両名 / 代理店</th>
                     @foreach($dates as $date)
                         <th class="text-center" style="background-color: #e9ecef; min-width: 100px;">
                             {{ $date['display'] }}
                         </th>
                     @endforeach
-                </tr>
-            </thead>
+                </thead>
             <tbody>
                 @foreach($vehicles as $index => $vehicle)
                     @php
                         $rowBgColor = $index % 2 == 0 ? '#f8f9fa' : '#ffffff';
                         $schedule = $scheduleData[$vehicle->id]['schedule'] ?? [];
+                        
+                        $groupedByBus = [];
+                        foreach ($schedule as $dateStr => $dayItineraries) {
+                            if (!empty($dayItineraries)) {
+                                foreach ($dayItineraries as $itinerary) {
+                                    $busId = $itinerary['bus_assignment_id'];
+                                    if (!isset($groupedByBus[$busId])) {
+                                        $groupedByBus[$busId] = [];
+                                    }
+                                    $groupedByBus[$busId][] = [
+                                        'date' => $dateStr,
+                                        'itinerary' => $itinerary
+                                    ];
+                                }
+                            }
+                        }
+                        
+                        $mergedItineraries = [];
+                        foreach ($groupedByBus as $busId => $items) {
+                            usort($items, function($a, $b) {
+                                return strcmp($a['date'], $b['date']);
+                            });
+                            
+                            $currentGroup = null;
+                            foreach ($items as $item) {
+                                $currentDate = \Carbon\Carbon::parse($item['date']);
+                                
+                                if ($currentGroup === null) {
+                                    $currentGroup = $item['itinerary'];
+                                    $currentGroup['start_date'] = $item['date'];
+                                    $currentGroup['end_date'] = $item['date'];
+                                    $currentGroup['start_minutes'] = $item['itinerary']['start_minutes'];
+                                    $currentGroup['end_minutes'] = $item['itinerary']['end_minutes'];
+                                    $currentGroup['dates'] = [$item['date']];
+                                } else {
+                                    $lastDate = \Carbon\Carbon::parse($currentGroup['end_date']);
+                                    $diffDays = $lastDate->diffInDays($currentDate);
+                                    
+                                    if ($diffDays == 1) {
+                                        $currentGroup['end_date'] = $item['date'];
+                                        $currentGroup['end_minutes'] = $item['itinerary']['end_minutes'];
+                                        $currentGroup['dates'][] = $item['date'];
+                                    } else {
+                                        $mergedItineraries[] = $currentGroup;
+                                        $currentGroup = $item['itinerary'];
+                                        $currentGroup['start_date'] = $item['date'];
+                                        $currentGroup['end_date'] = $item['date'];
+                                        $currentGroup['start_minutes'] = $item['itinerary']['start_minutes'];
+                                        $currentGroup['end_minutes'] = $item['itinerary']['end_minutes'];
+                                        $currentGroup['dates'] = [$item['date']];
+                                    }
+                                }
+                            }
+                            if ($currentGroup !== null) {
+                                $mergedItineraries[] = $currentGroup;
+                            }
+                        }
+                        
+                        usort($mergedItineraries, function($a, $b) {
+                            return $a['start_minutes'] - $b['start_minutes'];
+                        });
                     @endphp
                     <tr style="background-color: {{ $rowBgColor }};">
                         <td class="align-top" style="position: sticky; left: 0; background-color: {{ $rowBgColor }}; z-index: 5;">
@@ -114,26 +181,54 @@
                                 <br><small class="text-muted">{{ $vehicle->vehicleModel->model_name }}</small>
                             @endif
                             <br><small>{{ $vehicle->branch->branch_name ?? '' }}</small>
-                        </td>
-                        @foreach($dates as $dateInfo)
+                        </div>
+                        @foreach($dates as $dateIndex => $dateInfo)
                             @php
                                 $dateStr = $dateInfo['date']->format('Y-m-d');
-                                $dayItineraries = $schedule[$dateStr] ?? [];
+                                $displayItems = [];
+                                $itemIndex = 0;
+                                
+                                foreach ($mergedItineraries as $idx => $itinerary) {
+                                    if (in_array($dateStr, $itinerary['dates'])) {
+                                        if ($dateStr == $itinerary['start_date']) {
+                                            $startPercent = ($itinerary['start_minutes'] / 1440) * 100;
+                                            
+                                            $startDateObj = \Carbon\Carbon::parse($itinerary['start_date']);
+                                            $endDateObj = \Carbon\Carbon::parse($itinerary['end_date']);
+                                            $daysDiff = $startDateObj->diffInDays($endDateObj);
+                                            
+                                            $endPercent = ($itinerary['end_minutes'] / 1440) * 100;
+                                            
+                                            if ($daysDiff == 0) {
+                                                $spanWidth = $endPercent - $startPercent;
+                                            } else {
+                                                $firstDayWidth = 100 - $startPercent;
+                                                $middleDaysWidth = ($daysDiff - 1) * 100;
+                                                $spanWidth = $firstDayWidth + $middleDaysWidth + $endPercent;
+                                            }
+                                            
+                                            $itemData = $itinerary;
+                                            $itemData['span_width'] = $spanWidth;
+                                            $itemData['start_percent'] = $startPercent;
+                                            $itemData['z_index'] = 100 + $idx;
+                                            $displayItems[] = $itemData;
+                                        }
+                                    }
+                                }
                             @endphp
                             <td class="position-relative p-0" style="background-color: {{ $rowBgColor }}; cursor: pointer;" 
                                 onclick="openCreateGroup({{ $vehicle->id }}, '{{ $dateStr }}', '{{ $vehicle->registration_number }}')">
-                                <div class="timeline-cell" style="background-color: {{ $rowBgColor }};">
-                                    @foreach($dayItineraries as $idx => $itinerary)
+                                <div class="timeline-cell" style="background-color: {{ $rowBgColor }}; position: relative;">
+                                    @foreach($displayItems as $idx => $itinerary)
                                         @php
-                                            $leftPercent = ($itinerary['start_minutes'] / 1440) * 100;
-                                            $zIndex = count($dayItineraries) - $idx;
-                                            $categoryColor = $itinerary['category_color'] ?? 'transparent';
-                                            
-                                            if ($leftPercent < 0) $leftPercent = 0;
-                                            if ($leftPercent > 100) $leftPercent = 100;
+                                            $backgroundColor = request('color_type') == 'category' 
+                                                ? ($itinerary['category_color'] ?? 'transparent')
+                                                : ($itinerary['status_color'] ?? 'transparent');
                                         @endphp
-                                        <div class="timeline-event" style="left: {{ $leftPercent }}%; z-index: {{ $zIndex }}; background-color: {{ $categoryColor }};" onclick="event.stopPropagation(); openBusAssignmentEdit({{ $itinerary['bus_assignment_id'] }})">
-                                            <div class="event-content" style="border-left: 3px solid {{ $itinerary['status_color'] }};">
+                                        <div class="timeline-event" 
+                                             style="left: {{ $itinerary['start_percent'] }}%; width: {{ $itinerary['span_width'] }}%; z-index: {{ $itinerary['z_index'] }}; background-color: {{ $backgroundColor }};" 
+                                             onclick="event.stopPropagation(); openBusAssignmentEdit({{ $itinerary['bus_assignment_id'] }})">
+                                            <div class="event-content">
                                                 <div>
                                                     {{ $itinerary['group_info_id'] }} [{{ $itinerary['bus_assignment_id'] }}]
                                                 </div>
@@ -158,14 +253,16 @@
                                                     @if($itinerary['is_temporary_driver'])
                                                         <span style="color: #f59e0b; cursor: help;" title="仮運転手">(仮)</span>
                                                     @endif
-                                                    <span title="運転手名: {{ $itinerary['driver_name'] }}{{ $itinerary['driver_name_kana'] ? ' (' . $itinerary['driver_name_kana'] . ')' : '' }}{{ $itinerary['driver_phone'] ? ' / 電話: ' . $itinerary['driver_phone'] : '' }}">
-                                                        {{ $itinerary['driver_name'] }}
-                                                        @if($itinerary['driver_name_kana'])
-                                                            <span style="font-size: 0.6rem; color: #666;">({{ $itinerary['driver_name_kana'] }})</span>
+                                                    @if($itinerary['driver_name'] && $itinerary['driver_name'] != '未割当')
+                                                        <span title="運転手名: {{ $itinerary['driver_name'] }}{{ $itinerary['driver_name_kana'] ? ' (' . $itinerary['driver_name_kana'] . ')' : '' }}{{ $itinerary['driver_phone'] ? ' / 電話: ' . $itinerary['driver_phone'] : '' }}">
+                                                            {{ $itinerary['driver_name'] }}
+                                                            @if($itinerary['driver_name_kana'])
+                                                                <span style="font-size: 0.6rem; color: #666;">({{ $itinerary['driver_name_kana'] }})</span>
+                                                            @endif
+                                                        </span>
+                                                        @if($itinerary['driver_phone'])
+                                                            <span style="cursor: help;" title="電話番号: {{ $itinerary['driver_phone'] }}">📞</span>
                                                         @endif
-                                                    </span>
-                                                    @if($itinerary['driver_phone'])
-                                                        <span style="cursor: help;" title="電話番号: {{ $itinerary['driver_phone'] }}">📞</span>
                                                     @endif
                                                 </div>
                                                 @if($itinerary['remarks'])
@@ -177,26 +274,26 @@
                                         </div>
                                     @endforeach
                                     
-                                    @if(count($dayItineraries) == 0)
+                                    @if(count($displayItems) == 0)
                                         <div></div>
                                     @endif
                                 </div>
-                            </td>
+                            </div>
                         @endforeach
-                    </tr>
+                    </div>
                 @endforeach
             </tbody>
             <tfoot>
-                <tr>
+                32
                     <th class="text-center" style="background-color: #e9ecef;">日付</th>
                     @foreach($dates as $date)
                         <th class="text-center" style="background-color: #e9ecef;">
                             {{ $date['display'] }}
                         </th>
                     @endforeach
-                </tr>
+                </div>
             </tfoot>
-        </table>
+        </div>
     </div>
 </div>
 
@@ -241,29 +338,29 @@
     position: absolute;
     top: 0;
     bottom: 0;
+    height: 60px;
     border-left: 1px dashed #666;
+    border-right: 1px dashed #666;
     overflow: visible;
-    z-index: 100;
     cursor: pointer;
-    white-space: nowrap;
-    min-width: 30px;
     pointer-events: auto;
+    min-width: 0;
+}
+
+.timeline-event:hover {
+    border: 1px solid #ff0000;
 }
 
 .event-content {
-    height: 60px;
     position: relative;
     padding: 2px 4px;
     font-size: 0.7rem;
     line-height: 1.3;
-    border-left-width: 3px;
-    border-left-style: solid;
-    white-space: nowrap;
     z-index: 101;
     color: #000;
-    display: inline-block;
+    height: 60px;
+    white-space: nowrap;
     background-color: inherit;
-    pointer-events: auto;
 }
 
 .datepicker-3months {
@@ -387,11 +484,28 @@ function openIframeModal(url, title = '新規グループ作成') {
     
     iframe.src = url;
     modalTitle.textContent = title;
-    iframe.style.height = '480px';
-    if (modalContent) modalContent.style.maxWidth = '550px';
+    
+    if (title === '運行割当編集') {
+        iframe.style.height = '600px';
+        if (modalContent) modalContent.style.maxWidth = '900px';
+    } else {
+        iframe.style.height = '480px';
+        if (modalContent) modalContent.style.maxWidth = '550px';
+    }
     
     modal.style.display = 'block';
     document.body.style.overflow = 'hidden';
+    
+    iframe.onload = function() {
+        try {
+            const iframeHeight = iframe.contentWindow.document.body.scrollHeight;
+            if (iframeHeight > 100 && iframeHeight < 800) {
+                iframe.style.height = (iframeHeight + 40) + 'px';
+            }
+        } catch(e) {
+            console.log('无法获取iframe内容高度');
+        }
+    };
 }
 
 function closeIframeModal() {
@@ -415,7 +529,14 @@ function openCreateGroup(vehicleId, date, vehicleName) {
 
 function openBusAssignmentEdit(busAssignmentId) {
     const url = '/masters/bus-assignments/' + busAssignmentId + '/edit';
-    window.open(url, '_blank');
+    openIframeModal(url, '運行割当編集');
 }
+
+window.addEventListener('message', function(event) {
+    if (event.data && event.data.action === 'close-iframe-and-reload') {
+        closeIframeModal();
+        location.reload();
+    }
+});
 </script>
 @endpush
