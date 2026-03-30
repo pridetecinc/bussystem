@@ -45,6 +45,7 @@ use App\Http\Controllers\Masters\AccountPartnerController;
 use App\Http\Controllers\Masters\AccountController;
 use App\Http\Controllers\Masters\AccountSubController;
 use App\Http\Controllers\Masters\AccountJournalEntryController;
+use App\Http\Controllers\Masters\AccountLedgerController;
 
 Route::get('/', function() {
     return redirect('/masters');
@@ -150,7 +151,9 @@ Route::prefix('masters')->name('masters.')->group(function () {
         Route::resource('account-subs', AccountSubController::class)->names('account-subs');//勘定科目
         Route::resource('journal_entries', AccountJournalEntryController::class)->names('journal_entries');//
         Route::get('/account/account-subs/{accountId}', [AccountJournalEntryController::class, 'getAccountSubs'])->name('account.account-subs');
-        Route::get('/account/journal-entries/{id}', [AccountJournalEntryController::class, 'show'])->name('masters.journal_entries.show');
+        Route::get('/account/journal-entries/{id}', [AccountJournalEntryController::class, 'show'])->name('journal_entries.show');
+        Route::get('/account-ledgers/index', [AccountLedgerController::class, 'index'])->name('account-ledgers.index');
+        Route::get('/account-ledgers/generate/{id}', [AccountLedgerController::class, 'generate'])->name('account-ledgers.generate');
 
 
     });
