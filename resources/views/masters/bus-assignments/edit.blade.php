@@ -8,9 +8,10 @@
         @csrf
         @method('PUT')
         <input type="hidden" name="iframe" value="1" id="isIframe">
+        <input type="hidden" name="group_info_id" id="group_info_id" value="{{ $busAssignment->group_info_id }}">
 
         <div class="m-2">
-            <div class="d-flex flex-wrap align-items-center">
+            <div class="d-flex flex-wrap align-items-center justify-content-between">
                 <div class="d-flex align-items-center">
                     <label for="status" class="label-text mr-2">車種指定</label>
                     <input type="checkbox" id="status" class="checkbox mr-5" name="vehicle_type_spec_check" value="1" {{ $busAssignment->vehicle_type_spec_check ? 'checked' : '' }}>
@@ -36,16 +37,32 @@
                 
                 <div class="d-flex align-items-center">
                     <label for="category" class="label-text mr-2">業務分類</label>
-                        <select id="category" name="business_category" class="form-input" style="width: 100px;">
-                            <option value="">-- 選択 --</option>
-                            @foreach($reservationCategories ?? [] as $category)
-                                <option value="{{ $category->category_name }}" 
-                                        {{ ($busAssignment->groupInfo->business_category ?? '') == $category->category_name ? 'selected' : '' }}>
-                                    {{ $category->category_name }}
-                                </option>
-                            @endforeach
-                        </select>
+                    <select id="category" name="reservation_categories_id" class="form-input" style="width: 100px;">
+                        <option value="">-- 選択 --</option>
+                        @foreach($reservationCategories ?? [] as $category)
+                            <option value="{{ $category->id }}" 
+                                    {{ ($busAssignment->groupInfo->reservation_categories_id ?? '') == $category->id ? 'selected' : '' }}>
+                                {{ $category->category_name }}
+                            </option>
+                        @endforeach
+                    </select>
                 </div>
+            </div>
+        </div>
+
+        <!-- 新增信息区域 -->
+        <div class="info-cards d-flex gap-2 mb-2">
+            <div class="info-card w-100" style="background-color: #e6f3ff; border: 1px solid #b8d9ff; border-radius: 6px; padding: 6px 12px;">
+                <span class="info-label" style="font-size: 11px; color: #1e40af;">団体情報</span>
+                <span class="info-value" style="font-size: 13px; font-weight: bold; margin-left: 8px;">
+                    {{ $busAssignment->group_info_id }} 
+                    @php
+                        $busCount = \App\Models\Masters\BusAssignment::where('group_info_id', $busAssignment->group_info_id)->count();
+                    @endphp
+                    @if($busCount > 1)
+                        [{{ $busCount }}]
+                    @endif
+                </span>
             </div>
         </div>
 
@@ -101,6 +118,13 @@
                     <input type="hidden" name="driver_id" id="driver_id" value="{{ $busAssignment->driver_id }}">
                     <div class="suggestions-container" id="driver_suggestions" style="display: none;"></div>
                 </div>
+            </div>
+        </div>
+        
+        <div class="info-cards d-flex gap-2 mb-2">
+            <div class="info-card w-100" style="background-color: #e6f3ff; border: 1px solid #b8d9ff; border-radius: 6px; padding: 6px 12px;">
+                <span class="info-label" style="font-size: 11px; color: #1e40af;">運行ID</span>
+                <span class="info-value" style="font-size: 13px; font-weight: bold; margin-left: 8px;">{{ $busAssignment->id }}</span>
             </div>
         </div>
 
@@ -244,8 +268,10 @@
 
         <div class="d-flex justify-content-between align-items-center mt-3">
             <div class="d-flex gap-2">
-                <button type="submit" class="btn-primary" id="saveBtn">更新</button>
-                <button type="button" class="btn-danger" id="cancelBtn">取消</button>
+                <button type="button" class="btn-primary" id="detailBtn">運行詳細</button>
+                <button type="submit" class="btn-primary" id="saveBtn">变更</button>
+                <button type="button" class="btn-secondary" id="closeBtn">閉じる</button>
+                <button type="button" class="btn-danger" id="deleteBtn">削除</button>
             </div>
         </div>
     </form>
@@ -274,6 +300,8 @@
     .btn-primary { background-color: #2563eb; border: none; color: white; font-size: 12px; padding: 6px 24px; border-radius: 4px; cursor: pointer; }
     .btn-primary:hover { background-color: #1d4ed8; }
     .btn-primary:disabled { background-color: #93c5fd; cursor: not-allowed; }
+    .btn-secondary { background-color: #6b7280; border: none; color: white; font-size: 12px; padding: 6px 24px; border-radius: 4px; cursor: pointer; }
+    .btn-secondary:hover { background-color: #4b5563; }
     .btn-danger { background-color: #dc2626; border: none; color: white; font-size: 12px; padding: 6px 24px; border-radius: 4px; cursor: pointer; }
     .btn-danger:hover { background-color: #b91c1c; }
     .dashed-box { color: #6b7280; font-size: 11px; padding: 16px; background-color: #f9fafb; border-radius: 4px; text-align: center; border: 1px dashed #d1d5db; }
@@ -301,6 +329,8 @@
     .align-items-start { align-items: flex-start; }
     .justify-content-between { justify-content: space-between; }
     .position-relative { position: relative; }
+    .info-cards { margin-bottom: 8px; }
+    .info-card { display: inline-flex; align-items: center; }
     
     .suggestions-container {
         position: absolute;
@@ -393,14 +423,97 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('isIframe').value = '1';
     }
 
-    const cancelBtn = document.getElementById('cancelBtn');
-    
-    cancelBtn.addEventListener('click', function() {
+    const closeBtn = document.getElementById('closeBtn');
+    const detailBtn = document.getElementById('detailBtn');
+    const deleteBtn = document.getElementById('deleteBtn');
+    const groupInfoId = document.getElementById('group_info_id').value;
+    const busAssignmentId = {{ $busAssignment->id }};
+
+    // 閉じる按钮
+    closeBtn.addEventListener('click', function() {
         if (isInIframe) {
+            // 向父页面发送关闭消息
             window.parent.postMessage('close-iframe', '*');
+            
+            // 备用方案：如果父页面没有响应，尝试直接关闭
+            setTimeout(function() {
+                try {
+                    window.parent.document.getElementById('iframeModal').style.display = 'none';
+                } catch(e) {
+                    // 如果无法访问父页面，尝试关闭自己
+                    window.close();
+                }
+            }, 100);
         } else {
-            window.location.href = '{{ route('masters.bus-assignments.index') }}';
+            // 非iframe模式，尝试关闭窗口
+            window.close();
+            
+            // 如果无法关闭（浏览器可能阻止），跳转到列表页
+            setTimeout(function() {
+                window.location.href = '{{ route("masters.bus-assignments.index") }}';
+            }, 100);
         }
+    });
+
+    // 運行詳細按钮
+    detailBtn.addEventListener('click', function() {
+        const editUrl = '{{ route("masters.group-infos.edit", ":id") }}'.replace(':id', groupInfoId);
+        window.open(editUrl, '_blank');
+    });
+
+    // 削除按钮
+    deleteBtn.addEventListener('click', function() {
+        // 获取当前预约状态
+        const reservationStatus = document.getElementById('yoyaku').value;
+        
+        if (reservationStatus !== 'キャンセル') {
+            alert('削除するには、予約状況を「キャンセル」に変更してください。');
+            return;
+        }
+        
+        if (!confirm('この運行を削除しますか？\n関連する行程データもすべて削除されます。')) {
+            return;
+        }
+        
+        deleteBtn.disabled = true;
+        deleteBtn.textContent = '削除中...';
+        
+        fetch('{{ route("masters.bus-assignments.destroy", $busAssignment->id) }}', {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => { throw err; });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                alert(data.message || '削除しました。');
+                // 刷新父页面
+                if (window.parent) {
+                    window.parent.postMessage({
+                        action: 'close-iframe-and-reload'
+                    }, '*');
+                } else {
+                    window.location.href = '{{ route("masters.operation-ledger.index") }}';
+                }
+            } else {
+                alert(data.message || '削除に失敗しました');
+                deleteBtn.disabled = false;
+                deleteBtn.textContent = '削除';
+            }
+        })
+        .catch(error => {
+            alert(error.message || 'エラーが発生しました');
+            deleteBtn.disabled = false;
+            deleteBtn.textContent = '削除';
+        });
     });
 
     const tabs = document.querySelectorAll('.tab-item');
