@@ -10,13 +10,17 @@
     
     <div class="bg-light p-2 mb-2 rounded" style="background-color: #F3F4F6 !important; border: 1px solid #E5E7EB;">
         <form method="GET" action="{{ route('masters.operation-ledger.index') }}" class="row g-2 align-items-center" id="searchForm">
+            <input type="hidden" name="display_days" id="display_days" value="{{ $displayDays ?? 7 }}">
+            
             <div class="col-auto">
                 <input type="text" name="start_date" value="{{ $startDate }}" 
-                       class="form-control form-control-sm datepicker-3months" style="width: 120px;" placeholder="開始日" id="start_date">
+                       class="form-control form-control-sm datepicker-3months" style="width: 120px;" placeholder="開始日" 
+                       id="start_date" onchange="submitWithEndDate()">
             </div>
             <div class="col-auto">
                 <input type="text" name="end_date" value="{{ $endDate }}" 
-                       class="form-control form-control-sm datepicker-3months" style="width: 120px;" placeholder="終了日" id="end_date">
+                       class="form-control form-control-sm datepicker-3months" style="width: 120px;" placeholder="終了日" 
+                       id="end_date">
             </div>
             
             <div class="col-auto">
@@ -29,7 +33,13 @@
             </div>
             
             <div class="col-auto">
-                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="setToday()">今日</button>
+                <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-secondary" onclick="moveDate(-7)">&lt;&lt;</button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="moveDate(-1)">&lt;</button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="setToday()">今日</button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="moveDate(1)">&gt;</button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="moveDate(7)">&gt;&gt;</button>
+                </div>
             </div>
             
             <div class="col-auto">
@@ -41,6 +51,42 @@
                         </option>
                     @endforeach
                 </select>
+            </div>
+            
+            <div class="col-auto">
+                <input type="text" name="reservation_id" value="{{ request('reservation_id') }}" 
+                       class="form-control form-control-sm" style="width: 100px;" placeholder="予約ID">
+            </div>
+            
+            <div class="col-auto">
+                <input type="text" name="group_name" value="{{ request('group_name') }}" 
+                       class="form-control form-control-sm" style="width: 120px;" placeholder="団体名">
+            </div>
+            
+            <div class="col-auto branch-dropdown">
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="min-width: 140px; text-align: left; background-color: #fff; border-color: #ced4da;">
+                        <span id="branchSelectedText">営業所</span>
+                        <span id="branchSelectedCount" class="selected-count" style="display: none;">0</span>
+                    </button>
+                    <div class="dropdown-menu p-0" style="min-width: 220px;">
+                        <div class="dropdown-header border-bottom px-3 py-2">
+                            <label class="d-flex align-items-center w-100" style="cursor: pointer;">
+                                <input type="checkbox" id="branchSelectAll" class="me-2"> 
+                                <span>全て選択</span>
+                            </label>
+                        </div>
+                        <div style="max-height: 250px; overflow-y: auto;">
+                            @foreach($branches ?? [] as $branch)
+                                <label class="dropdown-item d-flex align-items-center" style="cursor: pointer;">
+                                    <input type="checkbox" name="branch_checkbox" value="{{ $branch->id }}" class="me-2 branch-checkbox"
+                                        {{ in_array($branch->id, (array)request('branch_ids', [])) ? 'checked' : '' }}>
+                                    {{ $branch->branch_name }}
+                                </label>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <div class="col-auto">
@@ -73,19 +119,31 @@
             </div>
             
             <div class="col-auto">
-                <select name="color_type" class="form-select form-select-sm" style="width: 140px;">
-                    <option value="status" {{ request('color_type') == 'status' ? 'selected' : '' }}>予約状態カラー</option>
-                    <option value="category" {{ request('color_type') == 'category' ? 'selected' : '' }}>予約分類カラー</option>
-                </select>
+                <div class="btn-group btn-group-sm" role="group">
+                    <input type="radio" class="btn-check" name="color_type" id="color_type_status" value="status" autocomplete="off" 
+                           {{ (request('color_type') == 'status' || !request()->has('color_type')) ? 'checked' : '' }} onchange="this.form.submit()">
+                    <label class="btn btn-outline-secondary" for="color_type_status" style="background-color: #fff; border-color: #ced4da;">
+                        <span style="display:inline-block; width:12px; height:12px; background-color:#ccf5ff; border:1px solid #999; margin-right:4px;"></span>
+                        予約状態
+                    </label>
+                    
+                    <input type="radio" class="btn-check" name="color_type" id="color_type_category" value="category" autocomplete="off" 
+                           {{ request('color_type') == 'category' ? 'checked' : '' }} onchange="this.form.submit()">
+                    <label class="btn btn-outline-secondary" for="color_type_category" style="background-color: #fff; border-color: #ced4da;">
+                        <span style="display:inline-block; width:12px; height:12px; background: linear-gradient(45deg, #ff9999, #99ff99); border:1px solid #999; margin-right:4px;"></span>
+                        予約分類
+                    </label>
+                </div>
             </div>
             
             <div class="col-auto">
                 <div class="form-check">
-                    <input type="checkbox" class="form-check-input" id="has_guide" name="has_guide" value="1" {{ request('has_guide') == '1' ? 'checked' : '' }}>
+                    <input type="checkbox" class="form-check-input" id="has_guide" name="has_guide" value="1" 
+                           {{ request('has_guide') == '1' ? 'checked' : '' }}>
                     <label class="form-check-label" for="has_guide" style="font-size: 0.8rem;">添乗員あり</label>
                 </div>
             </div>
-            
+    
             <div class="col-auto">
                 <button type="submit" class="btn btn-sm btn-primary">検索</button>
             </div>
@@ -99,17 +157,41 @@
     <div class="table-responsive" style="overflow-x: auto;">
         <table class="table table-bordered table-sm ledger-table" style="font-size: 0.75rem; min-width: 800px;">
             <thead>
-                32
+                <tr>
                     <th class="text-center" style="position: sticky; left: 0; background-color: #f8f9fa; z-index: 10; min-width: 180px;">車両名 / 代理店</th>
                     @foreach($dates as $date)
-                        <th class="text-center" style="background-color: #e9ecef; min-width: 100px;">
-                            {{ $date['display'] }}
+                        @php
+                            $dateStr = $date['date']->format('Y-m-d');
+                            $dateRemark = $dateRemarks[$dateStr] ?? null;
+                            $dateColor = '';
+                            if ($date['is_saturday']) {
+                                $dateColor = 'color: #0066cc;';
+                            } elseif ($date['is_sunday'] || $date['is_holiday']) {
+                                $dateColor = 'color: #ff0000;';
+                            }
+                        @endphp
+                        <th class="text-center date-header-cell" style="background-color: #e9ecef; min-width: 100px; vertical-align: top;">
+                            <div onclick="openDateRemarkModal('{{ $dateStr }}')" style="cursor: pointer; padding: 4px;">
+                                <div style="{{ $dateColor }}">{{ $date['display'] }}</div>
+                                @if ($date['is_holiday'] && $date['holiday_name'])
+                                    <div class="holiday-name" style="color: #ff0000; font-size: 0.6rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                        {{ $date['holiday_name'] }}
+                                    </div>
+                                @endif
+                                @if ($dateRemark && $dateRemark->remark)
+                                    <div class="date-remark" title="{{ $dateRemark->remark }}">
+                                        {{ \Illuminate\Support\Str::limit($dateRemark->remark, 12) }}
+                                    </div>
+                                @endif
+                            </div>
                         </th>
                     @endforeach
-                </thead>
+                </tr>
+            </thead>
             <tbody>
-                @foreach($vehicles as $index => $vehicle)
+                @foreach($groupedVehicles as $index => $vehicleData)
                     @php
+                        $vehicle = $vehicleData['vehicle'];
                         $rowBgColor = $index % 2 == 0 ? '#f8f9fa' : '#ffffff';
                         $schedule = $scheduleData[$vehicle->id]['schedule'] ?? [];
                         
@@ -176,123 +258,130 @@
                     @endphp
                     <tr style="background-color: {{ $rowBgColor }};">
                         <td class="align-top" style="position: sticky; left: 0; background-color: {{ $rowBgColor }}; z-index: 5;">
+                            @if($vehicleData['is_first_in_group'])
+                                <span style="display: inline-block; background-color: #6c757d; color: white; font-size: 0.6rem; padding: 2px 8px; border-radius: 12px; margin-bottom: 4px;">
+                                    {{ $vehicleData['group_name'] }}
+                                </span>
+                                <br>
+                            @endif
                             <strong>{{ $vehicle->registration_number }}</strong>
                             @if($vehicle->vehicleModel)
                                 <br><small class="text-muted">{{ $vehicle->vehicleModel->model_name }}</small>
                             @endif
                             <br><small>{{ $vehicle->branch->branch_name ?? '' }}</small>
-                        </div>
-                        @foreach($dates as $dateIndex => $dateInfo)
-                            @php
-                                $dateStr = $dateInfo['date']->format('Y-m-d');
-                                $displayItems = [];
-                                $itemIndex = 0;
-                                
-                                foreach ($mergedItineraries as $idx => $itinerary) {
-                                    if (in_array($dateStr, $itinerary['dates'])) {
-                                        if ($dateStr == $itinerary['start_date']) {
-                                            $startPercent = ($itinerary['start_minutes'] / 1440) * 100;
-                                            
-                                            $startDateObj = \Carbon\Carbon::parse($itinerary['start_date']);
-                                            $endDateObj = \Carbon\Carbon::parse($itinerary['end_date']);
-                                            $daysDiff = $startDateObj->diffInDays($endDateObj);
-                                            
-                                            $endPercent = ($itinerary['end_minutes'] / 1440) * 100;
-                                            
-                                            if ($daysDiff == 0) {
-                                                $spanWidth = $endPercent - $startPercent;
-                                            } else {
-                                                $firstDayWidth = 100 - $startPercent;
-                                                $middleDaysWidth = ($daysDiff - 1) * 100;
-                                                $spanWidth = $firstDayWidth + $middleDaysWidth + $endPercent;
-                                            }
-                                            
-                                            $itemData = $itinerary;
-                                            $itemData['span_width'] = $spanWidth;
-                                            $itemData['start_percent'] = $startPercent;
-                                            $itemData['z_index'] = 100 + $idx;
-                                            $displayItems[] = $itemData;
+                        </td>
+                    @foreach($dates as $dateIndex => $dateInfo)
+                        @php
+                            $dateStr = $dateInfo['date']->format('Y-m-d');
+                            $displayItems = [];
+                            $itemIndex = 0;
+                            
+                            $dayItineraryCount = 0;
+                            if (isset($schedule[$dateStr])) {
+                                $dayItineraryCount = count($schedule[$dateStr]);
+                            }
+                            
+                            foreach ($mergedItineraries as $idx => $itinerary) {
+                                if (in_array($dateStr, $itinerary['dates'])) {
+                                    if ($dateStr == $itinerary['start_date']) {
+                                        $startPercent = ($itinerary['start_minutes'] / 1440) * 100;
+                                        
+                                        $startDateObj = \Carbon\Carbon::parse($itinerary['start_date']);
+                                        $endDateObj = \Carbon\Carbon::parse($itinerary['end_date']);
+                                        $daysDiff = $startDateObj->diffInDays($endDateObj);
+                                        
+                                        $endPercent = ($itinerary['end_minutes'] / 1440) * 100;
+                                        
+                                        if ($daysDiff == 0) {
+                                            $spanWidth = $endPercent - $startPercent;
+                                        } else {
+                                            $firstDayWidth = 100 - $startPercent;
+                                            $middleDaysWidth = ($daysDiff - 1) * 100;
+                                            $spanWidth = $firstDayWidth + $middleDaysWidth + $endPercent;
                                         }
+                                        
+                                        $itemData = $itinerary;
+                                        $itemData['span_width'] = $spanWidth;
+                                        $itemData['start_percent'] = $startPercent;
+                                        $itemData['z_index'] = 100 + $idx;
+                                        $displayItems[] = $itemData;
                                     }
                                 }
-                            @endphp
-                            <td class="position-relative p-0" style="background-color: {{ $rowBgColor }}; cursor: pointer;" 
-                                onclick="openCreateGroup({{ $vehicle->id }}, '{{ $dateStr }}', '{{ $vehicle->registration_number }}')">
-                                <div class="timeline-cell" style="background-color: {{ $rowBgColor }}; position: relative;">
-                                    @foreach($displayItems as $idx => $itinerary)
-                                        @php
-                                            $backgroundColor = request('color_type') == 'category' 
-                                                ? ($itinerary['category_color'] ?? 'transparent')
-                                                : ($itinerary['status_color'] ?? 'transparent');
-                                        @endphp
-                                        <div class="timeline-event" 
-                                             style="left: {{ $itinerary['start_percent'] }}%; width: {{ $itinerary['span_width'] }}%; z-index: {{ $itinerary['z_index'] }}; background-color: {{ $backgroundColor }};" 
-                                             onclick="event.stopPropagation(); openBusAssignmentEdit({{ $itinerary['bus_assignment_id'] }})">
-                                            <div class="event-content">
-                                                <div>
-                                                    {{ $itinerary['group_info_id'] }} [{{ $itinerary['bus_assignment_id'] }}]
-                                                </div>
-                                                <div>
-                                                    @if($itinerary['vehicle_type_spec_check'])
-                                                        <span style="color: #f59e0b; cursor: help;" title="車種指定">⭐</span>
-                                                    @endif
-                                                    @if($itinerary['guide_name'])
-                                                        <span style="color: #10b981; cursor: help;" title="添乗員: {{ $itinerary['guide_name'] }}">👤</span>
-                                                    @endif
-                                                    @if($itinerary['status_finalized'])
-                                                        <span style="color: #22c55e; cursor: help; font-weight: bold;" title="最終確認済み">✓</span>
-                                                    @endif
-                                                </div>
-                                                <div>
-                                                    @if($itinerary['agency_code'])
-                                                        <span title="代理店コード: {{ $itinerary['agency_code'] }}">{{ $itinerary['agency_code'] }}</span> /
-                                                    @endif
-                                                    <span title="団体名: {{ $itinerary['group_name'] }}">{{ $itinerary['group_name'] }}</span>
-                                                </div>
-                                                <div>
-                                                    @if($itinerary['is_temporary_driver'])
-                                                        <span style="color: #f59e0b; cursor: help;" title="仮運転手">(仮)</span>
-                                                    @endif
-                                                    @if($itinerary['driver_name'] && $itinerary['driver_name'] != '未割当')
-                                                        <span title="運転手名: {{ $itinerary['driver_name'] }}{{ $itinerary['driver_name_kana'] ? ' (' . $itinerary['driver_name_kana'] . ')' : '' }}{{ $itinerary['driver_phone'] ? ' / 電話: ' . $itinerary['driver_phone'] : '' }}">
-                                                            {{ $itinerary['driver_name'] }}
-                                                            @if($itinerary['driver_name_kana'])
-                                                                <span style="font-size: 0.6rem; color: #666;">({{ $itinerary['driver_name_kana'] }})</span>
-                                                            @endif
-                                                        </span>
-                                                        @if($itinerary['driver_phone'])
-                                                            <span style="cursor: help;" title="電話番号: {{ $itinerary['driver_phone'] }}">📞</span>
-                                                        @endif
-                                                    @endif
-                                                </div>
-                                                @if($itinerary['remarks'])
-                                                    <div style="font-size: 0.6rem; color: #666; white-space: normal; cursor: help;" title="備考: {{ $itinerary['remarks'] }}">
-                                                        {{ Str::limit($itinerary['remarks'], 50) }}
-                                                    </div>
+                            }
+                        @endphp
+                        <td class="position-relative p-0" style="background-color: {{ $rowBgColor }}; cursor: pointer;" 
+                            onclick="openCreateGroup({{ $vehicle->id }}, '{{ $dateStr }}', '{{ $vehicle->registration_number }}')">
+                            <div class="timeline-cell" style="background-color: {{ $rowBgColor }}; position: relative;">
+                                @if($dayItineraryCount > 1)
+                                    <div class="itinerary-count-badge" title="{{ $dayItineraryCount }}件の運行があります">
+                                        {{ $dayItineraryCount }}
+                                    </div>
+                                @endif
+                                
+                                @foreach($displayItems as $idx => $itinerary)
+                                    @php
+                                        $backgroundColor = request('color_type') == 'category' 
+                                            ? ($itinerary['category_color'] ?? 'transparent')
+                                            : ($itinerary['status_color'] ?? 'transparent');
+                                    @endphp
+                                    <div class="timeline-event" 
+                                         style="left: {{ $itinerary['start_percent'] }}%; width: {{ $itinerary['span_width'] }}%; z-index: {{ $itinerary['z_index'] }}; background-color: {{ $backgroundColor }};" 
+                                         onclick="event.stopPropagation(); openBusAssignmentEdit({{ $itinerary['bus_assignment_id'] }})">
+                                        <div class="event-content">
+                                            <div>
+                                                {{ $itinerary['group_info_id'] }} [{{ $itinerary['bus_assignment_id'] }}]
+                                            </div>
+                                            <div>
+                                                @if($itinerary['vehicle_type_spec_check'])
+                                                    <span style="color: #f59e0b; cursor: help;" title="車種指定">⭐</span>
+                                                @endif
+                                                @if($itinerary['guide_name'])
+                                                    <span style="color: #10b981; cursor: help;" title="添乗員: {{ $itinerary['guide_name'] }}">👤</span>
+                                                @endif
+                                                @if($itinerary['status_finalized'])
+                                                    <span style="color: #22c55e; cursor: help; font-weight: bold;" title="最終確認済み">✓</span>
                                                 @endif
                                             </div>
+                                            <div>
+                                                @if($itinerary['agency_code'])
+                                                    <span title="代理店コード: {{ $itinerary['agency_code'] }}">{{ $itinerary['agency_code'] }}</span> /
+                                                @endif
+                                                <span title="団体名: {{ $itinerary['group_name'] }}">{{ $itinerary['group_name'] }}</span>
+                                            </div>
+                                            <div>
+                                                @if($itinerary['is_temporary_driver'])
+                                                    <span style="color: #f59e0b; cursor: help;" title="仮運転手">(仮)</span>
+                                                @endif
+                                                @if($itinerary['driver_name'] && $itinerary['driver_name'] != '未割当')
+                                                    <span title="運転手名: {{ $itinerary['driver_name'] }}{{ $itinerary['driver_name_kana'] ? ' (' . $itinerary['driver_name_kana'] . ')' : '' }}{{ $itinerary['driver_phone'] ? ' / 電話: ' . $itinerary['driver_phone'] : '' }}">
+                                                        {{ $itinerary['driver_name'] }}
+                                                        @if($itinerary['driver_name_kana'])
+                                                            <span style="font-size: 0.6rem; color: #666;">({{ $itinerary['driver_name_kana'] }})</span>
+                                                        @endif
+                                                    </span>
+                                                    @if($itinerary['driver_phone'])
+                                                        <span style="cursor: help;" title="電話番号: {{ $itinerary['driver_phone'] }}">📞</span>
+                                                    @endif
+                                                @endif
+                                            </div>
+                                            @if($itinerary['remarks'])
+                                                <div style="font-size: 0.6rem; color: #666; white-space: normal; cursor: help;" title="備考: {{ $itinerary['remarks'] }}">
+                                                    {{ Str::limit($itinerary['remarks'], 50) }}
+                                                </div>
+                                            @endif
                                         </div>
-                                    @endforeach
-                                    
-                                    @if(count($displayItems) == 0)
-                                        <div></div>
-                                    @endif
-                                </div>
+                                    </div>
+                                @endforeach
+                                
+                                @if(count($displayItems) == 0)
+                                    <div></div>
+                                @endif
                             </div>
-                        @endforeach
+                        </div>
+                    @endforeach
                     </div>
                 @endforeach
             </tbody>
-            <tfoot>
-                32
-                    <th class="text-center" style="background-color: #e9ecef;">日付</th>
-                    @foreach($dates as $date)
-                        <th class="text-center" style="background-color: #e9ecef;">
-                            {{ $date['display'] }}
-                        </th>
-                    @endforeach
-                </div>
-            </tfoot>
         </div>
     </div>
 </div>
@@ -329,7 +418,7 @@
 
 .timeline-cell {
     position: relative;
-    height: 60px;
+    height: 78px;
     width: 100%;
     overflow: visible;
 }
@@ -337,8 +426,7 @@
 .timeline-event {
     position: absolute;
     top: 0;
-    bottom: 0;
-    height: 60px;
+    height: 78px;
     border-left: 1px dashed #666;
     border-right: 1px dashed #666;
     overflow: visible;
@@ -349,6 +437,7 @@
 
 .timeline-event:hover {
     border: 1px solid #ff0000;
+    z-index: 1000 !important;
 }
 
 .event-content {
@@ -358,7 +447,7 @@
     line-height: 1.3;
     z-index: 101;
     color: #000;
-    height: 60px;
+    height: 76px;
     white-space: nowrap;
     background-color: inherit;
 }
@@ -370,9 +459,9 @@
 }
 
 .table-responsive {
-    max-height: calc(100vh - 200px);
-    overflow-y: auto;
+    max-height: none;
     overflow-x: auto;
+    overflow-y: visible;
 }
 
 .table-responsive .table {
@@ -405,12 +494,327 @@
 .table-responsive::-webkit-scrollbar-thumb:hover {
     background: #a8a8a8;
 }
+
+.itinerary-count-badge {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    background-color: #ef4444;
+    color: white;
+    font-size: 0.6rem;
+    font-weight: bold;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    z-index: 200;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+.itinerary-count-badge:hover {
+    background-color: #dc2626;
+    transform: scale(1.05);
+}
+
+.timeline-event[data-text-color="white"] .event-content,
+.timeline-event[data-text-color="white"] .event-content * {
+    color: #ffffff !important;
+}
+
+.date-header-cell {
+    cursor: pointer;
+}
+
+.date-remark {
+    font-size: 0.65rem;
+    color: #cc0000;
+    padding: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+}
+
+.branch-dropdown .dropdown-toggle {
+    min-width: 140px;
+    text-align: left;
+    background-color: #fff !important;
+    border-color: #ced4da !important;
+}
+
+.branch-dropdown .dropdown-toggle:after {
+    float: right;
+    margin-top: 8px;
+}
+
+.branch-dropdown .dropdown-menu {
+    min-width: 220px;
+}
+
+.branch-dropdown .dropdown-item {
+    cursor: pointer;
+}
+
+.btn-outline-secondary {
+    color: #212529 !important;
+}
+
+.selected-count {
+    background-color: #0d6efd;
+    color: white;
+    border-radius: 10px;
+    padding: 0 6px;
+    font-size: 0.7rem;
+    margin-left: 8px;
+}
+
+.btn-group .btn-outline-secondary {
+    background-color: #fff;
+    border-color: #ced4da;
+    color: #212529;
+}
+
+.btn-group .btn-outline-secondary:hover {
+    background-color: #e9ecef;
+    border-color: #adb5bd;
+    color: #212529;
+}
+
+.btn-group .btn-check:checked + .btn-outline-secondary {
+    background-color: #cfe2ff !important;
+    color: #212529;
+    font-weight: 500 !important;
+}
+
+.btn-group .btn-check:checked + .btn-outline-secondary:hover {
+    background-color: #b6d4fe !important;
+    color: #212529;
+}
+
+.holiday-name {
+    color: #ff0000;
+    font-size: 0.6rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 2px;
+    font-weight: normal;
+}
 </style>
 @endpush
 
 @push('scripts')
 <script>
+function getCurrentDisplayDays() {
+    let displayDays = document.getElementById('display_days')?.value;
+    if (displayDays) {
+        return parseInt(displayDays);
+    }
+    
+    const startDate = document.getElementById('start_date')?.value;
+    const endDate = document.getElementById('end_date')?.value;
+    if (startDate && endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        return Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
+    }
+    
+    return 7;
+}
+
+function formatDate(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function submitWithEndDate() {
+    const startDateInput = document.getElementById('start_date');
+    const endDateInput = document.getElementById('end_date');
+    const displayDaysInput = document.getElementById('display_days');
+    
+    if (!startDateInput.value) return;
+    
+    let displayDays = getCurrentDisplayDays();
+    
+    const newStart = new Date(startDateInput.value);
+    const newEnd = new Date(newStart);
+    newEnd.setDate(newStart.getDate() + displayDays - 1);
+    
+    endDateInput.value = formatDate(newEnd);
+    
+    if (displayDaysInput) {
+        displayDaysInput.value = displayDays;
+    }
+    
+    document.getElementById('searchForm').submit();
+}
+
+function moveDate(days) {
+    const startDateInput = document.getElementById('start_date');
+    const endDateInput = document.getElementById('end_date');
+    const displayDaysInput = document.getElementById('display_days');
+    
+    let currentStart = startDateInput.value ? new Date(startDateInput.value) : new Date();
+    let currentDays = getCurrentDisplayDays();
+    
+    const newStart = new Date(currentStart);
+    newStart.setDate(currentStart.getDate() + days);
+    const newEnd = new Date(newStart);
+    newEnd.setDate(newStart.getDate() + currentDays - 1);
+    
+    startDateInput.value = formatDate(newStart);
+    endDateInput.value = formatDate(newEnd);
+    
+    if (displayDaysInput) {
+        displayDaysInput.value = currentDays;
+    }
+    
+    document.getElementById('searchForm').submit();
+}
+
+function setToday() {
+    const today = new Date();
+    const startDateInput = document.getElementById('start_date');
+    const endDateInput = document.getElementById('end_date');
+    const displayDaysInput = document.getElementById('display_days');
+    
+    let currentDays = getCurrentDisplayDays();
+    const endDate = new Date(today);
+    endDate.setDate(today.getDate() + currentDays - 1);
+    
+    startDateInput.value = formatDate(today);
+    endDateInput.value = formatDate(endDate);
+    
+    if (displayDaysInput) {
+        displayDaysInput.value = currentDays;
+    }
+    
+    document.getElementById('searchForm').submit();
+}
+
+function initBranchSelect() {
+    const checkboxes = document.querySelectorAll('.branch-checkbox');
+    const selectAllCheckbox = document.getElementById('branchSelectAll');
+    const branchSelectedText = document.getElementById('branchSelectedText');
+    const branchSelectedCount = document.getElementById('branchSelectedCount');
+    const searchForm = document.getElementById('searchForm');
+    
+    function updateBranchDisplay() {
+        const selected = Array.from(checkboxes).filter(cb => cb.checked);
+        const count = selected.length;
+        
+        if (count === 0) {
+            branchSelectedText.textContent = '営業所';
+            branchSelectedCount.style.display = 'none';
+        } else {
+            branchSelectedText.textContent = '営業所';
+            branchSelectedCount.textContent = count;
+            branchSelectedCount.style.display = 'inline-block';
+        }
+        
+        if (selectAllCheckbox) {
+            const allChecked = checkboxes.length > 0 && Array.from(checkboxes).every(cb => cb.checked);
+            selectAllCheckbox.checked = allChecked;
+        }
+        
+        document.querySelectorAll('.branch-hidden-input').forEach(input => input.remove());
+        
+        selected.forEach(cb => {
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'branch_ids[]';
+            hiddenInput.value = cb.value;
+            hiddenInput.className = 'branch-hidden-input';
+            searchForm.appendChild(hiddenInput);
+        });
+    }
+    
+    function toggleCheckbox(checkbox) {
+        checkbox.checked = !checkbox.checked;
+        updateBranchDisplay();
+    }
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.removeEventListener('change', checkbox._changeHandler);
+        const changeHandler = function(e) {
+            e.stopPropagation();
+            updateBranchDisplay();
+        };
+        checkbox._changeHandler = changeHandler;
+        checkbox.addEventListener('change', changeHandler);
+        
+        checkbox.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    });
+    
+    if (selectAllCheckbox) {
+        selectAllCheckbox.removeEventListener('change', selectAllCheckbox._changeHandler);
+        const selectAllHandler = function(e) {
+            e.stopPropagation();
+            const isChecked = this.checked;
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = isChecked;
+            });
+            updateBranchDisplay();
+        };
+        selectAllCheckbox._changeHandler = selectAllHandler;
+        selectAllCheckbox.addEventListener('change', selectAllHandler);
+        
+        selectAllCheckbox.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    }
+    
+    document.querySelectorAll('.branch-dropdown .dropdown-item').forEach(item => {
+        item.removeEventListener('click', item._clickHandler);
+        
+        const clickHandler = function(e) {
+            if (e.target.type === 'checkbox') {
+                return;
+            }
+            e.preventDefault();
+            e.stopPropagation();
+            const checkbox = this.querySelector('input[type="checkbox"]');
+            if (checkbox) {
+                toggleCheckbox(checkbox);
+            }
+        };
+        item._clickHandler = clickHandler;
+        item.addEventListener('click', clickHandler);
+    });
+    
+    updateBranchDisplay();
+}
+
+function initColorTypeButtons() {
+    const statusRadio = document.getElementById('color_type_status');
+    const categoryRadio = document.getElementById('color_type_category');
+    const searchForm = document.getElementById('searchForm');
+    
+    if (statusRadio) {
+        statusRadio.addEventListener('change', function() {
+            if (this.checked) searchForm.submit();
+        });
+    }
+    if (categoryRadio) {
+        categoryRadio.addEventListener('change', function() {
+            if (this.checked) searchForm.submit();
+        });
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+    initBranchSelect();
+    initColorTypeButtons();
+    
     flatpickr('.datepicker-3months', {
         locale: 'ja',
         dateFormat: 'Y-m-d',
@@ -435,44 +839,67 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    const periodSelect = document.getElementById('period_select');
-    const startDateInput = document.getElementById('start_date');
-    const endDateInput = document.getElementById('end_date');
-    const searchForm = document.getElementById('searchForm');
+    function getContrastColor(bgColor) {
+        let r, g, b;
+        
+        if (bgColor.startsWith('rgb')) {
+            const match = bgColor.match(/[\d\.]+/g);
+            if (match && match.length >= 3) {
+                r = parseFloat(match[0]);
+                g = parseFloat(match[1]);
+                b = parseFloat(match[2]);
+            }
+        } else if (bgColor.startsWith('#')) {
+            let hex = bgColor.slice(1);
+            if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+            r = parseInt(hex.slice(0, 2), 16);
+            g = parseInt(hex.slice(2, 4), 16);
+            b = parseInt(hex.slice(4, 6), 16);
+        }
+        
+        if (r === undefined) return '#000000';
+        const brightness = (r * 0.299 + g * 0.587 + b * 0.114);
+        return brightness > 128 ? '#000000' : '#ffffff';
+    }
     
-    if (periodSelect) {
-        periodSelect.addEventListener('change', function() {
-            const period = parseInt(this.value);
-            const today = new Date();
-            const startDate = new Date(today);
-            const endDate = new Date(today);
-            endDate.setDate(today.getDate() + (period * 7 - 1));
-            
-            const formatDate = (date) => {
-                const year = date.getFullYear();
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const day = String(date.getDate()).padStart(2, '0');
-                return `${year}-${month}-${day}`;
-            };
-            
-            startDateInput.value = formatDate(startDate);
-            endDateInput.value = formatDate(endDate);
-            searchForm.submit();
+    function adjustTextColorByBackground() {
+        document.querySelectorAll('.timeline-event').forEach(event => {
+            const bgColor = window.getComputedStyle(event).backgroundColor;
+            if (bgColor && bgColor !== 'rgba(0, 0, 0, 0)' && bgColor !== 'transparent') {
+                const textColor = getContrastColor(bgColor);
+                const isWhite = textColor === '#ffffff';
+                event.setAttribute('data-text-color', isWhite ? 'white' : 'black');
+                const contentDiv = event.querySelector('.event-content');
+                if (contentDiv) contentDiv.style.color = textColor;
+            }
+        });
+    }
+    
+    adjustTextColorByBackground();
+    
+    const observer = new MutationObserver(function(mutations) {
+        let shouldUpdate = false;
+        mutations.forEach(mutation => {
+            if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                shouldUpdate = true;
+            }
+            if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+                shouldUpdate = true;
+            }
+        });
+        if (shouldUpdate) adjustTextColorByBackground();
+    });
+    
+    const tableContainer = document.querySelector('.table-responsive');
+    if (tableContainer) {
+        observer.observe(tableContainer, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['style', 'class']
         });
     }
 });
-
-function setToday() {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    const todayStr = `${year}-${month}-${day}`;
-    
-    document.getElementById('start_date').value = todayStr;
-    document.getElementById('end_date').value = todayStr;
-    document.getElementById('searchForm').submit();
-}
 
 function openIframeModal(url, title = '新規グループ作成') {
     const iframe = document.getElementById('modalIframe');
@@ -484,14 +911,8 @@ function openIframeModal(url, title = '新規グループ作成') {
     
     iframe.src = url;
     modalTitle.textContent = title;
-    
-    if (title === '運行割当編集') {
-        iframe.style.height = '600px';
-        if (modalContent) modalContent.style.maxWidth = '900px';
-    } else {
-        iframe.style.height = '480px';
-        if (modalContent) modalContent.style.maxWidth = '550px';
-    }
+    iframe.style.height = '480px';
+    if (modalContent) modalContent.style.maxWidth = '550px';
     
     modal.style.display = 'block';
     document.body.style.overflow = 'hidden';
@@ -503,7 +924,7 @@ function openIframeModal(url, title = '新規グループ作成') {
                 iframe.style.height = (iframeHeight + 40) + 'px';
             }
         } catch(e) {
-            console.log('无法获取iframe内容高度');
+            console.log('iframeの高さを取得できません');
         }
     };
 }
@@ -530,6 +951,11 @@ function openCreateGroup(vehicleId, date, vehicleName) {
 function openBusAssignmentEdit(busAssignmentId) {
     const url = '/masters/bus-assignments/' + busAssignmentId + '/edit';
     openIframeModal(url, '運行割当編集');
+}
+
+function openDateRemarkModal(date) {
+    const url = '/masters/group-info-date-remarks/' + encodeURIComponent(date);
+    openIframeModal(url, '予定登録');
 }
 
 window.addEventListener('message', function(event) {
