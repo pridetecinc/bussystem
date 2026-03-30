@@ -363,7 +363,7 @@
             <div class="card h-100 border-danger border-1">
                 <div class="card-header bg-danger text-white py-0 d-flex justify-content-between align-items-center editor-header">
                     <span><i class="bi bi-arrow-down-right"></i> 借方</span>
-                    <!-- <button type="button" class="btn btn-sm btn-light text-danger py-0" style="height: 22px;" onclick="addLine(1)"><i class="bi bi-plus"></i> 行追加</button> -->
+                    <button type="button" class="btn btn-sm btn-light text-danger py-0" style="height: 22px;" onclick="addLine(1)"><i class="bi bi-plus"></i> 行追加</button>
                 </div>
                 <div class="card-body p-1 overflow-auto" style="max-height: 220px;">
                     <table class="table table-sm table-bordered mb-0" id="table-debit">
@@ -387,7 +387,7 @@
             <div class="card h-100 border-primary border-1">
                 <div class="card-header bg-primary text-white py-0 d-flex justify-content-between align-items-center editor-header">
                     <span><i class="bi bi-arrow-up-right"></i> 貸方</span>
-                    <!-- <button type="button" class="btn btn-sm btn-light text-primary py-0" style="height: 22px;" onclick="addLine(2)"><i class="bi bi-plus"></i> 行追加</button> -->
+                    <button type="button" class="btn btn-sm btn-light text-primary py-0" style="height: 22px;" onclick="addLine(2)"><i class="bi bi-plus"></i> 行追加</button>
                 </div>
                 <div class="card-body p-1 overflow-auto" style="max-height: 220px;">
                     <table class="table table-sm table-bordered mb-0" id="table-credit">
@@ -526,6 +526,7 @@
                 <div class="input-group input-group-sm">
                     <input type="number" step="0.01" class="form-control amount-input text-end" 
                            value="${data.amount || ''}" oninput="calculateTotals(); this.classList.remove('is-invalid');" placeholder="0">
+                           <button type="button" class="btn btn-outline-danger" onclick="removeRow(this)" style="border-left:0;"><i class="bi bi-x-lg"></i></button>
                 
                 </div>
             </td>
