@@ -53,8 +53,10 @@ class AccountLedgerController extends Controller
     public function generate($id){
         $year = request()->input('year_month');
 
+        $account = Account::findOrFail($id);
+
         $datas = [];
-        $datas['account_name'] = "现金";
+        $datas['account_name'] = $account->name ?? '';
         $datas['year'] = $year;
 
         $entry_id = AccountJournalEntry::where('posting_date','like', $year."%")->pluck('id');
