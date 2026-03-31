@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Masters;
 
 use App\Http\Controllers\Controller;
+use App\Models\Masters\Driver;
 use App\Models\Masters\Vehicle;
 use App\Models\Masters\DailyItinerary;
 use App\Models\Masters\ReservationCategory;
@@ -14,22 +15,23 @@ use App\Helpers\HolidayHelper;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
-class OperationLedgerController extends Controller
+class DriverLedgerController extends Controller
 {
     public function index(Request $request)
     {
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
         $period = $request->input('period');
-        $attendanceStatus = $request->input('attendance_status');
         $vehicleTypeId = $request->input('vehicle_type_id');
+        $vehicleId = $request->input('vehicle_id');
+        $driverId = $request->input('driver_id');
         $agencyId = $request->input('agency_id');
         $reservationStatus = $request->input('reservation_status');
         $hasGuide = $request->input('has_guide');
-        
+        $attendanceStatus = $request->input('attendance_status');
+        $branchId = $request->input('branch_id');
         $reservationId = $request->input('reservation_id');
         $groupName = $request->input('group_name');
-        $branchIds = $request->input('branch_ids', []);
         
         $displayDays = $request->input('display_days', 7);
         
@@ -77,55 +79,70 @@ class OperationLedgerController extends Controller
         
         $dateRemarks = GroupInfoDateRemark::getRemarksByDateRange($startDate, $endDate);
         
+        $drivers = Driver::with('branch')
+            ->where('is_active', true)
+            ->when($attendanceStatus, function($query) use ($attendanceStatus) {
+                $query->where('attendance_status', $attendanceStatus);
+            })
+            ->when($branchId, function($query) use ($branchId) {
+                $query->where('branch_id', $branchId);
+            })
+            ->when($driverId, function($query) use ($driverId) {
+                $query->where('id', $driverId);
+            })
+            ->orderBy('branch_id', 'asc')
+            ->orderBy('display_order', 'asc')
+            ->orderBy('driver_code', 'asc')
+            ->get();
+        
+        $groupedDrivers = [];
+        $currentBranch = null;
+        $branchIndex = 0;
+        
+        foreach ($drivers as $index => $driver) {
+            $branchName = $driver->branch ? $driver->branch->branch_name : '未所属';
+            
+            if ($currentBranch !== $branchName) {
+                $currentBranch = $branchName;
+                $isFirstInGroup = true;
+            } else {
+                $isFirstInGroup = false;
+            }
+            
+            $groupedDrivers[] = [
+                'driver' => $driver,
+                'group_name' => $branchName,
+                'is_first_in_group' => $isFirstInGroup,
+            ];
+        }
+        
         $vehicles = Vehicle::with(['vehicleModel', 'branch'])
             ->where('is_active', true)
             ->when($vehicleTypeId, function($query) use ($vehicleTypeId) {
                 $query->where('vehicle_type_id', $vehicleTypeId);
             })
-            ->when($branchIds, function($query) use ($branchIds) {
-                if (is_array($branchIds) && !empty($branchIds)) {
-                    $query->whereIn('branch_id', $branchIds);
-                }
-            })
-            ->orderByRaw("FIELD(ownership_type, 'own', 'reservable', 'rental')")
             ->orderBy('display_order', 'asc')
             ->orderBy('vehicle_code', 'asc')
             ->get();
         
-        $ownershipMap = [
-            'own' => '自社',
-            'reservable' => '予約用',
-            'rental' => '傭車',
-        ];
-        
-        $groupedVehicles = [];
-        foreach ($vehicles as $index => $vehicle) {
-            $groupedVehicles[] = [
-                'vehicle' => $vehicle,
-                'group_name' => $ownershipMap[$vehicle->ownership_type] ?? 'その他',
-                'is_first_in_group' => ($index == 0 || $vehicles[$index - 1]->ownership_type != $vehicle->ownership_type),
-            ];
-        }
-        
         $branches = Branch::orderBy('display_order', 'asc')
             ->orderBy('branch_code', 'asc')
             ->get();
+        
+        $vehicleTypes = VehicleType::orderBy('type_name')->get();
+        $agencies = Agency::orderBy('agency_name')->get();
+        
         
         $vehicleQuery = Vehicle::where('is_active', true);
         if ($vehicleTypeId) {
             $vehicleQuery->where('vehicle_type_id', $vehicleTypeId);
         }
         $filteredVehicleIds = $vehicleQuery->pluck('id');
-        
-        $allItineraries = DailyItinerary::with(['busAssignment', 'groupInfo', 'busAssignment.driver', 'busAssignment.guide'])
+
+        $allItineraries = DailyItinerary::with(['busAssignment', 'groupInfo', 'busAssignment.vehicle', 'busAssignment.guide'])
             ->whereBetween('date', [$startDate, $endDate])
             ->whereIn('vehicle_id', $filteredVehicleIds)
-            ->whereNotNull('vehicle_id')
-            ->when($agencyId, function($query) use ($agencyId) {
-                $query->whereHas('groupInfo', function($q) use ($agencyId) {
-                    $q->where('agency_id', $agencyId);
-                });
-            })
+            ->whereNotNull('driver_id')
             ->when($reservationId, function($query) use ($reservationId) {
                 $query->whereHas('groupInfo', function($q) use ($reservationId) {
                     $q->where('id', $reservationId);
@@ -135,6 +152,12 @@ class OperationLedgerController extends Controller
                 $query->whereHas('groupInfo', function($q) use ($groupName) {
                     $q->where('group_name', 'like', '%' . $groupName . '%');
                 });
+            })
+            ->when($vehicleId, function($query) use ($vehicleId) {
+                $query->where('vehicle_id', $vehicleId);
+            })
+            ->when($driverId, function($query) use ($driverId) {
+                $query->where('driver_id', $driverId);
             })
             ->when($reservationStatus, function($query) use ($reservationStatus) {
                 $query->whereHas('groupInfo', function($q) use ($reservationStatus) {
@@ -186,50 +209,54 @@ class OperationLedgerController extends Controller
             }
         }
         
-        $vehicleTypes = VehicleType::orderBy('type_name')->get();
-        
-        $agencies = Agency::orderBy('agency_name')->get();
-        
         $scheduleData = [];
-        foreach ($vehicles as $vehicle) {
-            $vehicleId = $vehicle->id;
-            $vehicleSchedule = [];
+        foreach ($drivers as $driver) {
+            $driverIdVal = $driver->id;
+            $driverSchedule = [];
             
             foreach ($dates as $dateInfo) {
                 $dateStr = $dateInfo['date']->format('Y-m-d');
                 
-                $dayItineraries = $allItineraries->filter(function($itinerary) use ($dateStr, $vehicleId) {
+                $dayItineraries = $allItineraries->filter(function($itinerary) use ($dateStr, $driverIdVal) {
                     $itineraryDate = Carbon::parse($itinerary->date)->format('Y-m-d');
-                    return $itineraryDate == $dateStr && $itinerary->vehicle_id == $vehicleId;
+                    return $itineraryDate == $dateStr && $itinerary->driver_id == $driverIdVal;
                 });
                 
                 if ($dayItineraries->count() > 0) {
-                    $vehicleSchedule[$dateStr] = $this->formatItineraries($dayItineraries, $busColors);
+                    $driverSchedule[$dateStr] = $this->formatItineraries($dayItineraries, $busColors);
                 } else {
-                    $vehicleSchedule[$dateStr] = null;
+                    $driverSchedule[$dateStr] = null;
                 }
             }
             
-            $scheduleData[$vehicleId] = [
-                'vehicle' => $vehicle,
-                'schedule' => $vehicleSchedule
+            $scheduleData[$driverIdVal] = [
+                'driver' => $driver,
+                'schedule' => $driverSchedule
             ];
         }
         
-        return view('masters.operation-ledger.index', compact(
+        return view('masters.driver-ledger.index', compact(
             'dates',
-            'groupedVehicles',
+            'groupedDrivers',
             'scheduleData',
             'startDate',
             'endDate',
             'vehicleTypes',
+            'vehicles',
+            'branches',
             'agencies',
             'dateRemarks',
-            'branches',
             'displayDays',
+            'vehicleTypeId',
+            'vehicleId',
+            'driverId',
+            'agencyId',
+            'reservationStatus',
+            'hasGuide',
+            'attendanceStatus',
+            'branchId',
             'reservationId',
-            'groupName',
-            'branchIds'
+            'groupName'
         ));
     }
     
@@ -237,6 +264,19 @@ class OperationLedgerController extends Controller
     {
         $days = ['日', '月', '火', '水', '木', '金', '土'];
         return $days[$dayOfWeek];
+    }
+    
+    private function getAttendanceStatusColor($status)
+    {
+        $colors = [
+            '出勤' => '#28a745',
+            '休暇' => '#ffc107',
+            '欠勤' => '#dc3545',
+            '研修' => '#17a2b8',
+            '有給' => '#fd7e14',
+            '代休' => '#6f42c1',
+        ];
+        return $colors[$status] ?? '#6c757d';
     }
     
     private function formatItineraries($itineraries, $busColors)
@@ -255,6 +295,7 @@ class OperationLedgerController extends Controller
             $agency = $groupInfo ? $groupInfo->agencyInfo : null;
             $driver = $busAssignment ? $busAssignment->driver : null;
             $guide = $busAssignment ? $busAssignment->guide : null;
+            $vehicle = $busAssignment ? $busAssignment->vehicle : null;
             
             $startTime = Carbon::parse($itinerary->time_start);
             $endTime = Carbon::parse($itinerary->time_end);
@@ -268,6 +309,7 @@ class OperationLedgerController extends Controller
                 $driverName = $driver ? $driver->name : ($busAssignment ? $busAssignment->driver_name : ($itinerary->driver ?? ''));
                 $guideName = $guide ? $guide->name : ($busAssignment ? $busAssignment->guide_name : ($itinerary->guide ?? ''));
                 $groupName = $groupInfo ? $groupInfo->group_name : '';
+                $vehicleName = $vehicle ? $vehicle->registration_number : ($itinerary->vehicle ?? '');
                 
                 $result[] = [
                     'start_minutes' => $startMinutes,
@@ -278,6 +320,7 @@ class OperationLedgerController extends Controller
                     'driver_name' => $driverName,
                     'driver_name_kana' => $driver->name_kana ?? '',
                     'driver_phone' => $driver->phone_number ?? '',
+                    'vehicle_name' => $vehicleName,
                     'is_temporary_driver' => $busAssignment ? $busAssignment->temporary_driver : false,
                     'vehicle_type_spec_check' => $busAssignment ? $busAssignment->vehicle_type_spec_check : false,
                     'status_finalized' => $busAssignment ? $busAssignment->status_finalized : false,

@@ -139,9 +139,9 @@
                                 <select name="ownership_type" id="ownership_type" 
                                         class="form-select @error('ownership_type') is-invalid @enderror" required>
                                     <option value="">選択してください</option>
-                                    <option value="company" {{ old('ownership_type') == 'company' ? 'selected' : '' }}>会社所有</option>
-                                    <option value="rental" {{ old('ownership_type') == 'rental' ? 'selected' : '' }}>レンタル</option>
-                                    <option value="personal" {{ old('ownership_type') == 'personal' ? 'selected' : '' }}>個人所有</option>
+                                    <option value="own" {{ old('ownership_type') == 'own' ? 'selected' : '' }}>自社</option>
+                                    <option value="reservable" {{ old('ownership_type') == 'reservable' ? 'selected' : '' }}>予約用</option>
+                                    <option value="rental" {{ old('ownership_type') == 'rental' ? 'selected' : '' }}>傭車</option>
                                 </select>
                                 @error('ownership_type')
                                     <div class="invalid-feedback">{{ $message }}</div>

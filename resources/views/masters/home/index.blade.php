@@ -33,7 +33,7 @@
                     @endif
                     
                     @if($isAdmin || $isOperationsManager || $isCoordinator || $isManager)
-                    <a href="{{ route('masters.drivers.index') }}" class="btn btn-outline-secondary btn-sm w-100 mb-1">運転手台帳</a>
+                    <a href="{{ route('masters.driver-ledger.index') }}" class="btn btn-outline-secondary btn-sm w-100 mb-1">運転手台帳</a>
                     @endif
                     
                     @if($isAdmin || $isOperationsManager || $isCoordinator || $isManager)
@@ -104,7 +104,7 @@
                         <a href="{{ route('masters.products.index') }}" class="btn btn-outline-secondary btn-sm w-100 mb-1 text-start">買掛帳</a>
                         
                         <!-- 勘定元帳 -->
-                        <a href="{{ route('masters.products.index') }}" class="btn btn-outline-secondary btn-sm w-100 mb-1 text-start">勘定元帳</a>
+                        <a href="{{ route('masters.account-ledgers.index') }}" class="btn btn-outline-secondary btn-sm w-100 mb-1 text-start">勘定元帳</a>
                         
                         <!-- 貸借対照表 -->
                         <a href="{{ route('masters.products.index') }}" class="btn btn-outline-secondary btn-sm w-100 mb-1 text-start">貸借対照表</a>
