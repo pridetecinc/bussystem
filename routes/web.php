@@ -30,6 +30,7 @@ use App\Http\Controllers\Masters\GroupInfoController;
 use App\Http\Controllers\Masters\GroupInfoDateRemarkController;
 use App\Http\Controllers\Masters\BusAssignmentController;
 use App\Http\Controllers\Masters\OperationLedgerController;
+use App\Http\Controllers\Masters\DriverLedgerController;
 
 use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -103,6 +104,8 @@ Route::prefix('masters')->name('masters.')->group(function () {
         Route::post('group-infos/{id}/delete-itinerary', [GroupInfoController::class, 'deleteItinerary'])->name('group-infos.delete-itinerary');
         
         Route::get('operation-ledger', [OperationLedgerController::class, 'index'])->name('operation-ledger.index');
+        
+        Route::get('driver-ledger', [DriverLedgerController::class, 'index'])->name('driver-ledger.index');
         
         Route::prefix('group-info-date-remarks')->name('group-info-date-remarks.')->group(function () {
             Route::get('/{date}', [GroupInfoDateRemarkController::class, 'show'])->name('show');
