@@ -1,5 +1,4 @@
 @extends('layouts.app')
-
 @section('content')
 <style>
     /* === 1. 全局基础样式 === */
@@ -7,7 +6,7 @@
         font-size: 0.9rem;
     }
 
-    /* === 2. 表格紧凑模式 === */
+    /* === 2. 表格紧凑模式 (优化版：仅影响列表，不影响编辑器) === */
     .table-compact th,
     .table-compact td {
         padding: 0.25rem 0.5rem !important;
@@ -20,6 +19,21 @@
         background-color: #f8f9fa;
         font-weight: 600;
         white-space: nowrap;
+    }
+
+    /* === 2.1 极致紧凑模式：上半部分列表专用 === */
+    .card-body .table-compact th,
+    .card-body .table-compact td {
+        padding: 0.1rem 0.25rem !important;
+        font-size: 0.75rem !important;
+        line-height: 1.7;
+        height: auto;
+    }
+
+    .card-body .table-compact thead th {
+        font-size: 0.8rem !important;
+        padding-top: 0.2rem !important;
+        padding-bottom: 0.2rem !important;
     }
 
     /* === 3. 搜索表单紧凑化 === */
@@ -39,11 +53,24 @@
         justify-content: center;
     }
 
-    /* === 4. 底部编辑器紧凑化 (关键：高度调整) === */
-    /* 调整底部编辑器总高度 (原330px -> 260px) */
+    /* === 3.1 搜索表单：列表专用压缩 === */
+    .card-body .search-form .form-control,
+    .card-body .search-form .form-select {
+        height: 26px !important;
+        font-size: 0.75rem !important;
+        padding: 0.1rem 0.4rem !important;
+    }
+
+    .card-body .search-form .btn {
+        height: 26px !important;
+        font-size: 0.7rem !important;
+        padding: 0.1rem 0.4rem !important;
+    }
+
+    /* === 4. 底部编辑器紧凑化 === */
     .fixed-bottom {
-        height: 260px !important; 
-        padding: 0.5rem 0.5rem 0.25rem 0.5rem; /* 减少内边距 */
+        height: 260px !important;
+        padding: 0.5rem 0.5rem 0.25rem 0.5rem;
         z-index: 1000;
         border-top: 1px solid #dee2e6;
         background-color: #fff;
@@ -51,14 +78,12 @@
         flex-direction: column;
     }
 
-    /* 编辑器头部样式 */
     .editor-header {
         padding: 0.2rem 0.4rem !important;
         font-size: 0.85rem;
         border-bottom: 1px solid #dee2e6;
     }
 
-    /* 编辑器内部输入框紧凑化 */
     .editor-compact .form-control,
     .editor-compact .form-select {
         height: 28px;
@@ -66,7 +91,6 @@
         padding: 0.1rem 0.4rem;
     }
 
-    /* 编辑器表格紧凑化 */
     .editor-compact table th,
     .editor-compact table td {
         padding: 0.15rem 0.3rem !important;
@@ -74,7 +98,6 @@
         height: 26px;
     }
 
-    /* 勘定科目红色边框错误样式 */
     .account-input.is-invalid {
         border-color: #dc3545 !important;
         background-repeat: no-repeat;
@@ -83,7 +106,6 @@
         padding-right: calc(1.5em + 0.75rem);
     }
 
-    /* 按钮组样式修正 */
     .editor-compact .input-group .form-control {
         border-top-right-radius: 0;
         border-bottom-right-radius: 0;
@@ -98,247 +120,297 @@
         align-items: center;
     }
 
-    /* === 5. 分页样式重写 (解决混乱问题) === */
-    /* 分页容器微调 */
-    .pagination-container {
-        margin: 0.5rem 0;
-        display: flex;
-        justify-content: center;
-        flex-wrap: wrap;
-        gap: 0.25rem;
+    /* === 5. 分页样式重写 (适配深色头部) === */
+    .card-header .pagination {
+        margin: 0 !important;
+        height: 30px;
     }
 
-    /* 分页列表基础样式 */
-    .pagination {
-        --bs-pagination-padding-x: 0.5rem;
-        --bs-pagination-padding-y: 0.25rem;
-        --bs-pagination-font-size: 0.875rem; /* 统一字体大小，防止过小 */
-        --bs-pagination-border-radius: 0.25rem;
-        margin: 0;
-        display: flex;
-        align-items: center;
-    }
-
-    /* 分页按钮通用样式 */
-    .page-item .page-link {
-        padding: 0.25rem 0.5rem;
-        margin: 0 0.1rem;
-        border: 1px solid #dee2e6;
-        border-radius: 0.25rem;
-        color: #007bff;
-        text-decoration: none;
-        font-weight: 500;
-        transition: all 0.15s ease;
-    }
-
-    /* 悬停效果 */
-    .page-item .page-link:hover {
-        background-color: #007bff;
+    .card-header .page-link {
+        background-color: #212529;
+        border-color: #6c757d;
         color: #fff;
-        border-color: #007bff;
+        padding: 0.1rem 0.4rem;
+        font-size: 0.75rem;
     }
 
-    /* 当前选中页 */
-    .page-item.active .page-link {
-        z-index: 3;
+    .card-header .page-link:hover {
+        background-color: #495057;
         color: #fff;
-        background-color: #007bff;
-        border-color: #007bff;
-        font-weight: bold;
     }
 
-    /* 禁用状态 (如首页/末页不可点) */
-    .page-item.disabled .page-link {
+    .card-header .page-item.active .page-link {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+        color: #fff;
+    }
+
+    .card-header .page-item.disabled .page-link {
+        background-color: #212529;
+        border-color: #495057;
         color: #6c757d;
-        background-color: #fff;
-        border-color: #dee2e6;
-        cursor: not-allowed;
     }
 
-    /* 行数选择器样式 */
-    .page-control-select {
-        min-width: 80px;
-        font-size: 0.875rem;
-        padding: 0.25rem 0.5rem;
+    /* === 6. 关键：增加列表可视区域高度 === */
+    /* 移除固定的 max-height，使用动态计算 */
+    .table-responsive.dynamic-height {
+        max-height: calc(100vh - 160px) !important; /* 你可以根据需要调整这个数值，越小表格越高 */
+        overflow-y: auto !important; /* 强制显示纵向滚动条 */
+        overflow-x: auto !important; /* 修复横向滚动条消失的问题，防止表头错位 */
+        display: block; /* 确保容器块级显示，这对滚动很重要 */
+    }
+
+    /* === 7. 优化右上角组件对齐 === */
+    .card-header {
+        padding: 0.4rem 0.75rem !important;
+        min-height: auto; /* 允许高度自适应内容 */
+        align-items: center !important;
+    }
+
+    /* 修正分页链接的行高，使其与下拉框对齐 */
+    .card-header .pagination {
+        margin: 0 !important;
         height: auto;
-        border: 1px solid #ced4da;
+    }
+    .card-header .page-link {
+        line-height: 1.5; /* 调整行高以匹配下拉框 */
+        padding: 0.1rem 0.4rem;
     }
 
-    /* 统计信息文字 */
-    .pagination-info {
-        font-size: 0.85rem;
-        color: #6c757d;
-        margin: 0 0.5rem;
-        white-space: nowrap;
-    }
-
-    /* 响应式适配：小屏幕下堆叠排列 */
-    @media (max-width: 576px) {
-        .pagination {
-            flex-direction: column;
-            align-items: center;
-        }
-        .page-item .page-link {
-            margin: 0.1rem 0;
-        }
-        .pagination-info {
-            margin: 0.25rem 0;
-        }
+    /* 修正下拉框在深色背景下的边框 */
+    .card-header .form-select {
+        background-color: #343a40;
+        border-color: #6c757d;
+        color: #fff;
     }
 </style>
 
 <div class="container-fluid py-2" style="padding-bottom: 280px;">
     <div class="card shadow-sm mb-2 border-0">
+        
+        <!-- === 右上角：标题、新增、分页、行数选择器 === -->
         <div class="card-header bg-dark py-2 d-flex justify-content-between align-items-center">
+            <!-- 左侧：标题 -->
             <h6 class="mb-0 text-white fw-bold"><i class="bi bi-list-ul"></i> 仕訳伝票一覧</h6>
-            <button type="button" class="btn btn-outline-light btn-sm" onclick="clearEditor()">
-                <i class="bi bi-plus-lg"></i> <span class="d-none d-sm-inline">新規</span>
-            </button>
-        </div>
-        <div class="card-body p-2">
-            <form method="GET" action="{{ route('masters.journal_entries.index') }}" class="row g-2 align-items-end mb-3 search-form">
-                <div class="col-md-2">
-                    <label class="form-label mb-0 text-muted" style="font-size: 0.75rem;">記帳日</label>
-                    <input type="date" name="posting_date" class="form-control form-control-sm" value="{{ request('posting_date') }}">
+            
+            <!-- 右侧：所有功能组件 -->
+            <div class="d-flex align-items-center gap-2">
+                
+                <!-- 1. 每页显示行数选择器 -->
+                <div class="d-flex align-items-center text-white">
+                    <select id="perPageSelect" class="form-select form-select-sm bg-dark text-white border-secondary" style="font-size: 0.75rem; height: 26px;">
+                        <option value="20" {{ request('per_page', 20) == 20 ? 'selected' : '' }}>20</option>
+                        <option value="30" {{ request('per_page') == 30 ? 'selected' : '' }}>30</option>
+                        <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50</option>
+                    </select>
                 </div>
+
+                <!-- 2. 分页导航 -->
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+                        <!-- 上一页 -->
+                        <li class="page-item {{ $entries->onFirstPage() ? 'disabled' : '' }}">
+                            <a class="page-link" href="{{ $entries->previousPageUrl() }}" aria-label="Previous">
+                                <span>&laquo;</span>
+                            </a>
+                        </li>
+                        
+                        <!-- 页码 -->
+                        @php
+                            $current = $entries->currentPage();
+                            $last = $entries->lastPage();
+                            $start = max(1, $current - 1);
+                            $end = min($last, $current + 1);
+                        @endphp
+                        
+                        @if($start > 1)
+                            <li class="page-item"><a class="page-link" href="{{ $entries->url(1) }}">1</a></li>
+                            @if($start > 2)
+                                <li class="page-item disabled"><span class="page-link">...</span></li>
+                            @endif
+                        @endif
+                        
+                        @for($i = $start; $i <= $end; $i++)
+                            <li class="page-item {{ $i == $current ? 'active' : '' }}">
+                                <a class="page-link" href="{{ $entries->url($i) }}">{{ $i }}</a>
+                            </li>
+                        @endfor
+                        
+                        @if($end < $last)
+                            @if($end < $last - 1)
+                                <li class="page-item disabled"><span class="page-link">...</span></li>
+                            @endif
+                            <li class="page-item"><a class="page-link" href="{{ $entries->url($last) }}">{{ $last }}</a></li>
+                        @endif
+
+                        <!-- 下一页 -->
+                        <li class="page-item {{ !$entries->hasMorePages() ? 'disabled' : '' }}">
+                            <a class="page-link" href="{{ $entries->nextPageUrl() }}" aria-label="Next">
+                                <span>&raquo;</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+
+            </div>
+        </div>
+
+        <div class="card-body p-2">
+            <!-- 搜索表单 (保持原样) -->
+            <form method="GET" action="{{ route('masters.journal_entries.index') }}" class="row g-2 align-items-end mb-3 search-form" id="searchForm">
+                <!-- 日期区间组 -->
+                <div class="col-md-auto">
+                    <!-- 标签部分 -->
+                    <label class="form-label mb-1 text-muted" style="font-size: 0.75rem;">仕訳日</label>
+                    <div class="d-flex flex-nowrap align-items-center">
+                        <!-- 左侧日期输入框 -->
+                        <input type="date" name="date_from" class="form-control form-control-sm" 
+                            value="{{ request('date_from') }}" 
+                            placeholder="From">
+                        <!-- 分隔符 -->
+                        <span class="mx-1 text-muted" style="font-size: 0.75rem;">～</span>
+                        <!-- 右侧日期输入框 -->
+                        <input type="date" name="date_to" class="form-control form-control-sm" 
+                            value="{{ request('date_to') }}" 
+                            placeholder="To">
+                    </div>
+                </div>
+
+                <!-- 勘定科目搜索组 (模仿明细样式) -->
+                <div class="col-md-3">
+                    <label class="form-label mb-1 text-muted" style="font-size: 0.75rem;">勘定科目</label>
+                    <div class="position-relative">
+                        
+                        <input type="text" style="display: none;" tabindex="-1" autocomplete="off">
+
+                        <input type="text" 
+                            id="search-account-input" 
+                            class="form-control form-control-sm account-input" 
+                            list="account-list-search" 
+                            placeholder="科目コードまたは名前を入力" 
+                            style="font-size: 0.85rem;"
+                            value="{{ $accounts->find(request('account_id')) ? $accounts->find(request('account_id'))->code . ' - ' . $accounts->find(request('account_id'))->name : '' }}"
+                            oninput="if(this.value === '') document.getElementById('search-account-id').value = ''">
+
+                        <!-- 隐藏字段：保持原样 -->
+                        <input type="hidden" id="search-account-id" name="account_id" value="{{ request('account_id') }}">
+
+                        <!-- datalist 保持原样 -->
+                        <datalist id="account-list-search">
+                            @foreach($accounts as $account)
+                                <option value="{{ $account->code }} - {{ $account->name }}"></option>
+                            @endforeach
+                        </datalist>
+
+                    </div>
+                </div>
+
+                <!-- 操作按钮组 -->
                 <div class="col-md-auto d-flex align-items-end">
-                    <button type="submit" class="btn btn-outline-primary"><i class="bi bi-search"></i> 検索</button>
-                    @if(request()->hasAny(['search', 'posting_date']))
-                        <a href="{{ route('masters.journal_entries.index') }}" class="btn btn-outline-secondary ms-1"><i class="bi bi-x-circle"></i> クリア</a>
+                    <button type="submit" class="btn btn-outline-primary btn-sm d-flex align-items-center">
+                        <i class="bi bi-search me-1"></i> 検索
+                    </button>
+                    @if(request()->hasAny(['date_from', 'date_to', 'account_id']))
+                        <a href="{{ route('masters.journal_entries.index') }}" class="btn btn-outline-secondary btn-sm ms-1 d-flex align-items-center">
+                            <i class="bi bi-x-circle me-1"></i> クリア
+                        </a>
                     @endif
                 </div>
             </form>
 
-            <div class="table-responsive" style="max-height: 450px; overflow-y: auto;">
+            <!-- 列表表格 -->
+            <div class="table-responsive dynamic-height" style="max-height: 550px !important;">
                 <table class="table table-hover table-bordered align-middle table-compact mb-0">
                     <thead class="table-light sticky-top">
                         <tr>
-                            <th width="4%">ID</th>
-                            <th width="10%">SourceID</th>
-                            <th width="8%">記帳日</th>
-                            <th width="8%">部门</th>
-                            <th width="5%">伝票種別</th>
-                            <th width="16%">借</th>
-                            <th width="16%">貸</th>
+                            <!-- 1. 添加了 "No" 列 -->
+                            <th width="4%" class="text-center">No</th>
+                            <th width="10%">伝票ID</th>
+                            <th width="8%">仕訳日</th>
+                            <th width="16%">借方</th>
+                            <th width="16%">貸方</th>
+                            <th width="8%">摘要</th>
+                            <th width="5%">部門/分類</th>
                             <th width="3%" class="text-center">操作</th>
+                            
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($entries as $entry)
-                            <tr style="cursor: pointer;" onclick="fetchAndLoadEntry({{ $entry->id }})">
-                                <td class="fw-bold text-muted">{{ $entry->id }}</td>
-                                <td>{{ $entry->source_id}}</td>
-                                <td>{{ $entry->posting_date->format('Y-m-d') }}</td>
-                                <td>{{ $entry->department->name ?? '' }}</td>
-                                <td>{{ $entry->source_type}}</td>
-                                <td>{!! $entry->debit_details_html !!}</td>
-                                <td>{!! $entry->credit_details_html !!}</td>
-                                <td class="text-center">
-                                    <div class="btn-group btn-group-sm" onclick="event.stopPropagation();">
-                                        <form action="{{ route('masters.journal_entries.destroy', $entry->id) }}" method="POST" onsubmit="return confirm('本当に削除しますか？');">
-                                            @csrf @method('DELETE')
-                                            <button type="submit" class="btn btn-danger btn-sm"><i class="bi bi-trash"></i></button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
+                        <tr style="cursor: pointer;" onclick="fetchAndLoadEntry({{ $entry->id }})">
+                            <!-- 2. 自动生成累加序号 -->
+                            <td class="fw-bold text-center" style="vertical-align: middle;">
+                                {{ $loop->index + $entries->firstItem() }}
+                            </td>
+
+                            <td>{{ $entry->source_id}}</td>
+                            <td>{{ $entry->posting_date->format('Y-m-d') }}</td>
+
+                            <td>{!! $entry->debit_details_html !!}</td>
+                            <td>{!! $entry->credit_details_html !!}</td>
+                            <td>{{ $entry->remark}}</td>
+                            <td>{{ $entry->department->name ?? '' }} {{ $entry->source_type}}</td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm" onclick="event.stopPropagation();">
+                                    <form action="{{ route('masters.journal_entries.destroy', $entry->id) }}" method="POST" onsubmit="return confirm('本当に削除しますか？');">
+                                        @csrf @method('DELETE')
+                                        
+                                        <!-- 修改处：使用 btn-link 去除背景，text-danger 保持红色，p-0 去除内边距 -->
+                                        <button type="submit" class="btn btn-link text-danger p-0" style="font-size: 0.8rem;">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                        
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
                         @empty
-                            <tr><td colspan="8" class="text-center py-3 text-muted">データがありません。</td></tr>
+                        <tr>
+                            <td colspan="9" class="text-center py-3 text-muted">データがありません。</td>
+                        </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
-            <!-- 分页区域 -->
-            @if($entries->hasPages() || $entries->total() > 0)
-            <div class="mt-3">
-                <!-- 使用 flex 容器 -->
-                <div class="d-flex flex-wrap justify-content-center align-items-center gap-2 p-2 bg-light rounded">
-                    
-                    <!-- 1. 左侧：行数选择器 -->
-                    <div class="d-flex align-items-center">
-                        <label for="per_page_select" class="form-label small text-muted mb-0 me-2">
-                            表示件数:
-                        </label>
-                        <select id="per_page_select" class="form-select form-select-sm page-control-select">
-                            <option value="20" {{ request('per_page', 20) == 20 ? 'selected' : '' }}>20 行</option>
-                            <option value="30" {{ request('per_page') == 30 ? 'selected' : '' }}>30 行</option>
-                            <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50 行</option>
-                        </select>
-                    </div>
-
-                    <!-- 2. 中间：分页链接 -->
-                    <nav aria-label="Page navigation">
-                        <ul class="pagination pagination-sm mb-0">
-                            <!-- 上一页 -->
-                            <li class="page-item {{ $entries->onFirstPage() ? 'disabled' : '' }}">
-                                <a class="page-link" href="{{ $entries->previousPageUrl() }}" aria-label="Previous">
-                                    <span>&laquo;</span>
-                                </a>
-                            </li>
-
-                            @php 
-                                $current = $entries->currentPage();
-                                $last = $entries->lastPage();
-                                $start = max(1, $current - 2);
-                                $end = min($last, $current + 2);
-                            @endphp
-
-                            @if($start > 1)
-                                <li class="page-item"><a class="page-link" href="{{ $entries->url(1) }}">1</a></li>
-                                @if($start > 2)
-                                    <li class="page-item disabled"><span class="page-link">...</span></li>
-                                @endif
-                            @endif
-
-                            @for($i = $start; $i <= $end; $i++)
-                                <li class="page-item {{ $i == $current ? 'active' : '' }}">
-                                    <a class="page-link" href="{{ $entries->url($i) }}">{{ $i }}</a>
-                                </li>
-                            @endfor
-
-                            @if($end < $last)
-                                @if($end < $last - 1)
-                                    <li class="page-item disabled"><span class="page-link">...</span></li>
-                                @endif
-                                <li class="page-item"><a class="page-link" href="{{ $entries->url($last) }}">{{ $last }}</a></li>
-                            @endif
-
-                            <!-- 下一页 -->
-                            <li class="page-item {{ !$entries->hasMorePages() ? 'disabled' : '' }}">
-                                <a class="page-link" href="{{ $entries->nextPageUrl() }}" aria-label="Next">
-                                    <span>&raquo;</span>
-                                </a>
-                            </li>
-                        </ul>
-                    </nav>
-                </div>
-
-                <!-- 3. 底部：统计信息 -->
-                <div class="text-center text-muted mt-2">
-                    表示中：{{ $entries->firstItem() ?? 0 }} - {{ $entries->lastItem() ?? 0 }} / 全 {{ $entries->total() }} 件
-                </div>
-            </div>
-            @endif
         </div>
     </div>
-</div>
 
 {{-- 底部编辑器 --}}
 <div class="fixed-bottom bg-white border-top shadow-lg p-2 editor-compact" style="z-index: 1000; height: 330px; overflow: hidden; display: flex; flex-direction: column;">
     <div class="d-flex justify-content-between align-items-center mb-1 flex-shrink-0">
+        <!-- 左侧区域：标题 + 按钮 -->
         <div class="d-flex gap-2 align-items-center">
             <h6 class="mb-0 text-success fw-bold" style="font-size: 0.9rem;"><i class="bi bi-keyboard"></i> クイック入力</h6>
+            
+            <!-- 插入位置：这里就是标题的右边 -->
+            <button type="button" 
+                class="btn text-white py-1 ms-2" 
+                style="font-size: 0.75rem; height: 22px; line-height: 1;
+                    background: linear-gradient(145deg, #6c757d, #495057);
+                    border: none;
+                    border-radius: 0.375rem;
+                    padding: 0 0.75rem;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.1);"
+                onmouseover="this.style.background='linear-gradient(145deg, #5a6268, #343a40)'"
+                onmouseout="this.style.background='linear-gradient(145deg, #6c757d, #495057)'"
+                onclick="clearEditor()">
+                <i class="bi bi-plus-lg me-1"></i> 新規
+            </button>
+            
             <span id="editing-id-badge" class="badge bg-warning text-dark d-none" style="font-size: 0.75rem;">ID: <span id="editing-id-val"></span></span>
-            <button type="button" class="btn btn-sm btn-outline-secondary py-0" style="height: 24px; font-size: 0.75rem;" onclick="clearEditor()">クリア</button>
         </div>
+        
+        <!-- 右侧区域：只剩下金额和保存按钮 -->
         <div class="d-flex gap-3 align-items-center">
+            <!-- 金额显示 -->
             <div class="text-end" style="font-size: 0.8rem; line-height: 1.1;">
                 <span class="text-danger">借方：<span id="total-debit-display" class="fw-bold">0</span></span> | 
                 <span class="text-primary">貸方：<span id="total-credit-display" class="fw-bold">0</span></span>
                 <br><span id="balance-status" class="badge bg-success" style="font-size: 0.7rem;">balanced</span>
             </div>
-            <button type="button" class="btn btn-primary px-3 py-0" style="height: 28px; font-size: 0.85rem;" onclick="submitJournalEntry()">
-                <i class="bi bi-save"></i> 保存
+            <!-- 保存按钮 -->
+            <button type="button" class="btn btn-primary px-3 py-0" style="height: 28px; font-size: 0.85rem;" onclick="submitJournalEntry()"> 
+                <i class="bi bi-save"></i> 保存 
             </button>
         </div>
     </div>
@@ -356,6 +428,7 @@
                     </datalist>
                 </div>
                 <div class="col-md-2"><input type="text" id="post-source-type" class="form-control" placeholder="伝票種別"></div>
+                <div class="col-md-6"><input type="text" id="post-source-remark" class="form-control" placeholder="摘要"></div>
             </div>
         </div>
 
@@ -369,7 +442,6 @@
                     <table class="table table-sm table-bordered mb-0" id="table-debit">
                         <thead class="table-light sticky-top">
                             <tr>
-                                <th width="4%"></th>
                                 <th width="30%">勘定科目</th>
                                 <th width="20%">補助科目</th>
                                 <th width="15%">取引先</th>
@@ -393,7 +465,6 @@
                     <table class="table table-sm table-bordered mb-0" id="table-credit">
                         <thead class="table-light sticky-top">
                             <tr>
-                                <th width="4%"></th>
                                 <th width="30%">勘定科目</th>
                                 <th width="20%">補助科目</th>
                                 <th width="15%">取引先</th>
@@ -494,7 +565,6 @@
         const taxOptions = `<option value="">[税区分無し]</option>` + taxList.map(t => `<option value="${t.id}" ${(data.tax_type_id == t.id) ? 'selected' : ''}>${t.name}</option>` ).join('');
 
         tr.innerHTML = `
-            <td class="text-center drag-handle" style="cursor:move; font-size: 0.7rem;"><i class="bi bi-grip-vertical"></i></td>
             <td>
                 <div class="position-relative">
                     <input type="text" class="form-control form-control-sm account-input" 
@@ -645,6 +715,7 @@
         document.getElementById('post-date').value = new Date().toISOString().split('T')[0];
         document.getElementById('post-dept').value = '';
         document.getElementById('post-source-type').value = '';
+        document.getElementById('post-source-remark').value = '';
         
         // 清空列表
         document.querySelector('.sortable-list[data-side="1"]').innerHTML = '';
@@ -780,6 +851,7 @@
             department_id: deptId,
             department_name: deptName, 
             source_type: document.getElementById('post-source-type').value,
+            remark: document.getElementById('post-source-remark').value,
             lines: linesData,
             _token: csrfToken
         };
@@ -855,6 +927,7 @@
         document.getElementById('editing-id-badge').classList.remove('d-none');
         document.getElementById('post-date').value = data.posting_date;
         document.getElementById('post-source-type').value = data.source_type || '';
+        document.getElementById('post-source-remark').value = data.remark || '';
         
         const deptInput = document.getElementById('post-dept');
         if (data.department && data.department.name) {
@@ -886,6 +959,89 @@
         calculateTotals();
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const searchForm = document.getElementById('searchForm');
+        const perPageSelect = document.getElementById('perPageSelect');
+
+        // 1. 监听“每页显示行数”变化
+        if (perPageSelect) {
+            perPageSelect.addEventListener('change', function() {
+                // 将选择的行数作为参数添加到表单中
+                let input = document.querySelector('input[name="per_page"]');
+                if (!input) {
+                    input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'per_page';
+                    searchForm.appendChild(input);
+                }
+                input.value = this.value;
+                searchForm.submit(); // 自动提交表单
+            });
+        }
+
+        // 2. 确保分页链接点击时，如果有搜索条件，能带上条件
+        // (Laravel 的 $entries->previousPageUrl() 已经包含了当前的 Query 参数，所以原生链接通常是有效的)
+        // 如果需要更复杂的处理，可以在这里拦截 a 标签的点击
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const searchAccountInput = document.getElementById('search-account-input');
+        const searchAccountIdInput = document.getElementById('search-account-id');
+        const accountListSearch = document.getElementById('account-list-search');
+
+        // 如果页面上有科目数据（从 Blade 传过来的），使用它
+        // 注意：这需要你在 Controller 的 Index 方法中也传入 $accounts 变量
+        const allAccounts = @json($accounts ?? []);
+
+        // 核心：输入时的模糊搜索逻辑
+        if (searchAccountInput) {
+            searchAccountInput.addEventListener('input', function() {
+                const inputValue = this.value.trim().toLowerCase();
+                
+                // 如果输入为空，显示所有选项（或者清空）
+                if (!inputValue) {
+                    searchAccountIdInput.value = '';
+                    return;
+                }
+
+                // 过滤科目数据
+                const filteredOptions = allAccounts.filter(acc => 
+                    (acc.code + ' - ' + acc.name).toLowerCase().includes(inputValue) ||
+                    acc.name.toLowerCase().includes(inputValue) ||
+                    acc.code.toLowerCase().includes(inputValue)
+                );
+
+                // 动态更新 Datalist (清空并重新填充)
+                accountListSearch.innerHTML = '';
+                filteredOptions.forEach(acc => {
+                    const option = document.createElement('option');
+                    option.value = acc.code + ' - ' + acc.name;
+                    accountListSearch.appendChild(option);
+                });
+
+                // 简单的自动填充逻辑：如果只有一个匹配项，自动填入
+                if (filteredOptions.length === 1) {
+                    this.value = filteredOptions[0].code + ' - ' + filteredOptions[0].name;
+                    searchAccountIdInput.value = filteredOptions[0].id;
+                } else if (filteredOptions.length === 0) {
+                    searchAccountIdInput.value = ''; // 无匹配项
+                }
+                // 如果匹配项大于1，保持用户输入，让用户自己选
+            });
+
+            // 当用户从 datalist 选择了某项
+            searchAccountInput.addEventListener('change', function() {
+                const selectedValue = this.value;
+                const matchedAccount = allAccounts.find(acc => 
+                    (acc.code + ' - ' + acc.name) === selectedValue
+                );
+                if (matchedAccount) {
+                    searchAccountIdInput.value = matchedAccount.id;
+                }
+            });
+        }
+    });
 </script>
 
 @endsection

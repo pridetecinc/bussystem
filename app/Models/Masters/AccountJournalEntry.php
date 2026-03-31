@@ -18,6 +18,7 @@ class AccountJournalEntry extends Model
         'source_id',
         'created_by',
         'updated_by',
+        'remark'
         // created_at 和 updated_at 通常由框架自动管理，不需要在 fillable 中列出，除非手动赋值
     ];
 

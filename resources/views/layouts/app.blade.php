@@ -142,7 +142,7 @@
                             <li><a class="dropdown-item" href="{{ route('masters.operation-ledger.index') }}">運行台帳</a></li>
                             @endif
                             @if($isAdmin || $isOperationsManager || $isCoordinator || $isManager)
-                            <li><a class="dropdown-item" href="{{ route('masters.drivers.index') }}">運転手台帳</a></li>
+                            <li><a class="dropdown-item" href="{{ route('masters.driver-ledger.index') }}">運転手台帳</a></li>
                             @endif
                             @if($isAdmin || $isOperationsManager || $isCoordinator || $isManager)
                             <li><a class="dropdown-item" href="{{ route('masters.bus-assignments.index') }}">運行一覧</a></li>
