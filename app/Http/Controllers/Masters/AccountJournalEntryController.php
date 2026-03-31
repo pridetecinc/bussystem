@@ -42,6 +42,18 @@ class AccountJournalEntryController extends Controller
             $query->where('posting_date', '=', $request->posting_date);
         }
 
+        if ($request->filled('date_from')) {
+            $query->where('posting_date', '>=', $request->date_from);
+        }
+        if ($request->filled('date_to')) {
+            $query->where('posting_date', '<=', $request->date_to);
+        }
+
+        if ($request->filled('account_id')) {
+            $entry_ids = AccountJournalLine::where('account_id',$request->account_id)->pluck("journal_entry_id");
+            $query->whereIn('id', $entry_ids);
+        }
+
         $perPage = 20;
         $allowedPerPages = [20, 30, 50];
         if ($request->filled('per_page') && in_array((int)$request->per_page, $allowedPerPages)) {
@@ -49,7 +61,7 @@ class AccountJournalEntryController extends Controller
         }
 
         $entries = $query->orderBy('id', 'desc')->paginate($perPage);
-        $entries->appends($request->only(['search', 'posting_date',   'per_page']));
+        $entries->appends($request->only(['search', 'posting_date',  'account_id', 'date_from','date_to','per_page']));
 
         // 预加载一些基础数据用于筛选下拉框 (可选)
         $departments = AccountDepartment::get();
@@ -112,6 +124,7 @@ class AccountJournalEntryController extends Controller
             'department_id' => 'nullable',
             'department_name' => 'nullable|string',
             'source_type' => 'nullable|string|max:50',
+            'remark' => 'nullable|string|max:100',
             'source_id' => 'nullable|integer',
             
             'lines' => 'required|array|min:1', // 至少有一行
@@ -187,6 +200,7 @@ class AccountJournalEntryController extends Controller
                 'posting_date'  => $validated['posting_date'],
                 'department_id' => $department_id,
                 'source_type'   => $validated['source_type'],
+                'remark'   => $validated['remark'],
                 'source_id'     => $this->generateAccountNumber(),
                 'created_by'    => Auth::id(),
                 'updated_by'    => Auth::id(),
@@ -293,6 +307,7 @@ class AccountJournalEntryController extends Controller
                 'id' => $entry->id,
                 'posting_date' => $entry->posting_date->format('Y-m-d'),
                 'source_type' => $entry->source_type,
+                'remark' => $entry->remark,
                 'description' => $entry->description, // 如果有描述字段
                 'department_id' => $entry->department_id,
                 'department' => $entry->department ? ['id' => $entry->department->id, 'name' => $entry->department->name] : null,
@@ -345,6 +360,7 @@ class AccountJournalEntryController extends Controller
             'department_id' => 'nullable',
             'department_name' => 'nullable|string',
             'source_type' => 'nullable|string|max:50',
+            'remark' => 'nullable|string|max:100',
             
             'lines' => 'required|array|min:1',
             'lines.*.account_id' => 'required|integer|exists:accounts,id',
@@ -402,6 +418,7 @@ class AccountJournalEntryController extends Controller
                 'posting_date'  => $validated['posting_date'],
                 'department_id' => $department_id,
                 'source_type'   => $validated['source_type'],
+                'remark'   => $validated['remark'],
                 'updated_by'    => Auth::id(),
                 'updated_at'    => now(),
             ]);
