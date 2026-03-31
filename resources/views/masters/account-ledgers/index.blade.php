@@ -28,41 +28,59 @@
             <div class="card shadow-sm">
                 <div class="card-body">
                     <form method="GET" action="{{ route('masters.account-ledgers.index') }}" class="row g-3 align-items-end">
-                        
-                        <!-- 年月选择器 -> 改为仅年份 -->
-                        <div class="col-md-3">
-                            <label class="form-label small text-muted mb-1">表示年</label>
-                            <select 
-                                id="year_month_input" 
-                                name="year_month" 
-                                class="form-control"
-                                required
-                            >
-                                <!-- 默认选项 -->
-                                <option value="">-- 年を選択 --</option>
-                                
-                                @php
-                                    // 获取当前选中的年份，如果没有则默认为今年
-                                    $selectedYear = request('year_month', now()->format('Y'));
-                                    // 生成前后各 5 年的范围 (可根据需要调整)
-                                    $startYear = now()->subYears(10)->format('Y');
-                                    $endYear = now()->addYears(0)->format('Y');
-                                @endphp
+    
 
-                                @for($year = $startYear; $year <= $endYear; $year++)
-                                    <option value="{{ $year }}" {{ $selectedYear == $year ? 'selected' : '' }}>
-                                        {{ $year }}年
-                                    </option>
-                                @endfor
-                            </select>
+                        <!-- 2. 区分下拉 (支持输入 + 回显) -->
+                        <div class="col-md-3">
+                            <label class="form-label small text-muted mb-1">区分</label>
+                            <input 
+                                type="text" 
+                                name="category_name" 
+                                class="form-control" 
+                                list="category-list" 
+                                placeholder="区分を入力..."
+                                value="{{ request('category_name') }}"
+                            >
+                            <!-- 循环数据源 -->
+                            <datalist id="category-list">
+                                @foreach($categories as $category)
+                                    <option value="{{ $category->name }}">
+                                @endforeach
+                            </datalist>
                         </div>
 
-                        <!-- 搜索与清除按钮 (保持不变) -->
-                        <div class="col-md-auto d-flex align-items-end gap-2">
+                        <!-- 3. 时间区间 (开始时间) -->
+                        <div class="col-md-3">
+                            <label class="form-label small text-muted mb-1">開始日</label>
+                            <input 
+                                type="date" 
+                                name="start_date" 
+                                id="start_date"
+                                class="form-control" 
+                                value="{{ request('start_date') }}"
+                            >
+                        </div>
+
+                        <!-- 4. 时间区间 (结束时间) -->
+                        <div class="col-md-3">
+                            <label class="form-label small text-muted mb-1">終了日</label>
+                            <input 
+                                type="date" 
+                                name="end_date" 
+                                id="end_date"
+                                class="form-control" 
+                                value="{{ request('end_date') }}"
+                            >
+                        </div>
+
+                        <!-- 5. 按钮区域 -->
+                        <div class="col-2 d-flex align-items-end gap-2 mt-3">
                             <button type="submit" class="btn btn-outline-primary">
                                 <i class="bi bi-search"></i> 表示
                             </button>
-                            @if(request('year_month'))
+                            
+                            <!-- 清除按钮：只有当有搜索条件时才显示 -->
+                            @if(request()->hasAny(['year_month', 'category_id', 'start_date', 'end_date']))
                                 <a href="{{ route('masters.account-ledgers.index') }}" class="btn btn-outline-secondary">
                                     <i class="bi bi-x-circle"></i> クリア
                                 </a>
@@ -73,15 +91,6 @@
             </div>
         </div>
 
-        <!-- 搜索结果提示 (根据是否有筛选条件显示) -->
-        @if(request('year_month'))
-            <div class="alert alert-info mb-3 d-flex align-items-center">
-                <i class="bi bi-calendar-event me-2 fs-5"></i>
-                <div>
-                    選択中の年月: <strong>{{ \Carbon\Carbon::parse(request('year_month'))->format('Y年m月') }}</strong>
-                </div>
-            </div>
-        @endif
 
         <!-- 表格区域 (保持不变，但建议替换为表格样式) -->
         <div class="card shadow-sm">
@@ -104,6 +113,7 @@
                                 <td class="text-center ps-3"><span class="fw-medium">{{ $account->name }}</span></td>
                                 <td>
                                     <div class="d-flex gap-1 justify-content-center">
+                                        <!-- 原有的元帳作成按钮 -->
                                         <a 
                                             href="javascript:void(0)" 
                                             class="btn btn-sm btn-outline-success open-ledger-modal"
@@ -112,6 +122,15 @@
                                             title="元帳作成"
                                         >
                                             <i class="bi bi-journal-plus"></i> 元帳作成
+                                        </a>
+
+                                        <!-- 新增的 PDF 下载按钮 -->
+                                        <a 
+                                            href="{{ route('masters.account-ledgers.pdf', ['id' => $account->id,'start_date' => request('start_date'), 'end_date' => request('end_date')]) }}" 
+                                            class="btn btn-sm btn-outline-primary"
+                                            title="PDFダウンロード"
+                                        >
+                                            <i class="bi bi-file-earmark-pdf"></i> PDF
                                         </a>
                                     </div>
                                 </td>
@@ -222,9 +241,6 @@
                 </div>
                 <div class="modal-body">
                     <!-- 下载按钮 (暂时隐藏或置灰，等数据加载完再操作) -->
-                    <button id="downloadBtn" class="btn btn-primary mb-3" disabled>
-                        PDFダウンロード
-                    </button>
 
                     <!-- 账簿表格 -->
                     <div id="tableContainer">
@@ -252,14 +268,16 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
     // 1. 获取日期输入框 (你之前的年份选择框)
-    const dateInput = document.getElementById('year_month_input');
+    const startDate = document.getElementById('start_date');
+    const endDate = document.getElementById('end_date');
 
     // 2. 为所有“元帳作成”按钮添加点击事件
     document.querySelectorAll('.open-ledger-modal').forEach(button => {
         button.addEventListener('click', function () {
             const url = this.getAttribute('data-url');
             const accountName = this.getAttribute('data-account-name');
-            const selectedYear = dateInput.value;
+            const startDateValue = startDate.value;
+            const endDateValue = endDate.value;
 
             // 设置模态框标题
             document.getElementById('ledgerModalLabel').textContent = `総勘定元帳 - ${accountName}`;
@@ -269,7 +287,7 @@
             modal.show();
 
             // --- 关键：开始 AJAX 请求 ---
-            const requestUrl = `${url}?year_month=${selectedYear}`;
+            const requestUrl = `${url}? start_date=${startDateValue}&end_date=${endDateValue}`;
             document.querySelector('#ledgerTable tbody').innerHTML = '<tr><td colspan="6" class="text-center">データ読み込み中...</td></tr>';
 
             fetch(requestUrl)

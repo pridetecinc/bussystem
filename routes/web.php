@@ -161,6 +161,7 @@ Route::prefix('masters')->name('masters.')->group(function () {
         Route::get('/account/journal-entries/{id}', [AccountJournalEntryController::class, 'show'])->name('journal_entries.show');
         Route::get('/account-ledgers/index', [AccountLedgerController::class, 'index'])->name('account-ledgers.index');
         Route::get('/account-ledgers/generate/{id}', [AccountLedgerController::class, 'generate'])->name('account-ledgers.generate');
+        Route::get('/account-ledgers/pdf', [AccountLedgerController::class, 'generatePdf'])->name('account-ledgers.pdf');
 
 
     });

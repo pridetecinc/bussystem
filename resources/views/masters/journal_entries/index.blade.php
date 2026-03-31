@@ -280,25 +280,27 @@
                 <div class="col-md-3">
                     <label class="form-label mb-1 text-muted" style="font-size: 0.75rem;">勘定科目</label>
                     <div class="position-relative">
-                        <!-- 显示给用户看的 Input (只读样式，实际提交靠 JS 或隐藏字段) -->
-                    <input type="text" 
-                        id="search-account-input" 
-                        class="form-control form-control-sm account-input" 
-                        list="account-list-search" 
-                        placeholder="科目コードまたは名前を入力" 
-                        style="font-size: 0.85rem;"
-                        value="{{ $accounts->find(request('account_id')) ? $accounts->find(request('account_id'))->code . ' - ' . $accounts->find(request('account_id'))->name : '' }}"
-                        oninput="if(this.value === '') document.getElementById('search-account-id').value = ''">
+                        
+                        <input type="text" style="display: none;" tabindex="-1" autocomplete="off">
 
-                    <!-- 隐藏字段：保持原样 -->
-                    <input type="hidden" id="search-account-id" name="account_id" value="{{ request('account_id') }}">
+                        <input type="text" 
+                            id="search-account-input" 
+                            class="form-control form-control-sm account-input" 
+                            list="account-list-search" 
+                            placeholder="科目コードまたは名前を入力" 
+                            style="font-size: 0.85rem;"
+                            value="{{ $accounts->find(request('account_id')) ? $accounts->find(request('account_id'))->code . ' - ' . $accounts->find(request('account_id'))->name : '' }}"
+                            oninput="if(this.value === '') document.getElementById('search-account-id').value = ''">
 
-                    <!-- 2. datalist 保持原样即可，不需要 selected -->
-                    <datalist id="account-list-search">
-                        @foreach($accounts as $account)
-                            <option value="{{ $account->code }} - {{ $account->name }}"></option>
-                        @endforeach
-                    </datalist>
+                        <!-- 隐藏字段：保持原样 -->
+                        <input type="hidden" id="search-account-id" name="account_id" value="{{ request('account_id') }}">
+
+                        <!-- datalist 保持原样 -->
+                        <datalist id="account-list-search">
+                            @foreach($accounts as $account)
+                                <option value="{{ $account->code }} - {{ $account->name }}"></option>
+                            @endforeach
+                        </datalist>
 
                     </div>
                 </div>
@@ -440,7 +442,6 @@
                     <table class="table table-sm table-bordered mb-0" id="table-debit">
                         <thead class="table-light sticky-top">
                             <tr>
-                                <th width="4%"></th>
                                 <th width="30%">勘定科目</th>
                                 <th width="20%">補助科目</th>
                                 <th width="15%">取引先</th>
@@ -464,7 +465,6 @@
                     <table class="table table-sm table-bordered mb-0" id="table-credit">
                         <thead class="table-light sticky-top">
                             <tr>
-                                <th width="4%"></th>
                                 <th width="30%">勘定科目</th>
                                 <th width="20%">補助科目</th>
                                 <th width="15%">取引先</th>
@@ -565,7 +565,6 @@
         const taxOptions = `<option value="">[税区分無し]</option>` + taxList.map(t => `<option value="${t.id}" ${(data.tax_type_id == t.id) ? 'selected' : ''}>${t.name}</option>` ).join('');
 
         tr.innerHTML = `
-            <td class="text-center drag-handle" style="cursor:move; font-size: 0.7rem;"><i class="bi bi-grip-vertical"></i></td>
             <td>
                 <div class="position-relative">
                     <input type="text" class="form-control form-control-sm account-input" 
