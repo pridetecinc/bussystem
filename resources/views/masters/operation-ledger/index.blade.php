@@ -433,7 +433,7 @@
 
 .event-content {
     position: relative;
-    padding: 2px 4px;
+    padding: 0;
     font-size: 0.7rem;
     line-height: 1.3;
     z-index: 101;
