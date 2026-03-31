@@ -33,7 +33,7 @@
                     @endif
                     
                     @if($isAdmin || $isOperationsManager || $isCoordinator || $isManager)
-                    <a href="{{ route('masters.drivers.index') }}" class="btn btn-outline-secondary btn-sm w-100 mb-1">運転手台帳</a>
+                    <a href="{{ route('masters.driver-ledger.index') }}" class="btn btn-outline-secondary btn-sm w-100 mb-1">運転手台帳</a>
                     @endif
                     
                     @if($isAdmin || $isOperationsManager || $isCoordinator || $isManager)

@@ -5,10 +5,15 @@ namespace App\Http\Controllers\Masters;
 use App\Http\Controllers\Controller;
 use App\Models\Masters\GroupInfoDateRemark;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 
 class GroupInfoDateRemarkController extends Controller
 {
+    private function canEdit()
+    {
+        $role = session('role');
+        return $role === 'admin' || $role === 'manager' || $role === 'operations_manager';
+    }
+
     public function show($date)
     {
         if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
@@ -19,13 +24,21 @@ class GroupInfoDateRemarkController extends Controller
         
         $remark = $dateRemark ? $dateRemark->remark : '';
         $stopOrder = $dateRemark && $dateRemark->stop_order ? '1' : '0';
+        $canEdit = $this->canEdit();
     
-        return view('masters.operation-ledger.date-remark', compact('date', 'remark', 'stopOrder'));
+        return view('masters.operation-ledger.date-remark', compact('date', 'remark', 'stopOrder', 'canEdit'));
     }
 
     public function store(Request $request)
     {
         try {
+            if (!$this->canEdit()) {
+                return response()->json([
+                    'success' => false, 
+                    'message' => '編集権限がありません。'
+                ], 403);
+            }
+
             $validated = $request->validate([
                 'date' => 'required|date|date_format:Y-m-d',
                 'remark' => 'nullable|string|max:500',
@@ -65,7 +78,6 @@ class GroupInfoDateRemarkController extends Controller
                 'errors' => $e->errors()
             ], 422);
         } catch (\Exception $e) {
-            Log::error($e->getMessage());
             return response()->json(['success' => false, 'message' => '保存に失敗しました'], 500);
         }
     }
@@ -73,6 +85,13 @@ class GroupInfoDateRemarkController extends Controller
     public function destroy($date)
     {
         try {
+            if (!$this->canEdit()) {
+                return response()->json([
+                    'success' => false, 
+                    'message' => '編集権限がありません。'
+                ], 403);
+            }
+
             if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
                 return response()->json(['success' => false, 'message' => '日付形式エラー'], 400);
             }
@@ -85,7 +104,6 @@ class GroupInfoDateRemarkController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error($e->getMessage());
             return response()->json(['success' => false, 'message' => '削除に失敗しました'], 500);
         }
     }

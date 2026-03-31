@@ -1,15 +1,15 @@
 @extends('layouts.app')
 
-@section('title', '運行台帳')
+@section('title', '運転手台帳')
 
 @section('content')
 <div class="container-fluid px-4 py-0">
     <div class="d-flex justify-content-between align-items-center mb-2">
-        <h5 class="mb-0" style="color: #374151; font-size: 1.25rem;">運行台帳</h5>
+        <h5 class="mb-0" style="color: #374151; font-size: 1.25rem;">運転手台帳</h5>
     </div>
     
     <div class="bg-light p-2 mb-2 rounded" style="background-color: #F3F4F6 !important; border: 1px solid #E5E7EB;">
-        <form method="GET" action="{{ route('masters.operation-ledger.index') }}" class="row g-2 align-items-center" id="searchForm">
+        <form method="GET" action="{{ route('masters.driver-ledger.index') }}" class="row g-2 align-items-center" id="searchForm">
             <input type="hidden" name="display_days" id="display_days" value="{{ $displayDays ?? 7 }}">
             
             <div class="col-auto">
@@ -138,16 +138,16 @@
             </div>
             
             <div class="col-auto">
-                <a href="{{ route('masters.operation-ledger.index') }}" class="btn btn-sm btn-outline-secondary">リセット</a>
+                <a href="{{ route('masters.driver-ledger.index') }}" class="btn btn-sm btn-outline-secondary">リセット</a>
             </div>
         </form>
     </div>
     
-    <div class="table-responsive" style="overflow-x: auto;">
+    <div class="table-responsive" style="overflow-x: auto; overflow-y: visible;">
         <table class="table table-bordered table-sm ledger-table" style="font-size: 0.75rem; min-width: 800px;">
             <thead>
-                <tr>
-                    <th class="text-center" style="position: sticky; left: 0; background-color: #f8f9fa; z-index: 10; min-width: 180px;">車両名 / 代理店</th>
+                 <tr>
+                    <th class="text-center" style="position: sticky; left: 0; background-color: #f8f9fa; z-index: 10; min-width: 180px;">運転手名 / 所属</th>
                     @foreach($dates as $date)
                         @php
                             $dateStr = $date['date']->format('Y-m-d');
@@ -159,7 +159,7 @@
                                 $dateColor = 'color: #ff0000;';
                             }
                         @endphp
-                        <th class="text-center date-header-cell" style="background-color: #e9ecef; min-width: 100px; vertical-align: top; cursor: pointer;"  onclick="openDateRemarkModal('{{ $dateStr }}')">
+                        <th class="text-center date-header-cell" style="background-color: #e9ecef; min-width: 100px; vertical-align: top; cursor: pointer;" onclick="openDateRemarkModal('{{ $dateStr }}')">
                             <div style="padding: 4px;">
                                 <div style="{{ $dateColor }}">{{ $date['display'] }}</div>
                                 @if ($date['is_holiday'] && $date['holiday_name'])
@@ -183,11 +183,11 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach($groupedVehicles as $index => $vehicleData)
+                @foreach($groupedDrivers as $index => $driverData)
                     @php
-                        $vehicle = $vehicleData['vehicle'];
+                        $driver = $driverData['driver'];
                         $rowBgColor = $index % 2 == 0 ? '#f8f9fa' : '#ffffff';
-                        $schedule = $scheduleData[$vehicle->id]['schedule'] ?? [];
+                        $schedule = $scheduleData[$driver->id]['schedule'] ?? [];
                         
                         $groupedByBus = [];
                         foreach ($schedule as $dateStr => $dayItineraries) {
@@ -252,23 +252,19 @@
                     @endphp
                     <tr style="background-color: {{ $rowBgColor }};">
                         <td class="align-top" style="position: sticky; left: 0; background-color: {{ $rowBgColor }}; z-index: 5;">
-                            @if($vehicleData['is_first_in_group'])
+                            @if($driverData['is_first_in_group'])
                                 <span style="display: inline-block; background-color: #6c757d; color: white; font-size: 0.6rem; padding: 2px 8px; border-radius: 12px; margin-bottom: 4px;">
-                                    {{ $vehicleData['group_name'] }}
+                                    {{ $driverData['group_name'] }}
                                 </span>
                                 <br>
                             @endif
-                            <strong>{{ $vehicle->registration_number }}</strong>
-                            @if($vehicle->vehicleModel)
-                                <small class="text-muted">{{ $vehicle->vehicleModel->model_name }}</small>
-                            @endif
-                            <br><small>{{ $vehicle->branch->branch_name ?? '' }}</small>
+                            <strong>{{ $driver->name }}</strong>
+                            <br><small>{{ $driver->branch->branch_name ?? '' }}</small>
                         </td>
                     @foreach($dates as $dateIndex => $dateInfo)
                         @php
                             $dateStr = $dateInfo['date']->format('Y-m-d');
                             $displayItems = [];
-                            $itemIndex = 0;
                             
                             $dayItineraryCount = 0;
                             if (isset($schedule[$dateStr])) {
@@ -304,7 +300,7 @@
                             }
                         @endphp
                         <td class="position-relative p-0" style="background-color: {{ $rowBgColor }}; cursor: pointer;" 
-                            onclick="openCreateGroup({{ $vehicle->id }}, '{{ $dateStr }}', '{{ $vehicle->registration_number }}')">
+                            onclick="openCreateGroup(null, '{{ $dateStr }}', null, {{ $driver->id }}, '{{ addslashes($driver->name) }}')">
                             <div class="timeline-cell" style="background-color: {{ $rowBgColor }}; position: relative;">
                                 @if($dayItineraryCount > 1)
                                     <div class="itinerary-count-badge" title="{{ $dayItineraryCount }}件の運行があります">
@@ -340,19 +336,18 @@
                                                 <span title="団体名: {{ $itinerary['group_name'] }}">{{ $itinerary['group_name'] }}</span>
                                             </div>
                                             <div>
+                                                <span title="車両: {{ $itinerary['vehicle_name'] }}">
+                                                    {{ $itinerary['vehicle_name'] }}
+                                                </span>
+                                            </div>
+                                            <div>
                                                 @if($itinerary['is_temporary_driver'])
                                                     <span style="color: #f59e0b; cursor: help;" title="仮運転手">(仮)</span>
                                                 @endif
                                                 @if($itinerary['driver_name'] && $itinerary['driver_name'] != '未割当')
-                                                    <span title="運転手名: {{ $itinerary['driver_name'] }}{{ $itinerary['driver_name_kana'] ? ' (' . $itinerary['driver_name_kana'] . ')' : '' }}{{ $itinerary['driver_phone'] ? ' / 電話: ' . $itinerary['driver_phone'] : '' }}">
+                                                    <span title="運転手名: {{ $itinerary['driver_name'] }}{{ $itinerary['driver_name_kana'] ? ' (' . $itinerary['driver_name_kana'] . ')' : '' }}">
                                                         {{ $itinerary['driver_name'] }}
-                                                        @if($itinerary['driver_name_kana'])
-                                                            <span style="font-size: 0.6rem; color: #666;">({{ $itinerary['driver_name_kana'] }})</span>
-                                                        @endif
                                                     </span>
-                                                    @if($itinerary['driver_phone'])
-                                                        <span style="cursor: help;" title="電話番号: {{ $itinerary['driver_phone'] }}">📞</span>
-                                                    @endif
                                                 @endif
                                             </div>
                                             @if($itinerary['remarks'])
@@ -370,7 +365,7 @@
                             </div>
                         </td>
                     @endforeach
-                    </tr>
+                    <tr>
                 @endforeach
             </tbody>
         </table>
@@ -409,7 +404,7 @@
 
 .timeline-cell {
     position: relative;
-    height: 60px;
+    height: 68px;
     width: 100%;
     overflow: visible;
 }
@@ -417,7 +412,7 @@
 .timeline-event {
     position: absolute;
     top: 0;
-    height: 60px;
+    height: 68px;
     border-left: 1px dashed #666;
     border-right: 1px dashed #666;
     overflow: visible;
@@ -438,7 +433,7 @@
     line-height: 1.3;
     z-index: 101;
     color: #000;
-    height: 58px;
+    height: 66px;
     white-space: nowrap;
     background-color: inherit;
 }
@@ -531,6 +526,16 @@
     width: 100%;
 }
 
+.holiday-name {
+    color: #ff0000;
+    font-size: 0.6rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 2px;
+    font-weight: normal;
+}
+
 .branch-dropdown .dropdown-toggle {
     min-width: 140px;
     text-align: left;
@@ -585,16 +590,6 @@
 .btn-group .btn-check:checked + .btn-outline-secondary:hover {
     background-color: #b6d4fe !important;
     color: #212529;
-}
-
-.holiday-name {
-    color: #ff0000;
-    font-size: 0.6rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-top: 2px;
-    font-weight: normal;
 }
 </style>
 @endpush
@@ -1017,12 +1012,20 @@ function closeIframeModal() {
     document.body.style.overflow = '';
 }
 
-function openCreateGroup(vehicleId, date, vehicleName) {
-    const url = '{{ route("masters.group-infos.create") }}' + 
-                '?vehicle_id=' + encodeURIComponent(vehicleId) +
-                '&vehicle_name=' + encodeURIComponent(vehicleName) +
-                '&start_date=' + encodeURIComponent(date) +
+function openCreateGroup(vehicleId, date, vehicleName, driverId, driverName) {
+    let url = '{{ route("masters.group-infos.create") }}' + 
+                '?start_date=' + encodeURIComponent(date) +
                 '&end_date=' + encodeURIComponent(date);
+    
+    if (vehicleId && vehicleName) {
+        url += '&vehicle_id=' + encodeURIComponent(vehicleId) +
+               '&vehicle_name=' + encodeURIComponent(vehicleName);
+    }
+    
+    if (driverId && driverName) {
+        url += '&driver_id=' + encodeURIComponent(driverId) +
+               '&driver_name=' + encodeURIComponent(driverName);
+    }
     
     openIframeModal(url, '新規グループ作成');
 }
