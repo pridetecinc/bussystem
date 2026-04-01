@@ -156,8 +156,8 @@ class AccountLedgerController extends Controller
                 // Windows 环境：指定 chrome.exe 路径
                 $browsershot->setChromePath('D:\Google\Chrome\Application\chrome.exe');
             } else {
-                $browsershot->setNodePath('/root/.nvm/versions/node/v24.14.0/bin/node');
-                $browsershot->setNpmPath('/root/.nvm/versions/node/v24.14.0/bin/npm');  
+                // $browsershot->setNodePath('/root/.nvm/versions/node/v24.14.0/bin/node');
+                // $browsershot->setNpmPath('/root/.nvm/versions/node/v24.14.0/bin/npm');  
                 // [Linux/生产环境] 取消下面这行的注释
                 $browsershot->addChromiumArguments(['--no-sandbox', '--disable-setuid-sandbox']);
             }
