@@ -373,6 +373,28 @@
                     </tr>
                 @endforeach
             </tbody>
+            <thead>
+                <tr>
+                    <th class="text-center" style="position: sticky; left: 0; background-color: #f8f9fa; z-index: 10; min-width: 180px;"></th>
+                    @foreach($dates as $date)
+                        @php
+                            $dateStr = $date['date']->format('Y-m-d');
+                            $dateRemark = $dateRemarks[$dateStr] ?? null;
+                            $dateColor = '';
+                            if ($date['is_saturday']) {
+                                $dateColor = 'color: #0066cc;';
+                            } elseif ($date['is_sunday'] || $date['is_holiday']) {
+                                $dateColor = 'color: #ff0000;';
+                            }
+                        @endphp
+                        <th class="text-center" style="background-color: #e9ecef; min-width: 100px; vertical-align: top;">
+                            <div style="padding: 4px;">
+                                <div style="{{ $dateColor }}">{{ $date['display'] }}</div>
+                            </div>
+                        </th>
+                    @endforeach
+                </tr>
+            </thead>
         </table>
     </div>
 </div>

@@ -31,6 +31,7 @@ use App\Http\Controllers\Masters\GroupInfoDateRemarkController;
 use App\Http\Controllers\Masters\BusAssignmentController;
 use App\Http\Controllers\Masters\OperationLedgerController;
 use App\Http\Controllers\Masters\DriverLedgerController;
+use App\Http\Controllers\Masters\DriverAttendanceController;
 
 use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -108,6 +109,12 @@ Route::prefix('masters')->name('masters.')->group(function () {
         Route::get('operation-ledger', [OperationLedgerController::class, 'index'])->name('operation-ledger.index');
         
         Route::get('driver-ledger', [DriverLedgerController::class, 'index'])->name('driver-ledger.index');
+        
+        Route::prefix('driver-attendance')->name('driver-attendance.')->group(function () {
+            Route::get('/edit', [DriverAttendanceController::class, 'edit'])->name('edit');
+            Route::post('/', [DriverAttendanceController::class, 'store'])->name('store');
+            Route::delete('/{driverId}/{date}', [DriverAttendanceController::class, 'destroy'])->name('destroy');
+        });
         
         Route::prefix('group-info-date-remarks')->name('group-info-date-remarks.')->group(function () {
             Route::get('/{date}', [GroupInfoDateRemarkController::class, 'show'])->name('show');

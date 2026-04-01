@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@php use Carbon\Carbon; @endphp
+
 @section('title', '運転手台帳')
 
 @section('content')
@@ -146,7 +148,6 @@
     <div class="table-responsive" style="overflow-x: auto; overflow-y: visible;">
         <table class="table table-bordered table-sm ledger-table" style="font-size: 0.75rem; min-width: 800px;">
             <thead>
-                 <tr>
                     <th class="text-center" style="position: sticky; left: 0; background-color: #f8f9fa; z-index: 10; min-width: 180px;">運転手名 / 所属</th>
                     @foreach($dates as $date)
                         @php
@@ -180,8 +181,7 @@
                             </div>
                         </th>
                     @endforeach
-                </tr>
-            </thead>
+                </thead>
             <tbody>
                 @foreach($groupedDrivers as $index => $driverData)
                     @php
@@ -213,7 +213,7 @@
                             
                             $currentGroup = null;
                             foreach ($items as $item) {
-                                $currentDate = \Carbon\Carbon::parse($item['date']);
+                                $currentDate = Carbon::parse($item['date']);
                                 
                                 if ($currentGroup === null) {
                                     $currentGroup = $item['itinerary'];
@@ -223,7 +223,7 @@
                                     $currentGroup['end_minutes'] = $item['itinerary']['end_minutes'];
                                     $currentGroup['dates'] = [$item['date']];
                                 } else {
-                                    $lastDate = \Carbon\Carbon::parse($currentGroup['end_date']);
+                                    $lastDate = Carbon::parse($currentGroup['end_date']);
                                     $diffDays = $lastDate->diffInDays($currentDate);
                                     
                                     if ($diffDays == 1) {
@@ -260,15 +260,84 @@
                             @endif
                             <strong>{{ $driver->name }}</strong>
                             <br><small>{{ $driver->branch->branch_name ?? '' }}</small>
-                        </td>
+                        </div>
                     @foreach($dates as $dateIndex => $dateInfo)
                         @php
                             $dateStr = $dateInfo['date']->format('Y-m-d');
                             $displayItems = [];
-                            
                             $dayItineraryCount = 0;
                             if (isset($schedule[$dateStr])) {
                                 $dayItineraryCount = count($schedule[$dateStr]);
+                            }
+                            
+                            $attendanceKey = $driver->id . '_' . $dateStr;
+                            $attendanceGroup = $attendanceGroups[$attendanceKey] ?? null;
+                            
+                            $showAttendanceBlock = false;
+                            $attendanceStartPercent = null;
+                            $attendanceWidthPercent = null;
+                            $attendanceCategoryName = null;
+                            $attendanceColor = null;
+                            
+                            if ($attendanceGroup && $attendanceGroup['category']) {
+                                $attendanceCategory = $attendanceGroup['category'];
+                                $attendanceCategoryName = $attendanceCategory->attendance_name;
+                                $attendanceColor = $attendanceCategory->color_code;
+                                
+                                $groupDates = [];
+                                $tempDate = Carbon::parse($attendanceGroup['start_date']);
+                                $tempEnd = Carbon::parse($attendanceGroup['end_date']);
+                                while ($tempDate <= $tempEnd) {
+                                    $groupDates[] = $tempDate->format('Y-m-d');
+                                    $tempDate->addDay();
+                                }
+                                
+                                $anyDayLongRest = false;
+                                $allDaysLongRest = true;
+                                foreach ($groupDates as $gd) {
+                                    $gdKey = $driver->id . '_' . $gd;
+                                    $gdAttendance = $attendances[$gdKey] ?? null;
+                                    if ($gdAttendance && $gdAttendance->category) {
+                                        $startM = Carbon::parse($gdAttendance->start_time)->hour * 60 + Carbon::parse($gdAttendance->start_time)->minute;
+                                        $endM = Carbon::parse($gdAttendance->end_time)->hour * 60 + Carbon::parse($gdAttendance->end_time)->minute;
+                                        $duration = $endM - $startM;
+                                        if ($duration >= 480) {
+                                            $anyDayLongRest = true;
+                                        } else {
+                                            $allDaysLongRest = false;
+                                        }
+                                    } else {
+                                        $allDaysLongRest = false;
+                                    }
+                                }
+                                
+                                $showAttendanceBlock = true;
+                                
+                                $currentAttendance = $attendances[$attendanceKey] ?? null;
+                                $currentStartM = 0;
+                                $currentEndM = 1440;
+                                $currentDuration = 0;
+                                
+                                if ($currentAttendance && $currentAttendance->category) {
+                                    $currentStartM = Carbon::parse($currentAttendance->start_time)->hour * 60 + Carbon::parse($currentAttendance->start_time)->minute;
+                                    $currentEndM = Carbon::parse($currentAttendance->end_time)->hour * 60 + Carbon::parse($currentAttendance->end_time)->minute;
+                                    $currentDuration = $currentEndM - $currentStartM;
+                                }
+                                
+                                if ($allDaysLongRest && count($groupDates) > 1) {
+                                    if ($dateStr == $attendanceGroup['start_date']) {
+                                        $attendanceStartPercent = 0;
+                                        $attendanceWidthPercent = count($groupDates) * 100;
+                                    } else {
+                                        $showAttendanceBlock = false;
+                                    }
+                                } elseif ($currentDuration >= 480) {
+                                    $attendanceStartPercent = 0;
+                                    $attendanceWidthPercent = 100;
+                                } else {
+                                    $attendanceStartPercent = ($currentStartM / 1440) * 100;
+                                    $attendanceWidthPercent = ($currentDuration / 1440) * 100;
+                                }
                             }
                             
                             foreach ($mergedItineraries as $idx => $itinerary) {
@@ -276,8 +345,8 @@
                                     if ($dateStr == $itinerary['start_date']) {
                                         $startPercent = ($itinerary['start_minutes'] / 1440) * 100;
                                         
-                                        $startDateObj = \Carbon\Carbon::parse($itinerary['start_date']);
-                                        $endDateObj = \Carbon\Carbon::parse($itinerary['end_date']);
+                                        $startDateObj = Carbon::parse($itinerary['start_date']);
+                                        $endDateObj = Carbon::parse($itinerary['end_date']);
                                         $daysDiff = $startDateObj->diffInDays($endDateObj);
                                         
                                         $endPercent = ($itinerary['end_minutes'] / 1440) * 100;
@@ -300,11 +369,21 @@
                             }
                         @endphp
                         <td class="position-relative p-0" style="background-color: {{ $rowBgColor }}; cursor: pointer;" 
-                            onclick="openCreateGroup(null, '{{ $dateStr }}', null, {{ $driver->id }}, '{{ addslashes($driver->name) }}')">
+                            onclick="openDriverAttendanceModal({{ $driver->id }}, '{{ $dateStr }}', '{{ addslashes($driver->name) }}')">
                             <div class="timeline-cell" style="background-color: {{ $rowBgColor }}; position: relative;">
                                 @if($dayItineraryCount > 1)
                                     <div class="itinerary-count-badge" title="{{ $dayItineraryCount }}件の運行があります">
                                         {{ $dayItineraryCount }}
+                                    </div>
+                                @endif
+                                
+                                @if($showAttendanceBlock && $attendanceCategoryName)
+                                    <div class="attendance-block" 
+                                         style="position: absolute; top: 0; left: {{ $attendanceStartPercent }}%; width: {{ $attendanceWidthPercent }}%; height: 100%; background-color: {{ $attendanceColor }}; z-index: 200; cursor: pointer;"
+                                         onclick="event.stopPropagation(); openDriverAttendanceModal({{ $driver->id }}, '{{ $dateStr }}', '{{ addslashes($driver->name) }}')">
+                                        <div class="attendance-content" style="padding: 4px; font-size: 0.65rem; font-weight: bold; white-space: nowrap; text-overflow: ellipsis; text-align: center; height: 100%; display: flex; align-items: center; justify-content: center;">
+                                            {{ $attendanceCategoryName }}
+                                        </div>
                                     </div>
                                 @endif
                                 
@@ -359,15 +438,35 @@
                                     </div>
                                 @endforeach
                                 
-                                @if(count($displayItems) == 0)
+                                @if(count($displayItems) == 0 && !$showAttendanceBlock)
                                     <div></div>
                                 @endif
                             </div>
-                        </td>
+                        </div>
                     @endforeach
-                    <tr>
+                    </div>
                 @endforeach
             </tbody>
+            <thead>
+                    <th class="text-center" style="position: sticky; left: 0; background-color: #f8f9fa; z-index: 10; min-width: 180px;"></th>
+                    @foreach($dates as $date)
+                        @php
+                            $dateStr = $date['date']->format('Y-m-d');
+                            $dateRemark = $dateRemarks[$dateStr] ?? null;
+                            $dateColor = '';
+                            if ($date['is_saturday']) {
+                                $dateColor = 'color: #0066cc;';
+                            } elseif ($date['is_sunday'] || $date['is_holiday']) {
+                                $dateColor = 'color: #ff0000;';
+                            }
+                        @endphp
+                        <th class="text-center" style="background-color: #e9ecef; min-width: 100px; vertical-align: top;">
+                            <div style="padding: 4px;">
+                                <div style="{{ $dateColor }}">{{ $date['display'] }}</div>
+                            </div>
+                        </th>
+                    @endforeach
+                </thead>
         </table>
     </div>
 </div>
@@ -436,6 +535,22 @@
     height: 66px;
     white-space: nowrap;
     background-color: inherit;
+}
+
+.attendance-block {
+    position: absolute;
+    top: 0;
+    cursor: pointer;
+}
+
+.attendance-block:hover {
+    opacity: 0.9;
+}
+
+.attendance-content {
+    color: #fff;
+    text-shadow: 0 0 3px rgba(0, 0, 0, 0.9);
+    font-weight: 500;
 }
 
 .datepicker-3months {
@@ -878,6 +993,51 @@ function initColorTypeButtons() {
     }
 }
 
+function getContrastColor(bgColor) {
+    let r, g, b;
+    
+    if (bgColor.startsWith('rgb')) {
+        const match = bgColor.match(/[\d\.]+/g);
+        if (match && match.length >= 3) {
+            r = parseFloat(match[0]);
+            g = parseFloat(match[1]);
+            b = parseFloat(match[2]);
+        }
+    } else if (bgColor.startsWith('#')) {
+        let hex = bgColor.slice(1);
+        if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+        r = parseInt(hex.slice(0, 2), 16);
+        g = parseInt(hex.slice(2, 4), 16);
+        b = parseInt(hex.slice(4, 6), 16);
+    }
+    
+    if (r === undefined) return '#000000';
+    const brightness = (r * 0.299 + g * 0.587 + b * 0.114);
+    return brightness > 128 ? '#000000' : '#ffffff';
+}
+
+function adjustTextColorByBackground() {
+    document.querySelectorAll('.timeline-event').forEach(event => {
+        const bgColor = window.getComputedStyle(event).backgroundColor;
+        if (bgColor && bgColor !== 'rgba(0, 0, 0, 0)' && bgColor !== 'transparent') {
+            const textColor = getContrastColor(bgColor);
+            const isWhite = textColor === '#ffffff';
+            event.setAttribute('data-text-color', isWhite ? 'white' : 'black');
+            const contentDiv = event.querySelector('.event-content');
+            if (contentDiv) contentDiv.style.color = textColor;
+        }
+    });
+    
+    document.querySelectorAll('.attendance-block').forEach(block => {
+        const bgColor = window.getComputedStyle(block).backgroundColor;
+        if (bgColor && bgColor !== 'rgba(0, 0, 0, 0)' && bgColor !== 'transparent') {
+            const textColor = getContrastColor(bgColor);
+            const contentDiv = block.querySelector('.attendance-content');
+            if (contentDiv) contentDiv.style.color = textColor;
+        }
+    });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     initBranchSelect();
     initColorTypeButtons();
@@ -910,42 +1070,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (periodSelect) {
         periodSelect.addEventListener('change', function() {
             submitPeriod();
-        });
-    }
-    
-    function getContrastColor(bgColor) {
-        let r, g, b;
-        
-        if (bgColor.startsWith('rgb')) {
-            const match = bgColor.match(/[\d\.]+/g);
-            if (match && match.length >= 3) {
-                r = parseFloat(match[0]);
-                g = parseFloat(match[1]);
-                b = parseFloat(match[2]);
-            }
-        } else if (bgColor.startsWith('#')) {
-            let hex = bgColor.slice(1);
-            if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
-            r = parseInt(hex.slice(0, 2), 16);
-            g = parseInt(hex.slice(2, 4), 16);
-            b = parseInt(hex.slice(4, 6), 16);
-        }
-        
-        if (r === undefined) return '#000000';
-        const brightness = (r * 0.299 + g * 0.587 + b * 0.114);
-        return brightness > 128 ? '#000000' : '#ffffff';
-    }
-    
-    function adjustTextColorByBackground() {
-        document.querySelectorAll('.timeline-event').forEach(event => {
-            const bgColor = window.getComputedStyle(event).backgroundColor;
-            if (bgColor && bgColor !== 'rgba(0, 0, 0, 0)' && bgColor !== 'transparent') {
-                const textColor = getContrastColor(bgColor);
-                const isWhite = textColor === '#ffffff';
-                event.setAttribute('data-text-color', isWhite ? 'white' : 'black');
-                const contentDiv = event.querySelector('.event-content');
-                if (contentDiv) contentDiv.style.color = textColor;
-            }
         });
     }
     
@@ -1038,6 +1162,15 @@ function openBusAssignmentEdit(busAssignmentId) {
 function openDateRemarkModal(date) {
     const url = '/masters/group-info-date-remarks/' + encodeURIComponent(date);
     openIframeModal(url, '予定登録');
+}
+
+function openDriverAttendanceModal(driverId, date, driverName) {
+    const url = '{{ route("masters.driver-attendance.edit") }}' + 
+                '?driver_id=' + encodeURIComponent(driverId) +
+                '&date=' + encodeURIComponent(date) +
+                '&driver_name=' + encodeURIComponent(driverName);
+    
+    openIframeModal(url, '運転手勤怠');
 }
 
 window.addEventListener('message', function(event) {

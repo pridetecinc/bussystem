@@ -11,6 +11,7 @@ use App\Models\Masters\VehicleType;
 use App\Models\Masters\Agency;
 use App\Models\Masters\Branch;
 use App\Models\Masters\GroupInfoDateRemark;
+use App\Models\Masters\DriverAttendance;
 use App\Helpers\HolidayHelper;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -97,7 +98,6 @@ class DriverLedgerController extends Controller
         
         $groupedDrivers = [];
         $currentBranch = null;
-        $branchIndex = 0;
         
         foreach ($drivers as $index => $driver) {
             $branchName = $driver->branch ? $driver->branch->branch_name : '未所属';
@@ -132,17 +132,14 @@ class DriverLedgerController extends Controller
         $vehicleTypes = VehicleType::orderBy('type_name')->get();
         $agencies = Agency::orderBy('agency_name')->get();
         
-        
-        $vehicleQuery = Vehicle::where('is_active', true);
-        if ($vehicleTypeId) {
-            $vehicleQuery->where('vehicle_type_id', $vehicleTypeId);
-        }
-        $filteredVehicleIds = $vehicleQuery->pluck('id');
-
         $allItineraries = DailyItinerary::with(['busAssignment', 'groupInfo', 'busAssignment.vehicle', 'busAssignment.guide'])
             ->whereBetween('date', [$startDate, $endDate])
-            ->whereIn('vehicle_id', $filteredVehicleIds)
             ->whereNotNull('driver_id')
+            ->when($vehicleTypeId, function($query) use ($vehicleTypeId) {
+                $query->whereHas('busAssignment.vehicle', function($q) use ($vehicleTypeId) {
+                    $q->where('vehicle_type_id', $vehicleTypeId);
+                });
+            })
             ->when($reservationId, function($query) use ($reservationId) {
                 $query->whereHas('groupInfo', function($q) use ($reservationId) {
                     $q->where('id', $reservationId);
@@ -159,6 +156,11 @@ class DriverLedgerController extends Controller
             ->when($driverId, function($query) use ($driverId) {
                 $query->where('driver_id', $driverId);
             })
+            ->when($agencyId, function($query) use ($agencyId) {
+                $query->whereHas('groupInfo', function($q) use ($agencyId) {
+                    $q->where('agency_id', $agencyId);
+                });
+            })
             ->when($reservationStatus, function($query) use ($reservationStatus) {
                 $query->whereHas('groupInfo', function($q) use ($reservationStatus) {
                     $q->where('reservation_status', $reservationStatus);
@@ -171,11 +173,6 @@ class DriverLedgerController extends Controller
             ->when($hasGuide, function($query) {
                 $query->whereHas('busAssignment', function($q) {
                     $q->whereNotNull('guide_id');
-                });
-            })
-            ->when($attendanceStatus, function($query) use ($attendanceStatus) {
-                $query->whereHas('busAssignment.driver', function($q) use ($attendanceStatus) {
-                    $q->where('attendance_status', $attendanceStatus);
                 });
             })
             ->orderBy('date', 'asc')
@@ -235,6 +232,62 @@ class DriverLedgerController extends Controller
             ];
         }
         
+        $driverIds = $drivers->pluck('id')->toArray();
+        $attendances = DriverAttendance::getAttendanceByDateRange($driverIds, $startDate, $endDate);
+        
+        // 预处理勤怠组信息
+        $attendanceGroups = [];
+        foreach ($drivers as $driver) {
+            foreach ($dates as $dateInfo) {
+                $dateStr = $dateInfo['date']->format('Y-m-d');
+                $key = $driver->id . '_' . $dateStr;
+                $current = $attendances[$key] ?? null;
+                
+                if ($current && $current->category) {
+                    // 查找连续组
+                    $groupStartDate = $dateStr;
+                    $groupEndDate = $dateStr;
+                    
+                    // 向前查找连续日期
+                    $tempDate = Carbon::parse($dateStr)->subDay();
+                    while (true) {
+                        $tempKey = $driver->id . '_' . $tempDate->format('Y-m-d');
+                        if (isset($attendances[$tempKey]) && 
+                            $attendances[$tempKey]->attendance_category_id == $current->attendance_category_id) {
+                            $groupStartDate = $tempDate->format('Y-m-d');
+                            $tempDate->subDay();
+                        } else {
+                            break;
+                        }
+                    }
+                    
+                    // 向后查找连续日期
+                    $tempDate = Carbon::parse($dateStr)->addDay();
+                    while (true) {
+                        $tempKey = $driver->id . '_' . $tempDate->format('Y-m-d');
+                        if (isset($attendances[$tempKey]) && 
+                            $attendances[$tempKey]->attendance_category_id == $current->attendance_category_id) {
+                            $groupEndDate = $tempDate->format('Y-m-d');
+                            $tempDate->addDay();
+                        } else {
+                            break;
+                        }
+                    }
+                    
+                    $attendanceGroups[$driver->id . '_' . $dateStr] = [
+                        'start_date' => $groupStartDate,
+                        'end_date' => $groupEndDate,
+                        'start_time' => $current->start_time,
+                        'end_time' => $current->end_time,
+                        'category' => $current->category,
+                        'is_first_in_group' => ($dateStr == $groupStartDate),
+                    ];
+                } else {
+                    $attendanceGroups[$driver->id . '_' . $dateStr] = null;
+                }
+            }
+        }
+        
         return view('masters.driver-ledger.index', compact(
             'dates',
             'groupedDrivers',
@@ -256,7 +309,9 @@ class DriverLedgerController extends Controller
             'attendanceStatus',
             'branchId',
             'reservationId',
-            'groupName'
+            'groupName',
+            'attendances',
+            'attendanceGroups'
         ));
     }
     
