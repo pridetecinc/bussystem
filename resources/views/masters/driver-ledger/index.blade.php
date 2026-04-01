@@ -148,7 +148,6 @@
     <div class="table-responsive" style="overflow-x: auto; overflow-y: visible;">
         <table class="table table-bordered table-sm ledger-table" style="font-size: 0.75rem; min-width: 800px;">
             <thead>
-                32
                     <th class="text-center" style="position: sticky; left: 0; background-color: #f8f9fa; z-index: 10; min-width: 180px;">運転手名 / 所属</th>
                     @foreach($dates as $date)
                         @php
@@ -449,7 +448,6 @@
                 @endforeach
             </tbody>
             <thead>
-                32
                     <th class="text-center" style="position: sticky; left: 0; background-color: #f8f9fa; z-index: 10; min-width: 180px;"></th>
                     @foreach($dates as $date)
                         @php
