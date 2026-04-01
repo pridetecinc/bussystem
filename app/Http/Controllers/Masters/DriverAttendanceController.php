@@ -104,6 +104,14 @@ class DriverAttendanceController extends Controller
             $userId = session('user_id', auth()->id() ?? 0);
             $startTime = $validated['start_time'] ?? '08:00:00';
             $endTime = $validated['end_time'] ?? '18:00:00';
+            
+            if (strlen($startTime) == 5) {
+                $startTime .= ':00';
+            }
+            if (strlen($endTime) == 5) {
+                $endTime .= ':00';
+            }
+            
             $startDate = $validated['start_date'];
             $endDate = $validated['end_date'];
             $categoryId = $validated['attendance_category_id'];
@@ -128,7 +136,9 @@ class DriverAttendanceController extends Controller
             }
             
             $datesToDelete = array_diff($oldDates, $newDates);
+            
             $datesToAdd = array_diff($newDates, $oldDates);
+            
             $datesToKeep = array_intersect($oldDates, $newDates);
             
             $template = $allRecords->first();
@@ -138,54 +148,47 @@ class DriverAttendanceController extends Controller
                     ->where('attendance_category_id', $categoryId)
                     ->whereIn('date', $datesToDelete)
                     ->delete();
-                Log::info(count($datesToDelete) . "日分の勤怠記録を削除しました", ['dates' => $datesToDelete]);
             }
             
             if (!empty($datesToKeep)) {
                 foreach ($datesToKeep as $date) {
-                    $updateData = [
-                        'attendance_category_id' => $categoryId,
-                        'start_time' => $startTime,
-                        'end_time' => $endTime,
-                        'remarks' => $validated['remarks'] ?? null,
-                        'updated_by' => $userId,
-                        'updated_at' => now(),
-                    ];
-                    
                     DriverAttendance::updateOrCreate(
                         [
                             'driver_id' => $validated['driver_id'],
                             'date' => $date,
                         ],
-                        $updateData
+                        [
+                            'attendance_category_id' => $categoryId,
+                            'start_time' => $startTime,
+                            'end_time' => $endTime,
+                            'remarks' => $validated['remarks'] ?? null,
+                            'updated_by' => $userId,
+                            'updated_at' => now(),
+                        ]
                     );
                 }
-                Log::info(count($datesToKeep) . "日分の勤怠記録を更新しました", ['dates' => $datesToKeep]);
             }
             
             if (!empty($datesToAdd)) {
                 sort($datesToAdd);
                 foreach ($datesToAdd as $date) {
-                    $newData = [
-                        'driver_id' => $validated['driver_id'],
-                        'date' => $date,
-                        'attendance_category_id' => $categoryId,
-                        'start_time' => $startTime,
-                        'end_time' => $endTime,
-                        'remarks' => $validated['remarks'] ?? null,
-                        'created_by' => $userId,
-                        'updated_by' => $userId,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ];
-                    
-                    if ($template && empty($validated['remarks'])) {
-                        $newData['remarks'] = $template->remarks;
-                    }
-                    
-                    DriverAttendance::create($newData);
+                    DriverAttendance::updateOrCreate(
+                        [
+                            'driver_id' => $validated['driver_id'],
+                            'date' => $date,
+                        ],
+                        [
+                            'attendance_category_id' => $categoryId,
+                            'start_time' => $startTime,
+                            'end_time' => $endTime,
+                            'remarks' => $validated['remarks'] ?? null,
+                            'created_by' => $userId,
+                            'updated_by' => $userId,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]
+                    );
                 }
-                Log::info(count($datesToAdd) . "日分の勤怠記録を追加しました", ['dates' => $datesToAdd]);
             }
             
             return response()->json([
@@ -200,7 +203,7 @@ class DriverAttendanceController extends Controller
                 'errors' => $e->errors()
             ], 422);
         } catch (\Exception $e) {
-            Log::error('ドライバー勤怠保存失敗', [
+            \Log::error('ドライバー勤怠保存失敗', [
                 'error' => $e->getMessage()
             ]);
             return response()->json([
