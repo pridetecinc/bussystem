@@ -6,7 +6,7 @@
 <div class="container-fluid px-3 py-3" style="font-size: 0.8rem;">
     @php
         $userRole = session('role');
-        $canEdit = ($userRole === 'admin1' || $userRole === 'manager' || $userRole === 'operations_manager');
+        $canEdit = ($userRole === 'admin' || $userRole === 'manager' || $userRole === 'operations_manager');
     @endphp
     
     <form id="attendanceForm">
