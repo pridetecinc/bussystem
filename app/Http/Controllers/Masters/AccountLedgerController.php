@@ -160,6 +160,7 @@ class AccountLedgerController extends Controller
                 
                 // 如果上面只指定 node 还不行，可以尝试加上 npm 路径
                 $browsershot->setNpmPath('/usr/local/nodejs/bin/npm');
+                $browsershot->setChromePath('/root/.cache/puppeteer/chrome/linux-146.0.7680.153/chrome-linux64/chrome');
                 // [Linux/生产环境] 取消下面这行的注释
                 $browsershot->addChromiumArguments(['--no-sandbox', '--disable-setuid-sandbox']);
             }
