@@ -107,10 +107,10 @@
                         <a href="{{ route('masters.account-ledgers.index') }}" class="btn btn-outline-secondary btn-sm w-100 mb-1 text-start">勘定元帳</a>
                         
                         <!-- 貸借対照表 -->
-                        <a href="{{ route('masters.products.index') }}" class="btn btn-outline-secondary btn-sm w-100 mb-1 text-start">貸借対照表</a>
+                        <a href="{{ route('masters.account-bs.index') }}" class="btn btn-outline-secondary btn-sm w-100 mb-1 text-start">貸借対照表</a>
                         
                         <!-- 損益計算書 -->
-                        <a href="{{ route('masters.products.index') }}" class="btn btn-outline-secondary btn-sm w-100 mb-1 text-start">損益計算書</a>
+                        <a href="{{ route('masters.account-pl.index') }}" class="btn btn-outline-secondary btn-sm w-100 mb-1 text-start">損益計算書</a>
                         
                         <!-- キャッシュ・フロー計算書 -->
                         <a href="{{ route('masters.products.index') }}" class="btn btn-outline-secondary btn-sm w-100 mb-1 text-start">キャッシュ・フロー計算書</a>

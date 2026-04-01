@@ -264,15 +264,25 @@
                     <label class="form-label mb-1 text-muted" style="font-size: 0.75rem;">仕訳日</label>
                     <div class="d-flex flex-nowrap align-items-center">
                         <!-- 左侧日期输入框 -->
-                        <input type="date" name="date_from" class="form-control form-control-sm" 
+                        <input 
+                            type="text" 
+                            name="date_from" 
+                            class="form-control form-control-sm datepicker-3months" 
                             value="{{ request('date_from') }}" 
-                            placeholder="From">
+                            placeholder=""
+                            style="border-color: #E5E7EB;"
+                        >
                         <!-- 分隔符 -->
                         <span class="mx-1 text-muted" style="font-size: 0.75rem;">～</span>
                         <!-- 右侧日期输入框 -->
-                        <input type="date" name="date_to" class="form-control form-control-sm" 
+                        <input 
+                            type="text" 
+                            name="date_to" 
+                            class="form-control form-control-sm datepicker-3months" 
                             value="{{ request('date_to') }}" 
-                            placeholder="To">
+                            placeholder=""
+                            style="border-color: #E5E7EB;"
+                        >
                     </div>
                 </div>
 
@@ -1041,6 +1051,10 @@
                 }
             });
         }
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        initDateRangePicker('input[name="date_from"]', 'input[name="date_to"]');
     });
 </script>
 

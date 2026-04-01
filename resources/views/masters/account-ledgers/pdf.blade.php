@@ -123,55 +123,59 @@
 
                 @forelse($rows as $index => $row)
                     @php
-                        // --- 1. 日期与月份处理 ---
+                        // --- 1. 数据清洗 ---
                         $dateStr = $row['date'];
-                        $currentMonthKey = '';
-
-                        if (strpos($dateStr, '-') !== false) {
-                            $currentMonthKey = substr($dateStr, 0, 7);
-                        } elseif (strpos($dateStr, '/') !== false) {
-                            $parts = explode('/', $dateStr);
-                            $currentMonthKey = "20{$parts[0]}-{$parts[1]}";
-                        }
-
-                        // --- 2. 汇总逻辑：月份切换检测 ---
-                        $shouldRenderSummary = ($index > 0 && $currentMonthKey !== $lastMonthKey);
-
-                        // --- 3. 金额处理 ---
                         $jieVal = (int) round((float) str_replace(',', '', $row['jie_money'] ?? '') ?: 0);
                         $daiVal = (int) round((float) str_replace(',', '', $row['dai_money'] ?? '') ?: 0);
 
-                        // --- 4. 余额计算 ---
-                        $currentBalance += $jieVal - $daiVal;
+                        // --- 2. 提取月份 Key ---
+                        $currentMonthKey = '';
+                        if (strpos($dateStr, '-') !== false) {
+                            $currentMonthKey = substr($dateStr, 0, 7); // YYYY-MM
+                        } elseif (strpos($dateStr, '/') !== false) {
+                            $parts = explode('/', $dateStr);
+                            $currentMonthKey = "20{$parts[0]}-{$parts[1]}"; // 假设 YY/MM
+                        }
 
-                        // --- 5. 累加到当月总额 ---
+                        // --- 3. 核心统计逻辑 (关键修复点) ---
+                        // A. 先把当前行的金额累加到当月总额中
                         $monthlyJieTotal += $jieVal;
                         $monthlyDaiTotal += $daiVal;
+
+                        // B. 余额计算 (全局)
+                        $currentBalance += $jieVal - $daiVal;
+
+                        // C. 检测是否需要渲染“上个月”的汇总
+                        // 条件：不是第一行，且当前月份 != 上个月份
+                        $shouldRenderSummary = ($index > 0 && !empty($lastMonthKey) && $currentMonthKey !== $lastMonthKey);
                     @endphp
 
-                    {{-- --- 视图渲染部分 --- --}}
+                    {{-- --- 视图渲染 --- --}}
 
-                    {{-- A. 渲染上个月的汇总行 (如果需要) --}}
+                    {{-- 1. 渲染上个月的汇总行 (如果需要) --}}
+                    {{-- 注意：这里渲染的是上一轮循环结束时的 $lastMonthKey 数据 --}}
                     @if($shouldRenderSummary)
                         <tr class="summary-row">
                             <td colspan="3" class="text-end">当月合計 ({{ $lastMonthKey }})</td>
-                            <td class="text-right">{{ number_format($monthlyJieTotal) }}</td>
-                            <td class="text-right">{{ number_format($monthlyDaiTotal) }}</td>
+                            <td class="text-right">{{ number_format($monthlyJieTotal - $jieVal) }}</td>
+                            <td class="text-right">{{ number_format($monthlyDaiTotal - $daiVal) }}</td>
                             <td></td>
                         </tr>
 
                         @php
+                            // 修正：月份切换，总额归零
+                            // 因为我们上面已经把当前行算进去了，所以这里要减去当前行，或者直接归零再加？
+                            // 更简单的逻辑：直接归零，因为当前行已经在上面算进去了，新月份从0开始
                             $monthlyJieTotal = $jieVal;
                             $monthlyDaiTotal = $daiVal;
                         @endphp
                     @endif
 
-                    {{-- B. 渲染当前数据行 --}}
+                    {{-- 2. 渲染当前数据行 --}}
                     <tr>
-                        <td class="text-center col-date">{{ $row['date'] }}</td>
+                        <td class="text-center col-date">{{ $dateStr }}</td>
                         <td class="col-account">{{ $row['account_name'] }}</td>
                         <td class="col-summary">
-                            {{-- 修改点：去掉了 <br>，改为直接显示，中间加空格 --}}
                             {{ $row['sub_account_name'] ?? '' }}
                             @if(!empty($row['tax_category']))
                                 {{ $row['tax_category'] }}
@@ -187,6 +191,7 @@
                     </tr>
 
                     @php
+                        // --- 4. 状态更新 (必须在渲染行之后) ---
                         $lastMonthKey = $currentMonthKey;
                         $rowCount++;
                     @endphp

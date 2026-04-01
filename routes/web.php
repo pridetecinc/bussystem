@@ -49,6 +49,8 @@ use App\Http\Controllers\Masters\AccountController;
 use App\Http\Controllers\Masters\AccountSubController;
 use App\Http\Controllers\Masters\AccountJournalEntryController;
 use App\Http\Controllers\Masters\AccountLedgerController;
+use App\Http\Controllers\Masters\AccountPlController;
+use App\Http\Controllers\Masters\AccountBsController;
 
 Route::get('/', function() {
     return redirect('/masters');
@@ -172,6 +174,8 @@ Route::prefix('masters')->name('masters.')->group(function () {
         Route::get('/account-ledgers/index', [AccountLedgerController::class, 'index'])->name('account-ledgers.index');
         Route::get('/account-ledgers/generate/{id}', [AccountLedgerController::class, 'generate'])->name('account-ledgers.generate');
         Route::get('/account-ledgers/pdf', [AccountLedgerController::class, 'generatePdf'])->name('account-ledgers.pdf');
+        Route::get('/account-pl/index', [AccountPlController::class, 'index'])->name('account-pl.index');
+        Route::get('/account-bs/index', [AccountBsController::class, 'index'])->name('account-bs.index');
 
 
     });

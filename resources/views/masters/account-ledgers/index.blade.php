@@ -27,21 +27,20 @@
         <div class="mb-3">
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <form method="GET" action="{{ route('masters.account-ledgers.index') }}" class="row g-3 align-items-end">
-    
+                    <form method="GET" action="{{ route('masters.account-ledgers.index') }}" class="d-flex align-items-end gap-2">
 
-                        <!-- 2. 区分下拉 (支持输入 + 回显) -->
-                        <div class="col-md-3">
-                            <label class="form-label small text-muted mb-1">区分</label>
+                        <!-- 1. 区分下拉 (放在左侧) -->
+                        <div style="min-width: 200px;">
+                            <label class="form-label small text-muted mb-1" style="display: block; margin-bottom: 4px;">区分</label>
                             <input 
                                 type="text" 
                                 name="category_name" 
-                                class="form-control" 
+                                class="form-control form-control-sm" 
                                 list="category-list" 
                                 placeholder="区分を入力..."
                                 value="{{ request('category_name') }}"
+                                style="border-color: #E5E7EB;"
                             >
-                            <!-- 循环数据源 -->
                             <datalist id="category-list">
                                 @foreach($categories as $category)
                                     <option value="{{ $category->name }}">
@@ -49,43 +48,49 @@
                             </datalist>
                         </div>
 
-                        <!-- 3. 时间区间 (开始时间) -->
-                        <div class="col-md-3">
-                            <label class="form-label small text-muted mb-1">開始日</label>
-                            <input 
-                                type="date" 
-                                name="start_date" 
-                                id="start_date"
-                                class="form-control" 
-                                value="{{ request('start_date') }}"
-                            >
-                        </div>
-
-                        <!-- 4. 时间区间 (结束时间) -->
-                        <div class="col-md-3">
-                            <label class="form-label small text-muted mb-1">終了日</label>
-                            <input 
-                                type="date" 
-                                name="end_date" 
-                                id="end_date"
-                                class="form-control" 
-                                value="{{ request('end_date') }}"
-                            >
-                        </div>
-
-                        <!-- 5. 按钮区域 -->
-                        <div class="col-2 d-flex align-items-end gap-2 mt-3">
-                            <button type="submit" class="btn btn-outline-primary">
+                        <!-- 2. 按钮区域 (紧挨着区分) -->
+                        <div class="d-flex gap-2" style="margin-top: 8px;">
+                            <button type="submit" class="btn btn-outline-primary btn-sm">
                                 <i class="bi bi-search"></i> 表示
                             </button>
                             
-                            <!-- 清除按钮：只有当有搜索条件时才显示 -->
-                            @if(request()->hasAny(['year_month', 'category_id', 'start_date', 'end_date']))
-                                <a href="{{ route('masters.account-ledgers.index') }}" class="btn btn-outline-secondary">
+                            <!-- 清除按钮 -->
+                            @if(request()->hasAny(['category_name']))
+                                <a href="{{ route('masters.account-ledgers.index') }}" class="btn btn-outline-secondary btn-sm">
                                     <i class="bi bi-x-circle"></i> クリア
                                 </a>
                             @endif
                         </div>
+
+                        <!-- 3. 占位符 (将日期框推到最右边) -->
+                        <div class="flex-grow-1"></div>
+
+                        <!-- 4. 时间区间 (靠右显示，注意没有 name 属性，所以不提交) -->
+                        <div class="d-flex align-items-end gap-2" style="margin-left: auto;">
+                            <div style="min-width: 120px;">
+                                <label class="form-label small text-muted mb-1" style="display: block; margin-bottom: 4px;">開始日</label>
+                                <input 
+                                    type="text" 
+                                    id="start_date"
+                                    value="{{ request('start_date') }}"
+                                    class="form-control form-control-sm datepicker-3months" 
+                                    style="border-color: #E5E7EB;" 
+                                    placeholder=""
+                                >
+                            </div>
+                            <div style="min-width: 120px;">
+                                <label class="form-label small text-muted mb-1" style="display: block; margin-bottom: 4px;">終了日</label>
+                                <input 
+                                    type="text" 
+                                    id="end_date"
+                                    value="{{ request('end_date') }}"
+                                    class="form-control form-control-sm datepicker-3months" 
+                                    style="border-color: #E5E7EB;" 
+                                    placeholder=""
+                                >
+                            </div>
+                        </div>
+
                     </form>
                 </div>
             </div>
@@ -119,19 +124,20 @@
                                             class="btn btn-sm btn-outline-success open-ledger-modal"
                                             data-url="{{ route('masters.account-ledgers.generate', $account->id) }}"
                                             data-account-name="{{ $account->name }}"
+                                            data-account-id="{{ $account->id }}"
                                             title="元帳作成"
                                         >
                                             <i class="bi bi-journal-plus"></i> 元帳作成
                                         </a>
 
                                         <!-- 新增的 PDF 下载按钮 -->
-                                        <a 
-                                            href="{{ route('masters.account-ledgers.pdf', ['id' => $account->id,'start_date' => request('start_date'), 'end_date' => request('end_date')]) }}" 
-                                            class="btn btn-sm btn-outline-primary"
-                                            title="PDFダウンロード"
-                                        >
-                                            <i class="bi bi-file-earmark-pdf"></i> PDF
-                                        </a>
+<a href="javascript:void(0)" 
+   class="btn btn-sm btn-outline-primary open-pdf-btn" 
+   data-base-url="{{ route('masters.account-ledgers.pdf') }}"
+   title="PDFダウンロード"
+   data-account-id="{{ $account->id }}">
+   <i class="bi bi-file-earmark-pdf"></i> PDF
+</a>
                                     </div>
                                 </td>
                             </tr>
@@ -399,6 +405,28 @@
         `;
         tbody.appendChild(sumTr);
     }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    initDateRangePicker('input[id="start_date"]', 'input[id="end_date"]');
+});
+
+document.querySelectorAll('.open-pdf-btn').forEach(button => {
+    button.addEventListener('click', function () {
+        const baseUrl = this.getAttribute('data-base-url');
+        const startDate = document.getElementById('start_date');
+        const endDate = document.getElementById('end_date');
+        const accountId = this.getAttribute('data-account-id');
+        
+        const params = new URLSearchParams({
+            id: accountId,
+            start_date: startDate.value,
+            end_date: endDate.value
+        });
+        
+        const url = `${baseUrl}?${params}`;
+        window.open(url, '_blank'); // 在新标签页打开，避免打断当前页面操作
+    });
 });
 </script>
 @endsection

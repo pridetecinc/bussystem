@@ -53,7 +53,7 @@ class AccountLedgerController extends Controller
         $accounts = $query->orderBy('id', 'asc')->paginate($perPage);
         
         // 保留查询参数用于分页链接
-        $accounts->appends(['search' => $request->search, 'is_active' => $request->is_active, 'per_page' => $perPage]);
+        $accounts->appends(['search' => $request->search, 'is_active' => $request->is_active, 'category_name' => $request->category_name, 'start_date' => $request->start_date, 'end_date' => $request->end_date,'per_page' => $perPage]);
         $categories = AccountCategory::get();
         
         return view('masters.account-ledgers.index', compact('accounts','categories'));
@@ -74,11 +74,17 @@ class AccountLedgerController extends Controller
             $query->where('posting_date','<=',$endDate);
         }
         $entry_id = $query->orderBy("posting_date",'asc')->pluck('id')->toArray();
-        $lines = AccountJournalLine::whereIn('journal_entry_id', $entry_id)
-            ->where('account_id', $account->id)
-            // 直接传入字符串，不要包裹 DB::raw()
-            ->orderByRaw('FIELD(journal_entry_id, ' . implode(',', $entry_id) . ')')
-            ->get();
+        if (empty($entry_id)) {
+            // 如果 ID 列表为空，直接返回空集合或者处理异常
+            $lines = collect(); 
+            // 或者抛出异常
+            // throw new \Exception('Entry ID list is empty');
+        } else {
+            $lines = AccountJournalLine::whereIn('journal_entry_id', $entry_id)
+                ->where('account_id', $account->id)
+                ->orderByRaw('FIELD(journal_entry_id, ' . implode(',', $entry_id) . ')')
+                ->get();
+        }
         
         foreach ($lines as $line) { 
             $account_name = "XXX";
