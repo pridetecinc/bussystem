@@ -316,6 +316,7 @@
                     let monthlyJieTotal = 0; // 当月借方累计
                     let monthlyDaiTotal = 0; // 当月贷方累计
                     let lastMonthKey = '';  // 记录上一行的月份
+                    let initialBalance = 0; 
 
                     data.rows.forEach((row, index) => {
                         // --- A. 日期与月份处理 ---
@@ -330,6 +331,8 @@
                             currentMonthKey = `20${parts[0]}-${parts[1]}`; // 假设是 YY/MM 格式
                         }
 
+
+
                         // --- B. 汇总逻辑：月份切换检测 (核心点) ---
                         // 如果不是第一行，且当前月份 != 上一行的月份
                         // 说明：上个月的数据已经全部读取完毕，可以画汇总线了
@@ -340,6 +343,19 @@
                             // 重置当月累计器，开始计算新月份
                             monthlyJieTotal = 0;
                             monthlyDaiTotal = 0;
+                        }
+
+                        if (index > 0 && currentMonthKey !== lastMonthKey) {
+                            // 创建 "前月繰越" 行
+                            const openingTr = document.createElement('tr');
+                            openingTr.className = 'table-warning'; // 可以加个背景色区分
+                            openingTr.innerHTML = `
+                                <td colspan="3" class="text-center fw-bold text-success">前月繰越</td>
+                                <td class="text-end">${currentBalance >= 0 ? Math.abs(currentBalance).toLocaleString('ja-JP') : ''}</td>
+                                <td class="text-end">${currentBalance < 0 ? Math.abs(currentBalance).toLocaleString('ja-JP') : ''}</td>
+                                <td class="text-end fw-bold">${currentBalance.toLocaleString('ja-JP')}</td>
+                            `;
+                            tbody.appendChild(openingTr);
                         }
 
                         // --- C. 金额处理 (去掉小数点，取整) ---

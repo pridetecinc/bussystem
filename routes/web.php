@@ -51,6 +51,7 @@ use App\Http\Controllers\Masters\AccountJournalEntryController;
 use App\Http\Controllers\Masters\AccountLedgerController;
 use App\Http\Controllers\Masters\AccountPlController;
 use App\Http\Controllers\Masters\AccountBsController;
+use App\Http\Controllers\Masters\AccountMonthSumController;
 
 Route::get('/', function() {
     return redirect('/masters');
@@ -168,7 +169,7 @@ Route::prefix('masters')->name('masters.')->group(function () {
         Route::resource('account_partners', AccountPartnerController::class)->names('account_partners');//取引先
         Route::resource('accounts', AccountController::class)->names('accounts');//勘定科目
         Route::resource('account-subs', AccountSubController::class)->names('account-subs');//勘定科目
-        Route::resource('journal_entries', AccountJournalEntryController::class)->names('journal_entries');//
+        Route::resource('journal_entries', AccountJournalEntryController::class)->names('journal_entries');
         Route::get('/account/account-subs/{accountId}', [AccountJournalEntryController::class, 'getAccountSubs'])->name('account.account-subs');
         Route::get('/account/journal-entries/{id}', [AccountJournalEntryController::class, 'show'])->name('journal_entries.show');
         Route::get('/account-ledgers/index', [AccountLedgerController::class, 'index'])->name('account-ledgers.index');
@@ -176,6 +177,7 @@ Route::prefix('masters')->name('masters.')->group(function () {
         Route::get('/account-ledgers/pdf', [AccountLedgerController::class, 'generatePdf'])->name('account-ledgers.pdf');
         Route::get('/account-pl/index', [AccountPlController::class, 'index'])->name('account-pl.index');
         Route::get('/account-bs/index', [AccountBsController::class, 'index'])->name('account-bs.index');
+        Route::resource('account-month-sums', AccountMonthSumController::class)->names('account-month-sums');//月次決算
 
 
     });

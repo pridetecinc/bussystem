@@ -89,7 +89,7 @@
                 <div class="card-body p-2">
                     @if($canViewAccounting)
                         <!-- 仕訳帳 -->
-                        <a href="{{ route('masters.products.index') }}" class="btn btn-outline-secondary btn-sm w-100 mb-1 text-start">仕訳帳</a>
+                        <a href="{{ route('masters.journal_entries.index') }}" class="btn btn-outline-secondary btn-sm w-100 mb-1 text-start">仕訳帳</a>
                         
                         <!-- 現金出納帳 -->
                         <a href="{{ route('masters.products.index') }}" class="btn btn-outline-secondary btn-sm w-100 mb-1 text-start">現金出納帳</a>
@@ -105,6 +105,8 @@
                         
                         <!-- 勘定元帳 -->
                         <a href="{{ route('masters.account-ledgers.index') }}" class="btn btn-outline-secondary btn-sm w-100 mb-1 text-start">勘定元帳</a>
+
+                        <a href="{{ route('masters.account-month-sums.index') }}" class="btn btn-outline-secondary btn-sm w-100 mb-1 text-start">月次決算</a>
                         
                         <!-- 貸借対照表 -->
                         <a href="{{ route('masters.account-bs.index') }}" class="btn btn-outline-secondary btn-sm w-100 mb-1 text-start">貸借対照表</a>
@@ -155,13 +157,6 @@
                             <a href="{{ route('masters.account-subs.index') }}" class="btn btn-light btn-sm w-100 mb-1 text-start" style="font-size: 0.85rem; border: 1px solid #dee2e6;">
                                 補助科目
                             </a>
-                            
-
-                            <!-- 固定仕訳 -->
-                            <a href="{{ route('masters.journal_entries.index') }}" class="btn btn-light btn-sm w-100 mb-1 text-start" style="font-size: 0.85rem; border: 1px solid #dee2e6;">
-                                仕訳
-                            </a>
-                            
 
                             
                             <!-- 部署 -->

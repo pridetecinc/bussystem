@@ -38,7 +38,7 @@ class AccountLedgerController extends Controller
         }
 
         if ($request->filled('category_name')) {
-            $category_id = AccountCategory::where('name', $request->category_name)->first()->id;
+            $category_id = AccountCategory::where('name', $request->category_name)->first()->id ?? 0;
             $query->where('category_id', $category_id);
         }
 
