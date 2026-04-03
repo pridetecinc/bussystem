@@ -18,11 +18,15 @@ use Illuminate\Support\Facades\View;
 use Illuminate\Validation\Rules\In;
 use Spatie\Browsershot\Browsershot;
 use App\Jobs\GenerateRequestPdfJob;
+use App\Models\Masters\PaymentDetail;
+use App\Models\Masters\PaymentHeader;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Filesystem\FilesystemAdapter; 
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Facades\Auth;
-use ZipArchive; 
+use ZipArchive;
+
+use function Symfony\Component\Clock\now;
 
 class InvoiceController extends Controller
 {
@@ -42,15 +46,39 @@ class InvoiceController extends Controller
         // }
 
         $query = Invoice::where('group_id', $groupId);
-
-        if ($request->filled('search')){
-            $search = $request->search;
-            $query->where('invoice_number', 'like', "%{$search}%");
+        if ($request->filled('agency_id') && $request->agency_id) {
+            $query->where('agency_id', $request->agency_id);
         }
 
-        if ($request->filled('billing_title')) {
-            $query->where('billing_title', 'like', "%{$request->billing_title}%");
+        if ($request->filled('staff_id') && $request->staff_id) {
+            $query->where('staff_id', $request->staff_id);
         }
+
+        if ($request->filled('payment_status') && count($request->payment_status)>0) {
+            $query->wherein('payment_status', $request->payment_status);
+        }
+
+        if ($request->filled('target_date') && $request->target_date) {
+            $end_date = date('Y-m-d',time());
+            if($request->days > 0){
+                $end_date = date('Y-m-d', strtotime($request->target_date . ' +'.$request->days.' day'));
+            }
+            
+            if($request->date_type== "operation"){
+                $query->where('operation_date','>=', $request->target_date)->where('operation_date','<=', $end_date);
+            }elseif($request->date_type== "billing"){
+                $query->where('invoice_date','>=', $request->target_date)->where('invoice_date','<=', $end_date);
+            }else{
+                $headers = PaymentHeader::where('group_id', $groupId)->where('payment_date','>=', $request->target_date)->where('payment_date','<=', $end_date)->pluck('id')->toArray();
+                $ids = PaymentDetail::whereIn('payment_header_id', $headers)->pluck('invoice_id')->toArray();
+                $query->wherein('id', $ids);
+
+            }
+
+        }
+
+        $totalAmount = (clone $query)->where('type', 1)->sum('total_amount');
+        $paidAmount  = (clone $query)->where('type', 1)->sum('paid_amount');
 
         $perPage = 20; // 默认值
         $allowedPerPages = [20, 30, 50]; // 允许的选项
@@ -60,16 +88,16 @@ class InvoiceController extends Controller
         }
         // --- [修改结束] ---
 
-        // 应用分页，并保留所有查询参数 (search, billing_title, group_id, per_page)
         $invoices = $query->orderBy('created_at', 'desc')->paginate($perPage);
         
         // appends 确保分页链接中携带当前搜索条件和 per_page 设置
-        $invoices->appends($request->only(['search', 'billing_title', 'group_id', 'per_page']));
+        $invoices->appends($request->only(['group_id', 'per_page','agency_id','staff_id']));
 
         $banks = Bank::where("is_active",1)->get();
         $agencies = Agency::where("is_active",1)->get();
+        $staffs = Staff::where("is_active",1)->get();
 
-        return view('masters.invoices.index', compact('invoices', 'groupId','banks','agencies'));
+        return view('masters.invoices.index', compact('invoices', 'groupId','banks','agencies','staffs','totalAmount','paidAmount'));
     }
 
     public function create(Request $request)

@@ -117,6 +117,8 @@ class AccountBsController extends Controller
                         'amount' => $absAmount,
                         'is_negative' => true
                     ];
+                    $liabilities[$categoryName]['total'] += $absAmount;//默认没有
+                    $totalLiabilities += $absAmount;//默认没有
                 }
             }
         }

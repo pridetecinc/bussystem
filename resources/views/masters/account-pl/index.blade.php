@@ -13,31 +13,48 @@
     <div class="card shadow-sm mb-4">
         <div class="card-body">
             <form method="GET" action="{{ route('masters.account-pl.index') }}" class="d-flex align-items-end gap-2">
-                <div style="min-width: 140px;">
-                    <label class="form-label small text-muted mb-1" style="display: block; margin-bottom: 4px;">開始日</label>
-                    <div class="input-group">
-                        <span class="input-group-text" style="height: 38px;">
-                            <i class="bi bi-calendar-event"></i>
-                        </span>
-                        <input type="text" name="start_date" id="start_date" class="form-control datepicker-3months" 
-                               value="{{ request('start_date') }}" style="height: 38px;" required>
+                <div class="col-md-auto">
+                    <!-- 标签部分：完全复用上方样式 -->
+                    <label class="form-label mb-1 text-muted" style="font-size: 0.75rem;">期間</label>
+                    
+                    <div class="d-flex flex-nowrap align-items-center">
+                        <!-- 开始日输入框 -->
+                        <input 
+                            type="text" 
+                            name="start_date" 
+                            id="start_date"
+                            class="form-control form-control-sm datepicker-3months" 
+                            value="{{ request('start_date') }}" 
+                            placeholder="開始日"
+                            autocomplete="off"
+                            style="border-color: #E5E7EB; width: 130px;"
+                            required
+                        >
+                        
+                        <!-- 分隔符 -->
+                        <span class="mx-2 text-muted" style="font-size: 0.75rem;">～</span>
+                        
+                        <!-- 结束日输入框 -->
+                        <input 
+                            type="text" 
+                            name="end_date" 
+                            id="end_date"
+                            class="form-control form-control-sm datepicker-3months" 
+                            value="{{ request('end_date') }}" 
+                            placeholder="終了日"
+                            autocomplete="off"
+                            style="border-color: #E5E7EB; width: 130px;"
+                            required
+                        >
                     </div>
                 </div>
-                <div style="min-width: 140px;">
-                    <label class="form-label small text-muted mb-1" style="display: block; margin-bottom: 4px;">終了日</label>
-                    <div class="input-group">
-                        <span class="input-group-text" style="height: 38px;">
-                            <i class="bi bi-calendar-event"></i>
-                        </span>
-                        <input type="text" name="end_date" id="end_date" class="form-control datepicker-3months" 
-                               value="{{ request('end_date') }}" style="height: 38px;" required>
+                <div class="col-md-auto d-flex align-items-end">
+                    <!-- 标签部分：添加 margin-bottom: 4px 以匹配输入框的视觉重心 -->
+                    <div>
+                        <button type="submit" class="btn btn-primary btn-sm" style="height: 31px; padding: 0 1rem; white-space: nowrap;">
+                            <i class="bi bi-search"></i> 計算
+                        </button>
                     </div>
-                </div>
-                <div style="min-width: 100px;">
-                    <label class="form-label small text-muted mb-1" style="display: block; margin-bottom: 4px; opacity: 0;">操作</label>
-                    <button type="submit" class="btn btn-primary w-100" style="height: 38px;">
-                        <i class="bi bi-search"></i> 計算
-                    </button>
                 </div>
             </form>
         </div>

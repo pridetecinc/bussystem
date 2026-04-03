@@ -21,7 +21,7 @@ class AccountJournalEntryController extends Controller
 {
     public function index(Request $request)
     {
-
+        $sortOrder = $request->input('sort_order') ?? 'desc'; 
         $query = AccountJournalEntry::query();
         
         // 如果有部门隔离需求，可以在这里加 where('department_id', ...)
@@ -60,7 +60,7 @@ class AccountJournalEntryController extends Controller
             $perPage = (int)$request->per_page;
         }
 
-        $entries = $query->orderBy('id', 'desc')->paginate($perPage);
+        $entries = $query->orderBy('posting_date', $sortOrder)->paginate($perPage);
         $entries->appends($request->only(['search', 'posting_date',  'account_id', 'date_from','date_to','per_page']));
 
         // 预加载一些基础数据用于筛选下拉框 (可选)
@@ -515,7 +515,7 @@ class AccountJournalEntryController extends Controller
             $entry->delete();
 
             return redirect()
-                ->route('masters.journal_entries.index')
+                ->route('masters.journal_entries.index' ,request()->only(['date_from', 'date_to', 'account_id']))
                 ->with([
                     'success' => '仕訳伝票を削除しました。',
                     'alert-type' => 'success'
@@ -524,7 +524,7 @@ class AccountJournalEntryController extends Controller
         } catch (\Exception $e) {
             Log::error('Journal Entry delete error: ' . $e->getMessage());
             return redirect()
-                ->route('masters.journal_entries.index')
+                ->route('masters.journal_entries.index',request()->only(['date_from', 'date_to', 'account_id']))
                 ->with([
                     'error' => '削除に失敗しました。',
                     'alert-type' => 'danger'

@@ -8,7 +8,7 @@
     <!-- 标题与新建按钮: 减小间距 mb-2，标题变小 -->
     <div class="d-flex justify-content-between align-items-center mb-2">
         <h5 class="mb-0 text-primary" style="font-size: 1.1rem !important;">
-            <i class="bi bi-file-text me-2"></i>請求書マスター
+            <i class="bi bi-file-text me-2"></i>請求書マスター {{$totalAmount}} {{$paidAmount}}
         </h5>
         <!-- 修改点：btn-sm, 字体变小 -->
         <a href="{{ route('masters.invoices.create', ['group_id' => request('group_id')]) }}" class="btn btn-primary btn-sm" style="font-size: 0.875rem;">
@@ -20,77 +20,256 @@
     @if(session('success'))
         <div class="alert alert-success alert-dismissible fade show py-2 mb-2" role="alert" style="font-size: 0.875rem;">
             <i class="bi bi-check-circle me-2"></i>{{ session('success') }}
-            <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert" aria-label="Close"></button>
+            <!-- 修改点：移除 btn-sm，使用 style 1控制大小 -->
+            <button type="button" class="btn-close" style="font-size: 0.875rem;" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     @endif
-    
-    @if(session('error'))
-        <div class="alert alert-danger alert-dismissible fade show py-2 mb-2" role="alert" style="font-size: 0.875rem;">
-            <i class="bi bi-exclamation-triangle me-2"></i>{{ session('error') }}
-            <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    @endif
+@if(session('error'))
+    <div class="alert alert-danger alert-dismissible fade show mb-2 py-2" role="alert" style="font-size: 0.875rem; position: relative;">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        {{ session('error') }}
+        <!-- 终极方案：手动定位 -->
+        <button type="button" class="btn-close" 
+                style="position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); font-size: 0.875rem;"
+                data-bs-dismiss="alert" aria-label="Close">
+        </button>
+    </div>
+@endif
 
     <!-- 搜索区域: 减小间距 mb-2 -->
-    <div class="mb-2">
-        <div class="card shadow-sm">
-            <!-- 修改点：p-2 -->
-            <div class="card-body p-2">
-                <form method="GET" action="{{ route('masters.invoices.index') }}" class="row g-2 align-items-end">
-                    <input type="hidden" name="group_id" value="{{ request('group_id') }}">
+<div class="mb-4">
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+            <form method="GET" id="searchForm" action="{{ route('masters.invoices.index') }}" class="row g-3 align-items-end">
+                
+                <!-- 隐藏域：用于提交选中的日期类型 -->
+                <input type="hidden" name="date_type" id="date_type" value="{{ request('date_type', 'operation') }}">
+                <input type="hidden" name="group_id" value="{{ request('group_id') }}">
 
-                    <div class="col-md-3">
-                        <label class="form-label mb-0 text-muted" style="font-size: 0.75rem;">請求書番号・件名</label>
-                        <input type="text" name="search" class="form-control form-control-sm" 
-                               placeholder="例: INV-2026-001"
-                               value="{{ request('search') }}" style="font-size: 0.875rem;">
+
+
+                <!-- 2. 标题选择 (运行日/请求日/入金日) & 日期范围 -->
+                <div class="col-md-3">
+                    
+                    <!-- 切换按钮组 (保持原样) -->
+                    <div class="border rounded bg-light d-flex align-items-center mb-2" style="height: 31px;">
+                        <div class="btn-group btn-group-sm w-100" role="group">
+                            <button type="button" class="btn btn-light date-type-btn" data-value="operation" 
+                                :class="{ 'active btn-primary text-white': dateType === 'operation' }"
+                                @click="updateDateType('operation')"
+                                style="font-size: 0.75rem; padding: 0.25rem 0;"
+                            >運行日</button>
+                            <button type="button" class="btn btn-light date-type-btn" data-value="billing"
+                                :class="{ 'active btn-primary text-white': dateType === 'billing' }"
+                                @click="updateDateType('billing')"
+                                style="font-size: 0.75rem; padding: 0.25rem 0;"
+                            >請求日</button>
+                            <button type="button" class="btn btn-light date-type-btn" data-value="payment"
+                                :class="{ 'active btn-primary text-white': dateType === 'payment' }"
+                                @click="updateDateType('payment')"
+                                style="font-size: 0.75rem; padding: 0.25rem 0;"
+                            >入金日</button>
+                        </div>
                     </div>
 
-                    <div class="col-md-3">
-                        <label class="form-label mb-0 text-muted" style="font-size: 0.75rem;">タイトル</label>
-                        <input type="text" name="billing_title" class="form-control form-control-sm" 
-                               placeholder=""
-                               value="{{ request('billing_title') }}" style="font-size: 0.875rem;">
-                    </div>
+                    <!-- 日期和天数并排显示 -->
+                    <div class="input-group input-group-sm">
+                        <!-- 日期输入框 -->
+                        <input type="date" name="target_date" class="form-control" 
+                            value="{{ request('target_date') }}">
+                        
+                        <!-- 天数输入框 (移到了这里) -->
+                        <input type="number" name="days" class="form-control" 
+                            list="days_list" value="{{ request('days') }}" placeholder="日数" style="max-width: 100px;">
+                        
+                        <!-- 可选：加一个单位标签 -->
+                        <span class="input-group-text">日間</span>
 
-                    <div class="col-md-auto">
-                        <!-- 修改点：btn-sm -->
-                        <button type="submit" class="btn btn-outline-primary btn-sm" style="font-size: 0.75rem; padding: 0.2rem 0.4rem;">
-                            <i class="bi bi-search"></i> 検索
+                        <datalist id="days_list">
+                            <option value="1">
+                            <option value="3">
+                            <option value="7">
+                            <option value="14">
+                            <option value="21">
+                            <option value="31">
+                        </datalist>
+                    </div>
+                </div>
+
+                <!-- 3. 请求先 (下拉框) -->
+                <div class="col-md-2">
+                    <label class="form-label mb-1 text-muted small">請求先</label>
+                    <select name="agency_id" class="form-select form-select-sm">
+                        <option value="0">請求先選択</option>
+                        @foreach($agencies as $agency)
+                            <option value="{{ $agency->id }}" {{ request('agency_id') == $agency->id ? 'selected' : '' }}>
+                                {{ $agency->agency_name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <!-- 4. 担当 (下拉框) -->
+                <div class="col-md-2">
+                    <label class="form-label mb-1 text-muted small">担当</label>
+                    <select name="staff_id" class="form-select form-select-sm">
+                        <option value="0">担当選択</option>
+                        @foreach($staffs as $staff)
+                            <option value="{{ $staff->id }}" {{ request('staff_id') == $staff->id ? 'selected' : '' }}>
+                                {{ $staff->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <!-- 5. 入金状況 (多选下拉框) -->
+                <div class="col-md-1">
+                    <label class="form-label mb-1 text-muted small">入金状況</label>
+                    <div class="dropdown payment-status-dropdown">
+                        <!-- 下拉按钮 (修复点：移除了 form-select，改用手动样式匹配左边) -->
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle payment-status-btn" 
+                                type="button" 
+                                data-bs-toggle="dropdown" 
+                                aria-expanded="false"
+                                style="background-color: #fff; border-color: #ced4da; color: #495057; width: 100%; text-align: left; position: relative; padding-right: 2.5rem;">
+                            
+                            <!-- 左侧：固定显示的文字 -->
+                            <span class="dropdown-label">入金状況</span>
+                            
+                            <!-- 右侧：徽章 -->
+                            <span class="selected-count badge bg-primary rounded-pill" 
+                                style="position: absolute; top: 50%; right: 0.75rem; transform: translateY(-50%); display: none;">
+                                0
+                            </span>
                         </button>
-                        @if(request()->hasAny(['search', 'status']))
-                            <a href="{{ route('masters.invoices.index', ['group_id' => request('group_id')]) }}" class="btn btn-outline-secondary btn-sm ms-1" style="font-size: 0.75rem; padding: 0.2rem 0.4rem;">
-                                <i class="bi bi-x-circle"></i> クリア
-                            </a>
-                        @endif
+
+                        <!-- 下拉菜单内容 (保持不变) -->
+                        <div class="dropdown-menu p-0" style="min-width: 200px;">
+                            <div class="dropdown-header border-bottom px-3 py-2 bg-light">
+                                <label class="d-flex align-items-center w-100" style="cursor: pointer;">
+                                    <input type="checkbox" class="form-check-input me-2 select-all-status">
+                                    <strong>全て選択</strong>
+                                </label>
+                            </div>
+                            <div style="max-height: 300px; overflow-y: auto;">
+                                <label class="dropdown-item d-flex align-items-center" style="cursor: pointer;">
+                                    <input type="checkbox" 
+                                        class="form-check-input me-2 status-checkbox" 
+                                        value="1"
+                                        @if(is_array(request('payment_status')) && in_array('1', request('payment_status'))) checked @endif> 未入金 
+                                </label>
+                                <label class="dropdown-item d-flex align-items-center" style="cursor: pointer;">
+                                    <input type="checkbox" 
+                                        class="form-check-input me-2 status-checkbox" 
+                                        value="2"
+                                        @if(is_array(request('payment_status')) && in_array('2', request('payment_status'))) checked @endif> 部分入金 
+                                </label>
+                                <label class="dropdown-item d-flex align-items-center" style="cursor: pointer;">
+                                    <input type="checkbox" 
+                                        class="form-check-input me-2 status-checkbox" 
+                                        value="3"
+                                        @if(is_array(request('payment_status')) && in_array('3', request('payment_status'))) checked @endif> 入金済 
+                                </label>
+                            </div>
+                        </div>
                     </div>
-                </form>
-            </div>
+                </div>
+
+
+                <!-- 6. 搜索按钮 -->
+                <div class="col-md-1 ms-auto">
+                    <label class="form-label mb-1 d-block" style="font-size: 0.75rem; opacity: 0;">Action</label>
+                    <button type="submit" class="btn btn-primary btn-sm w-100" style="height: 31px; padding-top: 0; padding-bottom: 0;">
+                        検索
+                    </button>
+                </div>
+
+                <!-- 7. 清除按钮 (可选) -->
+                <div class="col-md-1">
+                     <label class="form-label mb-1 d-block" style="font-size: 0.75rem; opacity: 0;">Action</label>
+                     @if(request()->hasAny(['start_date', 'days', 'agency_id', 'staff_id', 'payment_status']))
+                        <a href="{{ route('masters.invoices.index',['group_id'=>request('group_id') ]) }}" class="btn btn-outline-secondary btn-sm w-100" >
+                            <i class="bi bi-x-circle"></i>クリア
+                        </a>
+                     @endif
+                </div>
+
+            </form>
         </div>
     </div>
+</div>
     
-    <!-- 搜索结果提示: 减小间距 mb-2，字体变小 -->
-    @if(request()->hasAny(['search', 'status']))
+    <!-- 搜索结果提示：根据筛选条件动态显示 -->
+    <!-- 搜索结果提示 -->
+    @if(request()->hasAny(['start_date', 'target_date', 'date_type', 'agency_id', 'staff_id', 'payment_status', 'search', 'status']))
         <div class="alert alert-info mb-2 d-flex align-items-center py-2" style="font-size: 0.875rem;">
             <i class="bi bi-info-circle me-2 fs-6"></i>
-            <div>
-                @if(request('search'))<strong>「{{ request('search') }}」</strong> を含む @endif
-                @if(request('status'))
-                    ステータス：<strong>
-                        @switch(request('status'))
-                            @case('DRAFT') 下書き @break
-                            @case('ISSUED') 発行済 @break
-                            @case('PAID') 支払済 @break
-                            @case('CANCELLED') キャンセル @break
-                        @endswitch
-                    </strong>
+            <div class="flex-grow-1">
+                <!-- 期间 -->
+                @if(request('start_date'))
+                    <strong>期間：</strong>{{ request('start_date') }}から
+                    @if(request('days')){{ request('days') }}日間 @endif
+                    <span class="text-muted mx-1">|</span>
                 @endif
-                @if($invoices->count() > 0)
-                    - {{ $invoices->total() }}件の結果が見つかりました
+
+                <!-- 目标日期 -->
+                @if(request('target_date'))
+                    <strong>対象日：</strong>
+                    @php
+                        $dateTypeText = match(request('date_type', 'operation')) {
+                            'billing' => '請求日',
+                            'payment' => '入金日',
+                            default => '運行日'
+                        };
+                    @endphp
+                    {{ $dateTypeText }}: {{ request('target_date') }}
+                    <span class="text-muted mx-1">|</span>
+                @endif
+
+                <!-- 请求先 -->
+                @if(request('agency_id') && request('agency_id') != 0)
+                    <strong>請求先：</strong>
+                    {{ $agencies->firstWhere('id', request('agency_id'))->agency_name ?? '不明' }}
+                    <span class="text-muted mx-1">|</span>
+                @endif
+
+                <!-- 担当 -->
+                @if(request('staff_id') && request('staff_id') != 0)
+                    <strong>担当：</strong>
+                    {{ $staffs->firstWhere('id', request('staff_id'))->name ?? '不明' }}
+                    <span class="text-muted mx-1">|</span>
+                @endif
+
+                <!-- 入金状况 -->
+                @if(request('payment_status') !== null && request('payment_status') !== '')
+                    <strong>入金状況：</strong>
+                    @if(request('payment_status') == 'unpaid') 未入金
+                    @elseif(request('payment_status') == 'paid') 入金済
+                    @endif
+                    <span class="text-muted mx-1">|</span>
+                @endif
+
+                <!-- 搜索关键词 (保留原有的) -->
+                @if(request('search'))
+                    <strong>検索：</strong>「{{ request('search') }}」
+                    <span class="text-muted mx-1">|</span>
+                @endif
+
+                 <!-- 结果数量 -->
+                 @if(isset($invoices) && $invoices->count() > 0)
+                    {{ $invoices->total() }}件の結果が見つかりました
                 @else
-                    - 該当する請求書が見つかりませんでした
+                    該当するものが見つかりませんでした
                 @endif
             </div>
+
+            <!-- 关闭按钮：关键修改在这里 -->
+            <button type="button"
+                    class="btn-close position-static ms-auto"
+                    style="font-size: 0.75rem;"
+                    data-bs-dismiss="alert"
+                    aria-label="Close">
+            </button>
         </div>
     @endif
 
@@ -147,17 +326,19 @@
                         <th class="text-center py-1" style="width: 40px; font-size: 0.75rem;">
                             <input type="checkbox" class="form-check-input" id="select-all" title="全選択">
                         </th>
-                        <th class="text-center py-1" style="width: 50px; font-size: 0.75rem;">No.</th>
-                        <th class="text-center py-1" style="width: 60px; font-size: 0.75rem;">ID</th>
-                        <th class="text-center py-1" style="width: 120px; font-size: 0.75rem;">タイトル</th>
-                        <th class="text-center py-1" style="width: 130px; font-size: 0.75rem;">請求書番号</th>
+                        <!-- <th class="text-center py-1" style="width: 50px; font-size: 0.75rem;">No.</th> -->
+                        <th class="text-center py-1" style="width: 60px; font-size: 0.75rem;">予約ID</th>
                         <th class="text-center py-1" style="width: 120px; font-size: 0.75rem;">請求先</th>
+                        <th class="text-center py-1" style="width: 120px; font-size: 0.75rem;">タイトル</th>
+                        <!-- <th class="text-center py-1" style="width: 130px; font-size: 0.75rem;">請求書番号</th> -->
+                        <th class="text-center py-1" style="width: 100px; font-size: 0.75rem;">運行日</th>
                         <th class="text-center py-1" style="width: 100px; font-size: 0.75rem;">請求日</th>
-                        <th class="text-center py-1" style="width: 100px; font-size: 0.75rem;">支払期日</th>
+                        <!-- <th class="text-center py-1" style="width: 100px; font-size: 0.75rem;">支払期日</th> -->
                         <th class="text-center py-1" style="width: 80px; font-size: 0.75rem;">通貨</th>
                         <th class="text-center py-1" style="width: 100px; font-size: 0.75rem;">合計金額</th>
                         <th class="text-center py-1" style="width: 100px; font-size: 0.75rem;">余额</th>
                         <th class="text-center py-1" style="width: 80px; font-size: 0.75rem;">タイプ</th>
+                        <th class="text-center py-1" style="width: 80px; font-size: 0.75rem;">請求担当</th>
                         <th class="text-center py-1" style="width: 60px; font-size: 0.75rem;" title="データロック状態">ロック</th>
                         <th class="text-center py-1" style="width: 140px; font-size: 0.75rem;">操作</th>
                     </tr>
@@ -174,18 +355,20 @@
                                 data-invoice-no="{{ $invoice->invoice_number }}"
                                 data-currency-code="{{ $invoice->currency_code }}"
                                 data-customer-name="{{ $invoice->agency->agency_name ?? ''}}"
+                                data-return-url="{{ url()->current() }}"
                                 data-request-amount="{{ number_format($invoice->total_amount, 2, '.', '') }}" 
                                 data-balance-amount="{{ number_format($invoice->total_amount - $invoice->paid_amount, 2, '.', '') }}">
                         </td>
-                        <td class="text-center fw-bold text-muted py-1" style="font-size: 0.8rem;">
+                        <!-- <td class="text-center fw-bold text-muted py-1" style="font-size: 0.8rem;">
                             {{ ($invoices->currentPage() - 1) * $invoices->perPage() + $loop->iteration }}
-                        </td>
+                        </td> -->
                         <td class="text-center text-muted small py-1" style="font-size: 0.75rem;">{{ $invoice->id }}</td>
-                        <td class="text-center fw-bold text-primary py-1" style="font-size: 0.875rem;">{{ $invoice->billing_title }}</td>
-                        <td class="text-center fw-bold text-primary py-1" style="font-size: 0.875rem;">{{ $invoice->invoice_number }}</td>
                         <td class="text-center py-1" style="font-size: 0.875rem;">{{ $invoice->agency->agency_name ?? ''}}</td>
+                        <td class="text-center fw-bold text-primary py-1" style="font-size: 0.875rem;">{{ $invoice->billing_title }}</td>
+                        <!-- <td class="text-center fw-bold text-primary py-1" style="font-size: 0.875rem;">{{ $invoice->invoice_number }}</td> -->
+                        <td class="text-center py-1" style="font-size: 0.875rem;">{{ \Carbon\Carbon::parse($invoice->operation_date)->format('Y/m/d') }}</td>
                         <td class="text-center py-1" style="font-size: 0.875rem;">{{ \Carbon\Carbon::parse($invoice->invoice_date)->format('Y/m/d') }}</td>
-                        <td class="text-center py-1" style="font-size: 0.875rem;">{{ \Carbon\Carbon::parse($invoice->due_date)->format('Y/m/d') }}</td>
+                        <!-- <td class="text-center py-1" style="font-size: 0.875rem;">{{ \Carbon\Carbon::parse($invoice->due_date)->format('Y/m/d') }}</td> -->
                         <td class="text-center py-1" style="font-size: 0.875rem;">{{ $invoice->currency_code }}</td>
                         <td class="text-center font-monospace py-1" style="font-size: 0.875rem;">
                             {{ number_format($invoice->total_amount, 2) }}
@@ -193,6 +376,7 @@
                         <td class="text-center font-monospace py-1" style="font-size: 0.875rem;">
                             {{ number_format($invoice->total_amount - $invoice->paid_amount, 2) }}
                         </td>
+                        <td class="text-center py-1" style="font-size: 0.875rem;">{{ $invoice->staff->name ?? '' }}</td>
                         <td class="text-center font-monospace py-1" style="font-size: 0.875rem;">
                             {{ $invoice->type == 1 ? '正式' : '臨時' }}
                         </td>
@@ -300,6 +484,18 @@
                     @endforelse
                 </tbody>
             </table>
+            <div class="border-top border-2 d-flex justify-content-end py-2 px-3 bg-light">
+                <div class="text-end">
+                    <span class="fw-bold text-dark me-4" style="font-size: 0.9rem;">
+                        合計金額: 
+                        <span class="text-primary">{{ number_format($totalAmount) }}</span> 
+                    </span>
+                    <span class="fw-bold text-dark" style="font-size: 0.9rem;">
+                        入金残高: 
+                        <span class="text-danger">{{ number_format($totalAmount - $paidAmount) }}</span> 
+                    </span>
+                </div>
+            </div>
         </div>
     </div>
     
@@ -389,7 +585,8 @@
             <div class="toast-body" id="lockToastMessage">
                 <!-- 消息内容 -->
             </div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto btn-sm" data-bs-dismiss="toast" aria-label="Close"></button>
+            <!-- 修改点：移除 btn-sm，使用 style 3控制大小 -->
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" style="font-size: 0.875rem;" data-bs-dismiss="toast" aria-label="Close"></button>
         </div>
     </div>
 </div>
@@ -449,7 +646,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     input.type = 'hidden';
                     input.name = 'invoice_ids[]';
                     input.value = cb.value;
-                    pdfContainer.appendChild(input);
+                    if (pdfContainer) {
+                        pdfContainer.appendChild(input);
+                    }
                 });
             }
         } else {
@@ -571,6 +770,143 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 });
+
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. 日期类型切换逻辑
+    const dateTypeInput = document.getElementById('date_type');
+    const dateTypeBtns = document.querySelectorAll('.date-type-btn');
+
+    dateTypeBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            // 移除所有按钮的激活状态
+            dateTypeBtns.forEach(b => {
+                b.classList.remove('active', 'btn-primary', 'text-white');
+                b.classList.add('btn-light');
+            });
+            // 激活当前按钮
+            this.classList.remove('btn-light');
+            this.classList.add('active', 'btn-primary', 'text-white');
+            // 更新隐藏域的值
+            dateTypeInput.value = this.dataset.value;
+        });
+    });
+
+    // 初始化状态（如果页面加载时有默认值）
+    const currentType = dateTypeInput.value;
+    const activeBtn = document.querySelector(`.date-type-btn[data-value="${currentType}"]`);
+    if(activeBtn) {
+        activeBtn.click(); // 触发一次点击以设置样式
+    }
+
+});
+
+function initPaymentStatusDropdown() {
+    const checkboxes = document.querySelectorAll('.status-checkbox');
+    const selectAllCheckbox = document.querySelector('.select-all-status');
+    const selectedCountSpan = document.querySelector('.selected-count');
+    
+    // 【修复点 1】获取搜索表单 (请确保你的 form 标签上加了 id="searchForm")
+    const searchForm = document.getElementById('searchForm'); 
+    
+    // 防御性检查：如果没找到表单，打印错误并退出
+    if (!searchForm) {
+        console.error('Search form with id "searchForm" not found!');
+        return;
+    }
+
+    function updateDisplay() {
+        const selected = Array.from(checkboxes).filter(cb => cb.checked);
+        const count = selected.length;
+
+        // 更新徽章数字
+        if (count === 0) {
+            selectedCountSpan.style.display = 'none';
+        } else {
+            selectedCountSpan.textContent = count;
+            selectedCountSpan.style.display = 'inline-block';
+        }
+
+        // 更新全选状态
+        if (selectAllCheckbox) {
+            selectAllCheckbox.checked = count > 0 && count === checkboxes.length;
+        }
+
+        // 【修复点 2】清理旧的隐藏 Input
+        // 注意：这里必须在表单内部查找，而不是全局查找
+        searchForm.querySelectorAll('.status-hidden-input').forEach(input => input.remove());
+
+        // 【修复点 3】创建新的 Input 并直接添加到表单中
+        selected.forEach(cb => {
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'payment_status[]'; // PHP/Laravel 接收数组的标准写法
+            hiddenInput.value = cb.value;
+            hiddenInput.className = 'status-hidden-input';
+            // 【关键】直接 append 到表单
+            searchForm.appendChild(hiddenInput);
+        });
+    }
+
+
+    // 为每个 Checkbox 添加事件
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function(e) {
+            e.stopPropagation(); // 防止触发 label 的点击
+            updateDisplay();
+        });
+        
+        // 防止点击 Checkbox 时触发 label 的 toggle (避免重复触发)
+        checkbox.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    });
+
+    // 全选逻辑
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function(e) {
+            e.stopPropagation();
+            const isChecked = this.checked;
+            checkboxes.forEach(cb => {
+                cb.checked = isChecked;
+            });
+            updateDisplay();
+        });
+    }
+
+    // 点击下拉项时触发 Checkbox
+    document.querySelectorAll('.dropdown-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            // 如果点击的是 Checkbox 本身，上面的逻辑已经处理了，这里直接返回
+            if (e.target.type === 'checkbox') {
+                return;
+            }
+            e.preventDefault(); // 防止下拉框关闭（如果有的话）
+            e.stopPropagation();
+            
+            const checkbox = this.querySelector('input[type="checkbox"]');
+            if (checkbox) {
+                checkbox.checked = !checkbox.checked;
+                updateDisplay();
+            }
+        });
+    });
+
+    // 初始化：检查 URL 参数并预选中 (页面刷新保持状态)
+    // 这里简单处理：如果有隐藏域存在，说明后端传过来了，保持 UI 一致
+    // 更复杂的逻辑需要解析 URL，这里依赖后端在 Blade 渲染时处理 checked 状态（如你原来的 Blade 代码所示）
+    updateDisplay();
+}
+
+// 在 DOM 加载完成后执行
+document.addEventListener('DOMContentLoaded', function() {
+    // ... (其他初始化代码)
+    
+    // 初始化入金状況功能
+    // 注意：确保这行代码在 initBranchSelect() 之后，或者确保 ID 不冲突
+    initPaymentStatusDropdown(); 
+});
+
+
 </script>
 <style>
 /* 紧凑表格样式 */
@@ -593,13 +929,6 @@ document.addEventListener('DOMContentLoaded', function () {
     transition: all 0.3s ease-in-out;
 }
 
-/* 表单控件统一变小 */
-.form-control, .form-select {
-    font-size: 0.875rem !important;
-    /* 上下保持 0.2rem，左右增加到 0.6rem 以容纳箭头 */
-    padding: 0.2rem 0.6rem !important; 
-}
-
 /* 标签统一变小 */
 .form-label {
     font-size: 0.75rem !important;
@@ -610,6 +939,14 @@ document.addEventListener('DOMContentLoaded', function () {
 .d-flex.align-items-center .form-label {
     margin-bottom: 0 !important;
     white-space: nowrap;
+}
+/* 自定义样式微调 */
+.form-select[multiple] {
+    background-image: none; /* 移除多选框默认背景图，可选 */
+}
+.form-text {
+    margin-top: 0.2rem;
+    color: #6c757d;
 }
 </style>
 @endsection

@@ -50,7 +50,7 @@ public function store(Request $request)
     $rules = [
         'group_id' => 'required|integer', 
         'return_url' => 'required|string',
-        'mode'     => 'required|in:full,detail',
+        'mode'     => 'required',
         'bank_id'  => 'nullable|integer', 
         'staff_id'  => 'nullable|integer', 
         
@@ -91,11 +91,12 @@ public function store(Request $request)
         'items.*.payment_amount.numeric'  => '入金額は数値で入力してください。',
         'items.*.payment_amount.min'      => '入金額は0.01以上で入力してください。',
     ];
-
     // ==========================================
     // 3. 执行验证
     // ==========================================
-    $validated = $request->validate($rules, $messages);
+
+    //$validated = $request->validate($rules, $messages);
+    $validated = $request->all();
 
     $groupId    = $validated['group_id'];
     $bank_id       = $validated['bank_id'];
@@ -217,6 +218,9 @@ public function store(Request $request)
 
         DB::commit();
 
+        if(!$return_url){
+            $return_url = "masters/invoices?group_id=".$groupId;
+        }
         return redirect($return_url)->with('success', '登録完了：' . $batchToken);
 
     } catch (\Exception $e) {

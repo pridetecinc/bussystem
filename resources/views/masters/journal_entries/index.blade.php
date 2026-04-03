@@ -37,22 +37,22 @@
     }
 
     /* === 3. 搜索表单紧凑化 === */
-    .search-form .form-control,
-    .search-form .form-select {
-        height: 31px;
-        font-size: 0.875rem;
-        padding: 0.25rem 0.5rem;
-    }
-
-    .search-form .btn {
-        height: 31px;
-        font-size: 0.75rem;
-        padding: 0.35rem 0.6rem;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-    }
-
+.search-form .form-control, .search-form .form-select {
+    height: 31px; 
+    font-size: 0.875rem; 
+    padding: 0.25rem 0.5rem; 
+}
+.search-form .btn { 
+    height: 31px; 
+    font-size: 0.875rem; 
+    padding: 0.25rem 0.75rem; /* 微调左右内边距，让视觉更舒适 */
+    margin-top: 0;    /* 清除默认上边距 */
+    margin-bottom: 0; /* 清除默认下边距 */
+    line-height: 1.5; /* 强制行高，防止文字下沉 */
+    display: inline-flex; 
+    align-items: center; 
+    justify-content: center; 
+}
     /* === 3.1 搜索表单：列表专用压缩 === */
     .card-body .search-form .form-control,
     .card-body .search-form .form-select {
@@ -62,7 +62,7 @@
     }
 
     .card-body .search-form .btn {
-        height: 26px !important;
+        height: 27px !important;
         font-size: 0.7rem !important;
         padding: 0.1rem 0.4rem !important;
     }
@@ -257,7 +257,7 @@
 
         <div class="card-body p-2">
             <!-- 搜索表单 (保持原样) -->
-            <form method="GET" action="{{ route('masters.journal_entries.index') }}" class="row g-2 align-items-end mb-3 search-form" id="searchForm">
+            <form method="GET" action="{{ route('masters.journal_entries.index') }}" class="row g-2 mb-3 search-form" id="searchForm">
                 <!-- 日期区间组 -->
                 <div class="col-md-auto">
                     <!-- 标签部分 -->
@@ -270,6 +270,7 @@
                             class="form-control form-control-sm datepicker-3months" 
                             value="{{ request('date_from') }}" 
                             placeholder=""
+                            autocomplete="off"
                             style="border-color: #E5E7EB;"
                         >
                         <!-- 分隔符 -->
@@ -281,6 +282,7 @@
                             class="form-control form-control-sm datepicker-3months" 
                             value="{{ request('date_to') }}" 
                             placeholder=""
+                            autocomplete="off"
                             style="border-color: #E5E7EB;"
                         >
                     </div>
@@ -299,6 +301,7 @@
                             list="account-list-search" 
                             placeholder="科目コードまたは名前を入力" 
                             style="font-size: 0.85rem;"
+                            autocomplete="off"
                             value="{{ $accounts->find(request('account_id')) ? $accounts->find(request('account_id'))->code . ' - ' . $accounts->find(request('account_id'))->name : '' }}"
                             oninput="if(this.value === '') document.getElementById('search-account-id').value = ''">
 
@@ -316,7 +319,7 @@
                 </div>
 
                 <!-- 操作按钮组 -->
-                <div class="col-md-auto d-flex align-items-end">
+                <div class="col-md-auto d-flex align-items-end"  style="padding-top: 2px;">
                     <button type="submit" class="btn btn-outline-primary btn-sm d-flex align-items-center">
                         <i class="bi bi-search me-1"></i> 検索
                     </button>
@@ -336,7 +339,24 @@
                             <!-- 1. 添加了 "No" 列 -->
                             <th width="4%" class="text-center">No</th>
                             <th width="10%">伝票ID</th>
-                            <th width="8%">仕訳日</th>
+                            <th width="10%" class="position-relative" style="cursor: pointer;" onclick="sortTable('posting_date')">
+                                <!-- 文字部分：设置 padding-right 给箭头留出空间 -->
+                                <span class="pe-4">仕訳日</span>
+
+                                <!-- 箭头容器：使用绝对定位，强制固定在右侧居中 -->
+                                <div class="sort-arrows" style="position: absolute; top: 50%; right: 10px; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; line-height: 0.5;">
+                                    <!-- 上箭头 -->
+                                    <i class="bi bi-caret-up-fill sort-icon asc" 
+                                    style="font-size: 0.6rem; color: #ccc; margin: 0; padding: 0;"></i>
+                                    <!-- 下箭头 -->
+                                    <i class="bi bi-caret-down-fill sort-icon desc" 
+                                    style="font-size: 0.6rem; color: #ccc; margin: 0; padding: 0;"></i>
+                                </div>
+
+                                <!-- 隐藏域：存储排序状态 -->
+                                <input type="hidden" name="sort_field" value="posting_date">
+                                <input type="hidden" name="sort_order" class="sort-order-input" value="">
+                            </th>
                             <th width="16%">借方</th>
                             <th width="16%">貸方</th>
                             <th width="8%">摘要</th>
@@ -362,14 +382,15 @@
                             <td>{{ $entry->department->name ?? '' }} {{ $entry->source_type}}</td>
                             <td class="text-center">
                                 <div class="btn-group btn-group-sm" onclick="event.stopPropagation();">
-                                    <form action="{{ route('masters.journal_entries.destroy', $entry->id) }}" method="POST" onsubmit="return confirm('本当に削除しますか？');">
-                                        @csrf @method('DELETE')
-                                        
-                                        <!-- 修改处：使用 btn-link 去除背景，text-danger 保持红色，p-0 去除内边距 -->
+                                    <form action="{{ route('masters.journal_entries.destroy', $entry->id) }}?{{ http_build_query(request()->only(['date_from', 'date_to', 'account_id'])) }}" 
+                                        method="POST" 
+                                        onsubmit="return confirm('本当に削除しますか？');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <!-- 保持原有的按钮结构 -->
                                         <button type="submit" class="btn btn-link text-danger p-0" style="font-size: 0.8rem;">
                                             <i class="bi bi-trash"></i>
                                         </button>
-                                        
                                     </form>
                                 </div>
                             </td>
@@ -432,7 +453,7 @@
             <div class="row g-1">
                 <div class="col-md-2"><input type="date" id="post-date" class="form-control" value="{{ date('Y-m-d') }}"></div>
                 <div class="col-md-2">
-                    <input type="text" id="post-dept" class="form-control" list="dept-list-main" placeholder="部門を入力または選択" onchange="validateMainDeptInput()">
+                    <input type="text" id="post-dept" class="form-control" autocomplete="off" list="dept-list-main" placeholder="部門を入力または選択" onchange="validateMainDeptInput()">
                     <datalist id="dept-list-main">
                         @foreach($departments as $dept)<option value="{{ $dept->name }}">{{ $dept->name }}</option>@endforeach
                     </datalist>
@@ -577,7 +598,7 @@
         tr.innerHTML = `
             <td>
                 <div class="position-relative">
-                    <input type="text" class="form-control form-control-sm account-input" 
+                    <input type="text" autocomplete="off" class="form-control form-control-sm account-input" 
                            list="${accountDataListId}" value="${currentAccountText}" placeholder="科目"
                            onchange="handleAccountChange(this); this.classList.remove('is-invalid');" onblur="validateAccountInput(this)">
                     <datalist id="${accountDataListId}">${accountOptions}</datalist>
@@ -595,7 +616,7 @@
             </td>
             <td>
                 <div class="position-relative">
-                    <input type="text" class="form-control form-control-sm partner-input" 
+                    <input type="text" autocomplete="off" class="form-control form-control-sm partner-input" 
                            list="${partnerDataListId}" value="${currentPartnerText}" placeholder="取引先 (任意)">
                     <datalist id="${partnerDataListId}">${partnerOptions}</datalist>
                     <input type="hidden" class="partner-id-hidden" value="${data.partner_id || ''}">
@@ -990,39 +1011,35 @@
             });
         }
 
-        // 2. 确保分页链接点击时，如果有搜索条件，能带上条件
-        // (Laravel 的 $entries->previousPageUrl() 已经包含了当前的 Query 参数，所以原生链接通常是有效的)
-        // 如果需要更复杂的处理，可以在这里拦截 a 标签的点击
+
     });
 
     document.addEventListener('DOMContentLoaded', function () {
         const searchAccountInput = document.getElementById('search-account-input');
         const searchAccountIdInput = document.getElementById('search-account-id');
         const accountListSearch = document.getElementById('account-list-search');
-
-        // 如果页面上有科目数据（从 Blade 传过来的），使用它
-        // 注意：这需要你在 Controller 的 Index 方法中也传入 $accounts 变量
         const allAccounts = @json($accounts ?? []);
 
-        // 核心：输入时的模糊搜索逻辑
         if (searchAccountInput) {
+            // --- 修改点 1: 移除 input 事件中的自动填充逻辑 ---
+            // 现在 input 事件只负责“过滤下拉列表”，不负责“修改输入框的值”
             searchAccountInput.addEventListener('input', function() {
                 const inputValue = this.value.trim().toLowerCase();
                 
-                // 如果输入为空，显示所有选项（或者清空）
+                // 如果输入为空，不做处理
                 if (!inputValue) {
-                    searchAccountIdInput.value = '';
+                    // 这里不要清空 hidden，或者根据需求处理
                     return;
                 }
 
-                // 过滤科目数据
+                // 过滤选项
                 const filteredOptions = allAccounts.filter(acc => 
-                    (acc.code + ' - ' + acc.name).toLowerCase().includes(inputValue) ||
-                    acc.name.toLowerCase().includes(inputValue) ||
-                    acc.code.toLowerCase().includes(inputValue)
+                    (acc.code + ' - ' + acc.name).toLowerCase().includes(inputValue) || 
+                    acc.name.toLowerCase().includes(inputValue) || 
+                    acc.code.toLowerCase().includes(inputValue) 
                 );
 
-                // 动态更新 Datalist (清空并重新填充)
+                // 动态更新 Datalist
                 accountListSearch.innerHTML = '';
                 filteredOptions.forEach(acc => {
                     const option = document.createElement('option');
@@ -1030,24 +1047,22 @@
                     accountListSearch.appendChild(option);
                 });
 
-                // 简单的自动填充逻辑：如果只有一个匹配项，自动填入
-                if (filteredOptions.length === 1) {
-                    this.value = filteredOptions[0].code + ' - ' + filteredOptions[0].name;
-                    searchAccountIdInput.value = filteredOptions[0].id;
-                } else if (filteredOptions.length === 0) {
-                    searchAccountIdInput.value = ''; // 无匹配项
-                }
-                // 如果匹配项大于1，保持用户输入，让用户自己选
+                // ⚠️ 关键：删除了这里 if (filteredOptions.length === 1) { this.value = ... } 的代码
+                // 让用户自己决定选什么，不要强制改写 this.value
             });
 
-            // 当用户从 datalist 选择了某项
+            // --- 修改点 2: 依赖 change 事件来保存 ID ---
+            // 只有当用户选中（或者失去焦点确认）时，才去匹配 ID
             searchAccountInput.addEventListener('change', function() {
                 const selectedValue = this.value;
                 const matchedAccount = allAccounts.find(acc => 
-                    (acc.code + ' - ' + acc.name) === selectedValue
+                    (acc.code + ' - ' + acc.name) === selectedValue 
                 );
                 if (matchedAccount) {
                     searchAccountIdInput.value = matchedAccount.id;
+                } else {
+                    // 如果用户输入了不存在的值，可以清空或者保留
+                    // searchAccountIdInput.value = ''; 
                 }
             });
         }
@@ -1055,6 +1070,49 @@
 
     document.addEventListener('DOMContentLoaded', function() {
         initDateRangePicker('input[name="date_from"]', 'input[name="date_to"]');
+    });
+
+
+    function sortTable(field) {
+        // 1. 获取当前页面所有的 URL 参数
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        // 2. 获取当前的排序字段和顺序
+        const currentSortField = urlParams.get('sort_field');
+        const currentSortOrder = urlParams.get('sort_order');
+
+        // 3. 判断逻辑：
+        // 如果点击的是同一个字段，则切换升序/降序（默认降序 desc）
+        // 如果点击的是不同字段，则重置为降序
+        let newOrder = 'desc';
+        if (field === currentSortField && currentSortOrder === 'desc') {
+            newOrder = 'asc';
+        }
+
+        // 4. 设置新的参数
+        urlParams.set('sort_field', field);
+        urlParams.set('sort_order', newOrder);
+
+        // 5. 更新页面 URL（会触发页面刷新并重新加载数据）
+        // 注意：这里假设你的路由是 GET 请求，这样刷新后参数依然保留
+        window.location.search = urlParams.toString();
+    }
+
+    // --- 可选：页面加载时，根据当前的排序状态高亮箭头 ---
+    document.addEventListener("DOMContentLoaded", function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const sortField = urlParams.get('sort_field');
+        const sortOrder = urlParams.get('sort_order');
+
+        // 找到所有被点击的列（通过 data-sort 属性匹配）
+        const header = document.querySelector(`th[data-sort="${sortField}"]`);
+        if (header) {
+            const activeIcon = header.querySelector(`.sort-icon.${sortOrder}`);
+            if (activeIcon) {
+                activeIcon.style.color = '#0d6efd'; // 激活时变蓝色 (Bootstrap primary color)
+                activeIcon.style.opacity = '1';
+            }
+        }
     });
 </script>
 
