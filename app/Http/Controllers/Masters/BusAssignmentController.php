@@ -14,6 +14,7 @@ use App\Models\Masters\ReservationCategory;
 use App\Models\Masters\Branch;
 use App\Models\Masters\VehicleType;
 use App\Models\Masters\GroupInfoDateRemark;
+use App\Models\Masters\BusAssignmentLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -265,6 +266,10 @@ class BusAssignmentController extends Controller
             'dailyItineraries'
         ])->findOrFail($id);
         
+        $logs = BusAssignmentLog::where('bus_assignment_id', $id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+        
         $vehicles = Vehicle::with(['vehicleModel', 'vehicleType', 'branch'])
             ->where('is_active', true)
             ->orderBy('display_order', 'asc')
@@ -298,7 +303,8 @@ class BusAssignmentController extends Controller
             'drivers',
             'guides',
             'agencies',
-            'reservationCategories'
+            'reservationCategories',
+            'logs'
         ));
     }
 
@@ -308,18 +314,18 @@ class BusAssignmentController extends Controller
         
         try {
             $busAssignment = BusAssignment::findOrFail($id);
+            
+            $oldLock = (bool)$busAssignment->lock_arrangement;
+            $oldFinalized = (bool)$busAssignment->status_finalized;
+            $oldSent = (bool)$busAssignment->status_sent;
+            $oldVehicleSpec = (bool)$busAssignment->vehicle_type_spec_check;
+            $oldReservationStatus = $busAssignment->groupInfo->reservation_status ?? null;
+            
             $groupInfo = $busAssignment->groupInfo;
             
             $oldVehicleId = $busAssignment->vehicle_id;
             $oldDriverId = $busAssignment->driver_id;
             $oldGuideId = $busAssignment->guide_id;
-            
-            Log::info("=== 更新開始 ===", [
-                'bus_assignment_id' => $busAssignment->id,
-                'old_vehicle_id' => $oldVehicleId,
-                'old_driver_id' => $oldDriverId,
-                'old_guide_id' => $oldGuideId
-            ]);
             
             $oldStartDate = $busAssignment->start_date ? Carbon::parse($busAssignment->start_date)->format('Y-m-d') : null;
             $oldEndDate = $busAssignment->end_date ? Carbon::parse($busAssignment->end_date)->format('Y-m-d') : null;
@@ -396,18 +402,112 @@ class BusAssignmentController extends Controller
             $dateRangeChanged = ($oldStartDate != $newStartDate) || ($oldEndDate != $newEndDate);
             $timeChanged = ($oldStartTime != $newStartTime) || ($oldEndTime != $newEndTime);
             
-            Log::info("変更検出", [
-                'date_range_changed' => $dateRangeChanged,
-                'time_changed' => $timeChanged,
-                'old_start_time' => $oldStartTime,
-                'new_start_time' => $newStartTime,
-                'old_end_time' => $oldEndTime,
-                'new_end_time' => $newEndTime
-            ]);
+            $newLock = filter_var($validated['lock_arrangement'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            $newFinalized = filter_var($validated['status_finalized'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            $newSent = filter_var($validated['status_sent'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            $newVehicleSpec = filter_var($validated['vehicle_type_spec_check'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            
+            
+            $itineraries = DailyItinerary::where('bus_assignment_id', $busAssignment->id)
+                ->orderBy('date', 'asc')
+                ->get();
+            
+            if ($itineraries->isNotEmpty()) {
+                $itineraryData = [];
+                foreach ($itineraries as $itinerary) {
+                    $itineraryData[] = [
+                        'date' => Carbon::parse($itinerary->date)->format('Y-m-d'),
+                        'time_start' => $itinerary->time_start,
+                        'time_end' => $itinerary->time_end,
+                    ];
+                }
+                
+                $newReservationStatus = $validated['reservation_status'] ?? ($groupInfo ? $groupInfo->reservation_status : null);
+                $newIgnoreOperation = $validated['ignore_operation'] ?? $busAssignment->ignore_operation;
+                
+                $shouldCheck = !$newIgnoreOperation 
+                    && !in_array($newReservationStatus, ['見積', 'キャンセル']);
+                
+                if ($shouldCheck) {
+                    $this->checkConflicts(
+                        $validated['vehicle_id'] ?? $busAssignment->vehicle_id,
+                        $validated['driver_id'] ?? $busAssignment->driver_id,
+                        $itineraryData,
+                        $busAssignment->id,
+                        $groupInfo ? $groupInfo->id : null,
+                        $busAssignment->ignore_operation,
+                        $busAssignment->ignore_driver,
+                        $groupInfo ? $groupInfo->reservation_status : null
+                    );
+                }
+            }
+            
+            
             
             $busAssignment->update($validated);
             
-            Log::info("BusAssignment 更新完了");
+            $userId = session('user_id', auth()->id() ?? 0);
+            $username = session('username', auth()->user()->name ?? 'system');
+            
+            if ($oldLock != $newLock) {
+                $actionDesc = $newLock ? 'Lock' : 'Un-Lock';
+                BusAssignmentLog::log(
+                    $busAssignment->id,
+                    $groupInfo->id,
+                    'lock_arrangement',
+                    'lock',
+                    $oldLock ? '1' : '0',
+                    $newLock ? '1' : '0',
+                    $actionDesc,
+                    $userId,
+                    $username
+                );
+            }
+            
+            if ($oldFinalized != $newFinalized) {
+                $actionDesc = $newFinalized ? '最終確認' : 'Clear-最終確認';
+                BusAssignmentLog::log(
+                    $busAssignment->id,
+                    $groupInfo->id,
+                    'status_finalized',
+                    'finalized',
+                    $oldFinalized ? '1' : '0',
+                    $newFinalized ? '1' : '0',
+                    $actionDesc,
+                    $userId,
+                    $username
+                );
+            }
+            
+            if ($oldSent != $newSent) {
+                $actionDesc = $newSent ? '送信済' : 'Clear-送信済';
+                BusAssignmentLog::log(
+                    $busAssignment->id,
+                    $groupInfo->id,
+                    'status_sent',
+                    'sent',
+                    $oldSent ? '1' : '0',
+                    $newSent ? '1' : '0',
+                    $actionDesc,
+                    $userId,
+                    $username
+                );
+            }
+            
+            if ($oldVehicleSpec != $newVehicleSpec) {
+                $actionDesc = $newVehicleSpec ? '車種指定' : 'Clear-車種指定';
+                BusAssignmentLog::log(
+                    $busAssignment->id,
+                    $groupInfo->id,
+                    'vehicle_type_spec_check',
+                    'vehicle_spec',
+                    $oldVehicleSpec ? '1' : '0',
+                    $newVehicleSpec ? '1' : '0',
+                    $actionDesc,
+                    $userId,
+                    $username
+                );
+            }
             
             $vehicleName = '';
             if ($busAssignment->vehicle_id) {
@@ -531,39 +631,6 @@ class BusAssignmentController extends Controller
                 }
             }
             
-            $itineraries = DailyItinerary::where('bus_assignment_id', $busAssignment->id)
-                ->orderBy('date', 'asc')
-                ->get();
-            
-            if ($itineraries->isNotEmpty()) {
-                $itineraryData = [];
-                foreach ($itineraries as $itinerary) {
-                    $itineraryData[] = [
-                        'date' => Carbon::parse($itinerary->date)->format('Y-m-d'),
-                        'time_start' => $itinerary->time_start,
-                        'time_end' => $itinerary->time_end,
-                    ];
-                }
-                
-                $newReservationStatus = $validated['reservation_status'] ?? ($groupInfo ? $groupInfo->reservation_status : null);
-                $newIgnoreOperation = $validated['ignore_operation'] ?? $busAssignment->ignore_operation;
-                
-                $shouldCheck = !$newIgnoreOperation 
-                    && !in_array($newReservationStatus, ['見積', 'キャンセル']);
-                
-                if ($shouldCheck) {
-                    $this->checkConflicts(
-                        $busAssignment->vehicle_id,
-                        $busAssignment->driver_id,
-                        $itineraryData,
-                        $busAssignment->id,
-                        $groupInfo ? $groupInfo->id : null,
-                        $busAssignment->ignore_operation,
-                        $busAssignment->ignore_driver,
-                        $groupInfo ? $groupInfo->reservation_status : null
-                    );
-                }
-            }
             
             if ($groupInfo) {
                 $directUpdateFields = [
@@ -658,6 +725,26 @@ class BusAssignmentController extends Controller
                 
                 if (!empty($groupInfoData)) {
                     $groupInfo->update($groupInfoData);
+                    
+                    $groupInfo->refresh();
+                    $newReservationStatus = $groupInfo->reservation_status ?? null;
+                    
+                    if ($oldReservationStatus != $newReservationStatus) {
+                        $oldStatus = $oldReservationStatus ?? '未設定';
+                        $newStatus = $newReservationStatus ?? '未設定';
+                        $actionDesc = "予約状態変更: {$oldStatus} → {$newStatus}";
+                        BusAssignmentLog::log(
+                            $busAssignment->id,
+                            $groupInfo->id,
+                            'reservation_status',
+                            'reservation_status',
+                            $oldReservationStatus,
+                            $newReservationStatus,
+                            $actionDesc,
+                            $userId,
+                            $username
+                        );
+                    }
                 }
             }
             
@@ -723,6 +810,36 @@ class BusAssignmentController extends Controller
         
         if (empty($itineraries)) {
             return;
+        }
+        
+        if ($checkDriver && $driverId) {
+            foreach ($itineraries as $itinerary) {
+                $date = $itinerary['date'];
+                $timeStart = $itinerary['time_start'];
+                $timeEnd = $itinerary['time_end'];
+                
+                $startDateTime = Carbon::parse($date . ' ' . $timeStart);
+                $endDateTime = Carbon::parse($date . ' ' . $timeEnd);
+                
+                $restConflict = $this->checkDriverRestConflict(
+                    $driverId,
+                    $startDateTime,
+                    $endDateTime,
+                    $excludeBusId
+                );
+                
+                if ($restConflict) {
+                    $driver = Driver::find($driverId);
+                    $driverName = $driver ? $driver->name : '#' . $driverId;
+                    throw new \Exception(
+                        "運転手「{$driverName}」は日付「{$date}」 " . 
+                        substr($timeStart, 0, 5) . "～" . substr($timeEnd, 0, 5) . 
+                        " に休憩時間が設定されています。\n" .
+                        "休憩時間: {$restConflict['start_datetime']} ～ {$restConflict['end_datetime']}\n" .
+                        "内容: {$restConflict['attendance_name']}"
+                    );
+                }
+            }
         }
         
         $schedules = [];
@@ -865,6 +982,36 @@ class BusAssignmentController extends Controller
                 }
             }
         }
+    }
+    
+    private function checkDriverRestConflict($driverId, $startDateTime, $endDateTime, $excludeBusId = null)
+    {
+        $startDateOnly = $startDateTime->format('Y-m-d');
+        $endDateOnly = $endDateTime->format('Y-m-d');
+        $startTimeOnly = $startDateTime->format('H:i:s');
+        $endTimeOnly = $endDateTime->format('H:i:s');
+        
+        $query = \App\Models\Masters\DriverAttendance::where('driver_id', $driverId)
+            ->whereDate('date', '>=', $startDateOnly)
+            ->whereDate('date', '<=', $endDateOnly)
+            ->where(function($q) use ($startTimeOnly, $endTimeOnly) {
+                $q->where('start_time', '<', $endTimeOnly)
+                  ->where('end_time', '>', $startTimeOnly);
+            });
+        
+        $conflict = $query->first();
+        
+        if ($conflict) {
+            return [
+                'id' => $conflict->id,
+                'start_datetime' => Carbon::parse($conflict->start_time)->format('Y-m-d H:i'),
+                'end_datetime' => Carbon::parse($conflict->end_time)->format('Y-m-d H:i'),
+                'attendance_name' => $conflict->category->attendance_name ?? '休憩',
+                'remarks' => $conflict->remarks
+            ];
+        }
+        
+        return null;
     }
 
     private function syncDailyItinerariesByDateRange(

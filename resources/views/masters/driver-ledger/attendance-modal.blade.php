@@ -34,7 +34,7 @@
         </div>
         
         <div class="mb-2">
-            <label class="form-label">勤怠分類 <span class="text-danger">*</span></label>
+            <label class="form-label">勤怠分類</label>
             <select name="attendance_category_id" id="attendance_category_id" class="form-select" {{ !$canEdit ? 'disabled' : '' }}>
                 <option value="">-- 選択してください --</option>
                 @foreach($attendanceCategories as $category)
@@ -56,6 +56,8 @@
         <div class="d-flex gap-4 mt-3">
             @if($canEdit)
                 <button type="submit" class="btn btn-primary">保存</button>
+            @endif
+            @if($canEdit && !empty($categoryId))
                 <button type="button" class="btn btn-danger" id="deleteBtn">削除</button>
             @endif
             <button type="button" class="btn btn-secondary" onclick="parent.closeIframeModal()">キャンセル</button>
@@ -101,6 +103,27 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
         remarkText.addEventListener('input', updateCharCount);
     }
     
+    function validateDates() {
+        var startDate = document.getElementById('start_date').value;
+        var endDate = document.getElementById('end_date').value;
+        var startTime = document.getElementById('start_time').value;
+        var endTime = document.getElementById('end_time').value;
+        
+        if (!startDate || !endDate) {
+            return true;
+        }
+        
+        var startDateTime = new Date(startDate + 'T' + (startTime || '00:00') + ':00');
+        var endDateTime = new Date(endDate + 'T' + (endTime || '00:00') + ':00');
+        
+        if (endDateTime < startDateTime) {
+            alert('終了日時は開始日時より後の日時を設定してください。');
+            return false;
+        }
+        
+        return true;
+    }
+    
     function validateForm() {
         var categorySelect = document.getElementById('attendance_category_id');
         var categoryError = document.getElementById('categoryError');
@@ -113,6 +136,11 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
         
         categoryError.style.display = 'none';
         categorySelect.classList.remove('is-invalid');
+        
+        if (!validateDates()) {
+            return false;
+        }
+        
         return true;
     }
     

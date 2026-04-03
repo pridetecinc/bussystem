@@ -86,7 +86,7 @@
                                 
                                 <div class="d-flex align-items-center" style="flex: 1;">
                                     <span class="span-label" style="white-space: nowrap;">業務分類</span>
-                                    <span class="border px-2 py-1 bg-white rounded w-100 text-center">{{ $groupInfo->business_category ?? '--' }}</span>
+                                    <span class="border px-2 py-1 bg-white rounded w-100 text-center">{{ $groupInfo->reservationCategory ? $groupInfo->reservationCategory->category_name : ($groupInfo->business_category ?? '--') }}</span>
                                 </div>
                                 
                                 <div class="d-flex align-items-center" style="flex: 1.2;">
@@ -448,12 +448,12 @@
 
     <div class="d-flex align-items-center gap-4 my-2">
         <div class="form-check d-flex align-items-center ps-0">
-            <span class="form-check-label me-2" style="font-size: 0.9rem;">運行無視</span>
             <span class="badge bg-secondary">{{ $groupInfo->ignore_operation ? '✓' : '' }}</span>
+            <span class="form-check-label ms-2" style="font-size: 0.9rem;">運行無視</span>
         </div>
         <div class="form-check d-flex align-items-center ps-0">
-            <span class="form-check-label me-2" style="font-size: 0.9rem;">勤怠無視</span>
             <span class="badge bg-secondary">{{ $groupInfo->ignore_attendance ? '✓' : '' }}</span>
+            <span class="form-check-label ms-2" style="font-size: 0.9rem;">勤怠無視</span>
         </div>
     </div>
 

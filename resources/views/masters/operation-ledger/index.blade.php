@@ -326,14 +326,14 @@
                                                 {{ $itinerary['group_info_id'] }} [{{ $itinerary['bus_assignment_id'] }}]
                                             </div>
                                             <div>
+                                                @if($itinerary['status_finalized'])
+                                                    <span style="color: #ff0000; cursor: help; font-weight: bold;" title="最終確認済み">✓</span>
+                                                @endif
                                                 @if($itinerary['vehicle_type_spec_check'])
                                                     <span style="color: #f59e0b; cursor: help;" title="車種指定">⭐</span>
                                                 @endif
                                                 @if($itinerary['guide_name'])
                                                     <span style="color: #10b981; cursor: help;" title="添乗員: {{ $itinerary['guide_name'] }}">👤</span>
-                                                @endif
-                                                @if($itinerary['status_finalized'])
-                                                    <span style="color: #22c55e; cursor: help; font-weight: bold;" title="最終確認済み">✓</span>
                                                 @endif
                                             </div>
                                             <div>
