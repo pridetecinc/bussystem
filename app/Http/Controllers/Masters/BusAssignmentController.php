@@ -267,7 +267,7 @@ class BusAssignmentController extends Controller
         ])->findOrFail($id);
         
         $logs = BusAssignmentLog::where('bus_assignment_id', $id)
-            ->orderBy('created_at', 'asc')
+            ->orderBy('created_at', 'desc')
             ->get();
         
         $vehicles = Vehicle::with(['vehicleModel', 'vehicleType', 'branch'])
