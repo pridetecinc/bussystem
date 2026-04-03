@@ -14,12 +14,12 @@
             <div class="d-flex flex-wrap align-items-center justify-content-between">
                 <div class="d-flex align-items-center">
                     <label for="status" class="label-text mr-2">車種指定</label>
-                    <input type="checkbox" id="status" class="checkbox mr-5" name="vehicle_type_spec_check" value="1" {{ $busAssignment->vehicle_type_spec_check ? 'checked' : '' }}>
+                    <input type="checkbox" id="status" class="checkbox mr-5" name="vehicle_type_spec_check" value="1" {{ $busAssignment->vehicle_type_spec_check ? 'checked' : '' }} disabled>
                 </div>
                 
                 <div class="d-flex align-items-center mx-3">
-                    <label for="yoyaku" class="label-text mr-2">予約状況</label>
-                        <select id="yoyaku" class="form-input-small" name="reservation_status">
+                    <label for="reservation_status" class="label-text mr-2">予約状況</label>
+                        <select id="reservation_status" class="form-input-small" name="reservation_status" disabled>
                             <option value="予約" style="background-color: #ccf5ff; color: black;" {{ ($busAssignment->groupInfo->reservation_status ?? '') == '予約' ? 'selected' : '' }}>予約</option>
                             <option value="仮押さえ" style="background-color: #ffff99; color: black;" {{ ($busAssignment->groupInfo->reservation_status ?? '') == '仮押さえ' ? 'selected' : '' }}>仮押さえ</option>
                             <option value="見積" style="background-color: #ccffcc; color: black;" {{ ($busAssignment->groupInfo->reservation_status ?? '') == '見積' ? 'selected' : '' }}>見積</option>
@@ -37,7 +37,7 @@
                 
                 <div class="d-flex align-items-center">
                     <label for="category" class="label-text mr-2">業務分類</label>
-                    <select id="category" name="reservation_categories_id" class="form-input" style="width: 100px;">
+                    <select id="category" name="reservation_categories_id" class="form-input" style="width: 100px;" disabled>
                         <option value="">-- 選択 --</option>
                         @foreach($reservationCategories ?? [] as $category)
                             <option value="{{ $category->id }}" 
@@ -50,10 +50,9 @@
             </div>
         </div>
 
-        <!-- 新增信息区域 -->
         <div class="info-cards d-flex gap-2 mb-2">
             <div class="info-card w-100" style="background-color: #e6f3ff; border: 1px solid #b8d9ff; border-radius: 6px; padding: 6px 12px;">
-                <span class="info-label" style="font-size: 11px; color: #1e40af;">団体情報</span>
+                <span class="info-label" style="font-size: 11px; color: #1e40af;">予約ID</span>
                 <span class="info-value" style="font-size: 13px; font-weight: bold; margin-left: 8px;">
                     {{ $busAssignment->group_info_id }} 
                     @php
@@ -70,25 +69,24 @@
             <div class="d-flex align-items-center mb-1 position-relative">
                 <div class="label-width text-gray">車両名</div>
                 <div class="flex-1 position-relative">
-                    <input type="text" name="vehicle_name_input" class="form-input search-input" id="vehicle_search" 
+                    <input type="text" name="vehicle_name_input" class="form-input" id="vehicle_search" 
                            value="{{ $busAssignment->vehicle ? $busAssignment->vehicle->registration_number . ($busAssignment->vehicle->vehicleModel ? ' (' . $busAssignment->vehicle->vehicleModel->model_name . ')' : '') : '' }}" 
-                           placeholder="車両名を入力" autocomplete="off">
+                           placeholder="車両名を入力" autocomplete="off" readonly style="background-color: #f9fafb;">
                     <input type="hidden" name="vehicle_id" id="vehicle_id" value="{{ $busAssignment->vehicle_id }}">
-                    <div class="suggestions-container" id="vehicle_suggestions" style="display: none;"></div>
                 </div>
             </div>
 
             <div class="d-flex mb-1">
                 <div class="label-width text-gray">開始日</div>
                 <div class="d-flex align-items-center" style="flex: 1;">
-                    <input type="text" name="start_date" value="{{ $busAssignment->start_date ? \Carbon\Carbon::parse($busAssignment->start_date)->format('Y-m-d') : '' }}" class="form-input-small input-width-date datepicker-3months" id="start_date" style="flex: 1; min-width: 0;" placeholder="YYYY-MM-DD" autocomplete="off">
+                    <input type="text" name="start_date" value="{{ $busAssignment->start_date ? \Carbon\Carbon::parse($busAssignment->start_date)->format('Y-m-d') : '' }}" class="form-input-small input-width-date" id="start_date" style="flex: 1; min-width: 0;" placeholder="YYYY-MM-DD" autocomplete="off" readonly>
                     <span class="mx-2">
-                        <input type="time" name="start_time" value="{{ $busAssignment->start_time ? \Carbon\Carbon::parse($busAssignment->start_time)->format('H:i') : '08:00' }}" class="form-input-small input-width-time" step="60" style="width: 90px;">
+                        <input type="time" name="start_time" value="{{ $busAssignment->start_time ? \Carbon\Carbon::parse($busAssignment->start_time)->format('H:i') : '08:00' }}" class="form-input-small input-width-time" step="60" style="width: 90px;" readonly>
                     </span>
                     <span class="label-text mx-2" style="margin-left:0 !important;">~</span>
-                    <input type="text" name="end_date" value="{{ $busAssignment->end_date ? \Carbon\Carbon::parse($busAssignment->end_date)->format('Y-m-d') : '' }}" class="form-input-small input-width-date datepicker-3months" id="end_date" style="flex: 1; min-width: 0;" placeholder="YYYY-MM-DD" autocomplete="off">
+                    <input type="text" name="end_date" value="{{ $busAssignment->end_date ? \Carbon\Carbon::parse($busAssignment->end_date)->format('Y-m-d') : '' }}" class="form-input-small input-width-date" id="end_date" style="flex: 1; min-width: 0;" placeholder="YYYY-MM-DD" autocomplete="off" readonly>
                     <span class="ms-2">
-                        <input type="time" name="end_time" value="{{ $busAssignment->end_time ? \Carbon\Carbon::parse($busAssignment->end_time)->format('H:i') : '18:00' }}" class="form-input-small input-width-time" step="60" style="width: 90px;">
+                        <input type="time" name="end_time" value="{{ $busAssignment->end_time ? \Carbon\Carbon::parse($busAssignment->end_time)->format('H:i') : '18:00' }}" class="form-input-small input-width-time" step="60" style="width: 90px;" readonly>
                     </span>
                 </div>
             </div>
@@ -96,16 +94,15 @@
             <div class="d-flex align-items-center mb-1">
                 <div class="label-width text-gray">号車</div>
                 <div class="input-width-100 mr-4">
-                    <input type="text" name="vehicle_number" value="{{ $busAssignment->vehicle_number ?? '' }}" class="form-input" id="vehicle_number" placeholder="号車">
+                    <input type="text" name="vehicle_number" value="{{ $busAssignment->vehicle_number ?? '' }}" class="form-input" id="vehicle_number" placeholder="号車" readonly>
                 </div>
                 
                 <div class="label-width text-gray">ガイド</div>
                 <div class="flex-1 position-relative">
-                    <input type="text" name="guide_name_input" class="form-input search-input" id="guide_search" 
+                    <input type="text" name="guide_name_input" class="form-input" id="guide_search" 
                            value="{{ $busAssignment->guide ? $busAssignment->guide->name . ($busAssignment->guide->guide_code ? ' (' . $busAssignment->guide->guide_code . ')' : '') : '' }}" 
-                           placeholder="ガイド名を入力" autocomplete="off">
+                           placeholder="ガイド名を入力" autocomplete="off" readonly style="background-color: #f9fafb;">
                     <input type="hidden" name="guide_id" id="guide_id" value="{{ $busAssignment->guide_id }}">
-                    <div class="suggestions-container" id="guide_suggestions" style="display: none;"></div>
                 </div>
             </div>
 
@@ -121,10 +118,27 @@
             </div>
         </div>
         
-        <div class="info-cards d-flex gap-2 mb-2">
-            <div class="info-card w-100" style="background-color: #e6f3ff; border: 1px solid #b8d9ff; border-radius: 6px; padding: 6px 12px;">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <div class="info-card" style="background-color: #e6f3ff; border: 1px solid #b8d9ff; border-radius: 6px; padding: 6px 12px;">
                 <span class="info-label" style="font-size: 11px; color: #1e40af;">運行ID</span>
                 <span class="info-value" style="font-size: 13px; font-weight: bold; margin-left: 8px;">{{ $busAssignment->id }}</span>
+            </div>
+            <div class="d-flex gap-3 text-gray">
+                <div class="d-flex align-items-center gap-1">
+                    <input type="checkbox" class="label-text mr-1" id="lock_arrangement" name="lock_arrangement" value="1" 
+                           {{ $busAssignment->lock_arrangement ? 'checked' : '' }} disabled>
+                    <label for="lock_arrangement" style="color: #9ca3af;">操作ロック</label>
+                </div>
+                <div class="d-flex align-items-center gap-1">
+                    <input type="checkbox" class="label-text mr-1" id="status_finalized" name="status_finalized"  value="1" 
+                           {{ $busAssignment->status_finalized ? 'checked' : '' }} disabled>
+                    <label for="status_finalized" style="color: #9ca3af;">最終確認</label>
+                </div>
+                <div class="d-flex align-items-center gap-1">
+                    <input type="checkbox" class="label-text mr-1" id="status_sent" name="status_sent"  value="1" 
+                           {{ $busAssignment->status_sent ? 'checked' : '' }} disabled>
+                    <label for="status_sent" style="color: #9ca3af;">送信</label>
+                </div>
             </div>
         </div>
 
@@ -145,39 +159,38 @@
                     <div class="d-flex align-items-center mb-1 position-relative">
                         <div class="label-width text-gray">代理店</div>
                         <div class="flex-1 position-relative">
-                            <input type="text" name="agency_name_input" class="form-input search-input" id="agency_search" 
-                                   value="{{ $busAssignment->groupInfo->agency ?? '' }}" placeholder="代理店名を入力" autocomplete="off">
+                            <input type="text" name="agency_name_input" class="form-input" id="agency_search" 
+                                   value="{{ $busAssignment->groupInfo->agency ?? '' }}" placeholder="代理店名を入力" autocomplete="off" readonly style="background-color: #f9fafb;">
                             <input type="hidden" name="agency_id" id="agency_id" value="{{ $busAssignment->groupInfo->agency_id ?? '' }}">
                             <input type="hidden" name="agency_code" id="agency_code" value="{{ $busAssignment->groupInfo->agency_code ?? '' }}">
                             <input type="hidden" name="agency_branch" id="agency_branch" value="{{ $busAssignment->groupInfo->agency_branch ?? '' }}">
                             <input type="hidden" name="agency_phone" id="agency_phone" value="{{ $busAssignment->groupInfo->agency_phone ?? '' }}">
-                            <div class="suggestions-container" id="agency_suggestions" style="display: none;"></div>
                         </div>
                     </div>
 
                     <div class="d-flex align-items-center mb-1">
                         <div class="label-width text-gray">大人</div>
                         <div class="input-width-number mr-4">
-                            <input type="number" name="adult_count" id="adult_count" value="{{ $busAssignment->adult_count ?? 0 }}" class="form-input" min="0">
+                            <input type="number" name="adult_count" id="adult_count" value="{{ $busAssignment->adult_count ?? 0 }}" class="form-input" min="0" readonly>
                         </div>
                         <div class="label-width text-gray mr-2">小人</div>
                         <div class="input-width-number mr-4">
-                            <input type="number" name="child_count" value="{{ $busAssignment->child_count ?? 0 }}" class="form-input" min="0">
+                            <input type="number" name="child_count" value="{{ $busAssignment->child_count ?? 0 }}" class="form-input" min="0" readonly>
                         </div>
                         <div class="label-width text-gray mr-2">ガイド</div>
                         <div class="input-width-number mr-4">
-                            <input type="number" name="guide_count" value="{{ $busAssignment->guide_count ?? 0 }}" class="form-input" min="0">
+                            <input type="number" name="guide_count" value="{{ $busAssignment->guide_count ?? 0 }}" class="form-input" min="0" readonly>
                         </div>
                         <div class="label-width text-gray mr-2">その他</div>
                         <div class="input-width-number">
-                            <input type="number" name="other_count" value="{{ $busAssignment->other_count ?? 0 }}" class="form-input" min="0">
+                            <input type="number" name="other_count" value="{{ $busAssignment->other_count ?? 0 }}" class="form-input" min="0" readonly>
                         </div>
                     </div>
 
                     <div class="d-flex align-items-start">
                         <div class="label-width text-gray">備考</div>
                         <div class="flex-1">
-                            <textarea name="operation_remarks" rows="5" class="form-input" style="resize: vertical; height: auto;">{{ $busAssignment->operation_remarks ?? '' }}</textarea>
+                            <textarea name="operation_remarks" rows="5" class="form-input" style="resize: vertical; height: auto;" readonly>{{ $busAssignment->operation_remarks ?? '' }}</textarea>
                         </div>
                     </div>
                 </div>
@@ -186,28 +199,28 @@
                     <div class="d-flex align-items-center mb-2">
                         <div class="label-width-large text-gray">担当</div>
                         <div class="flex-1">
-                            <input type="text" name="representative" value="{{ $busAssignment->representative ?? '' }}" class="form-input" id="representative">
+                            <input type="text" name="representative" value="{{ $busAssignment->representative ?? '' }}" class="form-input" id="representative" readonly>
                         </div>
                     </div>
                     
                     <div class="d-flex align-items-center mb-2">
                         <div class="label-width-large text-gray">電話</div>
                         <div class="flex-1">
-                            <input type="text" name="representative_phone" value="{{ $busAssignment->representative_phone ?? '' }}" class="form-input" id="representative_phone">
+                            <input type="text" name="representative_phone" value="{{ $busAssignment->representative_phone ?? '' }}" class="form-input" id="representative_phone" readonly>
                         </div>
                     </div>
                     
                     <div class="d-flex align-items-center mb-2">
                         <div class="label-width-large text-gray">AGT予約ID</div>
                         <div class="flex-1">
-                            <input type="text" name="agt_tour_id" class="form-input" value="{{ $busAssignment->groupInfo->agt_tour_id ?? '' }}">
+                            <input type="text" name="agt_tour_id" class="form-input" value="{{ $busAssignment->groupInfo->agt_tour_id ?? '' }}" readonly>
                         </div>
                     </div>
                     
                     <div class="d-flex align-items-center mb-2">
                         <div class="label-width-large text-gray">荷物数</div>
                         <div class="flex-1">
-                            <input type="number" name="luggage_count" value="{{ $busAssignment->luggage_count ?? 0 }}" class="form-input" min="0">
+                            <input type="number" name="luggage_count" value="{{ $busAssignment->luggage_count ?? 0 }}" class="form-input" min="0" readonly>
                         </div>
                     </div>
                 </div>
@@ -240,9 +253,34 @@
                 </div>
 
                 <div class="tab-pane" id="history-tab" style="display: none;">
-                    <div class="dashed-box">
-                        履歴はありません
-                    </div>
+                    @if(isset($logs) && $logs->count() > 0)
+                        <div style="max-height: 150px; overflow-y: auto; font-size: 11px;">
+                            <table class="table table-sm table-bordered" style="font-size: 11px; margin-bottom: 0;">
+                                <thead style="background-color: #f3f4f6;">
+                                    <tr>
+                                        <th style="width: 8%; text-align: center;">#</th>
+                                        <th>操作内容</th>
+                                        <th style="width: 15%;">ユーザー</th>
+                                        <th style="width: 25%;">操作日時</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($logs as $index => $log)
+                                        <tr>
+                                            <td style="text-align: center; vertical-align: middle;">{{ $index + 1 }}</td>
+                                            <td>{{ $log->action_description }}</td>
+                                            <td>{{ $log->username ?? $log->user_id ?? 'system' }}</td>
+                                            <td style="white-space: nowrap;">{{ $log->created_at ? $log->created_at->format('Y/m/d H:i:s') : '' }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @else
+                        <div class="dashed-box" style="color: #6b7280; font-size: 11px; padding: 16px; background-color: #f9fafb; border-radius: 4px; text-align: center; border: 1px dashed #d1d5db;">
+                            履歴はありません
+                        </div>
+                    @endif
                 </div>
 
                 <div class="tab-pane" id="copy-tab" style="display: none;">
@@ -256,12 +294,12 @@
         <div class="m-2">
             <div class="d-flex gap-4">
                 <div class="d-flex align-items-center">
-                    <input type="checkbox" id="ignore_operation" class="checkbox-large" name="ignore_operation" value="1" {{ $busAssignment->ignore_operation ? 'checked' : '' }}>
-                    <label for="ignore_operation" class="label-text">運行無視</label>
+                    <input type="checkbox" id="ignore_operation" class="checkbox-large" name="ignore_operation" value="1" {{ $busAssignment->ignore_operation ? 'checked' : '' }} disabled>
+                    <label for="ignore_operation" class="label-text" style="color: #9ca3af;">運行無視</label>
                 </div>
                 <div class="d-flex align-items-center">
-                    <input type="checkbox" id="ignore_driver" class="checkbox-large" name="ignore_driver" value="1" {{ $busAssignment->ignore_driver ? 'checked' : '' }}>
-                    <label for="ignore_driver" class="label-text">勤怠無視</label>
+                    <input type="checkbox" id="ignore_driver" class="checkbox-large" name="ignore_driver" value="1" {{ $busAssignment->ignore_driver ? 'checked' : '' }} disabled>
+                    <label for="ignore_driver" class="label-text" style="color: #9ca3af;">勤怠無視</label>
                 </div>
             </div>
         </div>
@@ -269,9 +307,8 @@
         <div class="d-flex justify-content-between align-items-center mt-3">
             <div class="d-flex gap-2">
                 <button type="button" class="btn-primary" id="detailBtn">運行詳細</button>
-                <button type="submit" class="btn-primary" id="saveBtn">变更</button>
+                <button type="submit" class="btn-primary" id="saveBtn">変更</button>
                 <button type="button" class="btn-secondary" id="closeBtn">閉じる</button>
-                <button type="button" class="btn-danger" id="deleteBtn">削除</button>
             </div>
         </div>
     </form>
@@ -302,8 +339,6 @@
     .btn-primary:disabled { background-color: #93c5fd; cursor: not-allowed; }
     .btn-secondary { background-color: #6b7280; border: none; color: white; font-size: 12px; padding: 6px 24px; border-radius: 4px; cursor: pointer; }
     .btn-secondary:hover { background-color: #4b5563; }
-    .btn-danger { background-color: #dc2626; border: none; color: white; font-size: 12px; padding: 6px 24px; border-radius: 4px; cursor: pointer; }
-    .btn-danger:hover { background-color: #b91c1c; }
     .dashed-box { color: #6b7280; font-size: 11px; padding: 16px; background-color: #f9fafb; border-radius: 4px; text-align: center; border: 1px dashed #d1d5db; }
     .label-width { width: 50px; }
     .label-width-large { width: 60px; }
@@ -361,8 +396,17 @@
         border-bottom: none;
     }
     
-    .vehicle-selected { border-color: #2563eb; background-color: #f0f7ff; }
     .warning-message { color: #f59e0b; font-size: 10px; margin-top: 2px; animation: fadeIn 0.3s ease; }
+    
+    #history-tab .table th,
+    #history-tab .table td {
+        padding: 6px 8px;
+        vertical-align: middle;
+    }
+    
+    #history-tab .table tbody tr:hover {
+        background-color: #f3f4f6;
+    }
 
     @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
     
@@ -392,32 +436,6 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    flatpickr('.datepicker-3months', {
-        locale: 'ja',
-        dateFormat: 'Y-m-d',
-        showMonths: 3,
-        allowInput: true,
-        clickOpens: true,
-        mode: 'single',
-        disableMobile: true,
-        wrap: false,
-        onOpen: function(selectedDates, dateStr, instance) {
-            instance.calendarContainer.style.zIndex = '9999';
-        },
-        onReady: function(selectedDates, dateStr, instance) {
-            const daysContainer = instance.daysContainer;
-            if (daysContainer) {
-                const dayContainers = daysContainer.querySelectorAll('.dayContainer');
-                dayContainers.forEach(function(dayContainer) {
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'month-wrapper';
-                    dayContainer.parentNode.insertBefore(wrapper, dayContainer);
-                    wrapper.appendChild(dayContainer);
-                });
-            }
-        }
-    });
-
     const isInIframe = window.self !== window.top;
     if (isInIframe) {
         document.getElementById('isIframe').value = '1';
@@ -425,95 +443,44 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const closeBtn = document.getElementById('closeBtn');
     const detailBtn = document.getElementById('detailBtn');
-    const deleteBtn = document.getElementById('deleteBtn');
     const groupInfoId = document.getElementById('group_info_id').value;
-    const busAssignmentId = {{ $busAssignment->id }};
 
-    // 閉じる按钮
     closeBtn.addEventListener('click', function() {
         if (isInIframe) {
-            // 向父页面发送关闭消息
             window.parent.postMessage('close-iframe', '*');
             
-            // 备用方案：如果父页面没有响应，尝试直接关闭
             setTimeout(function() {
                 try {
                     window.parent.document.getElementById('iframeModal').style.display = 'none';
                 } catch(e) {
-                    // 如果无法访问父页面，尝试关闭自己
                     window.close();
                 }
             }, 100);
         } else {
-            // 非iframe模式，尝试关闭窗口
             window.close();
             
-            // 如果无法关闭（浏览器可能阻止），跳转到列表页
             setTimeout(function() {
                 window.location.href = '{{ route("masters.bus-assignments.index") }}';
             }, 100);
         }
     });
 
-    // 運行詳細按钮
     detailBtn.addEventListener('click', function() {
         const editUrl = '{{ route("masters.group-infos.edit", ":id") }}'.replace(':id', groupInfoId);
-        window.open(editUrl, '_blank');
-    });
-
-    // 削除按钮
-    deleteBtn.addEventListener('click', function() {
-        // 获取当前预约状态
-        const reservationStatus = document.getElementById('yoyaku').value;
         
-        if (reservationStatus !== 'キャンセル') {
-            alert('削除するには、予約状況を「キャンセル」に変更してください。');
-            return;
-        }
-        
-        if (!confirm('この運行を削除しますか？\n関連する行程データもすべて削除されます。')) {
-            return;
-        }
-        
-        deleteBtn.disabled = true;
-        deleteBtn.textContent = '削除中...';
-        
-        fetch('{{ route("masters.bus-assignments.destroy", $busAssignment->id) }}', {
-            method: 'DELETE',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(response => {
-            if (!response.ok) {
-                return response.json().then(err => { throw err; });
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                alert(data.message || '削除しました。');
-                // 刷新父页面
-                if (window.parent) {
-                    window.parent.postMessage({
-                        action: 'close-iframe-and-reload'
-                    }, '*');
-                } else {
-                    window.location.href = '{{ route("masters.operation-ledger.index") }}';
+        if (isInIframe) {
+            window.open(editUrl, '_blank');
+            
+            setTimeout(function() {
+                try {
+                    window.parent.document.getElementById('iframeModal').style.display = 'none';
+                } catch(e) {
+                    window.parent.postMessage('close-iframe', '*');
                 }
-            } else {
-                alert(data.message || '削除に失敗しました');
-                deleteBtn.disabled = false;
-                deleteBtn.textContent = '削除';
-            }
-        })
-        .catch(error => {
-            alert(error.message || 'エラーが発生しました');
-            deleteBtn.disabled = false;
-            deleteBtn.textContent = '削除';
-        });
+            }, 100);
+        } else {
+            window.location.href = editUrl;
+        }
     });
 
     const tabs = document.querySelectorAll('.tab-item');
@@ -534,49 +501,19 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    function validateDateRange() {
-        const startDate = document.getElementById('start_date').value;
-        const endDate = document.getElementById('end_date').value;
-        
-        if (!startDate || !endDate) {
-            return true;
-        }
-        
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-        
-        if (start > end) {
-            alert('終了日は開始日以降の日付を入力してください');
-            return false;
-        }
-        return true;
-    }
-
-    const vehicles = @json($vehicles ?? []);
-    const guides = @json($guides ?? []);
     const drivers = @json($drivers ?? []);
-    const agencies = @json($agencies ?? []);
 
-    function setupSearch(type, items, formatter) {
-        const searchInput = document.getElementById(`${type}_search`);
-        const suggestionsDiv = document.getElementById(`${type}_suggestions`);
-        const hiddenId = document.getElementById(`${type}_id`);
+    function setupDriverSearch() {
+        const searchInput = document.getElementById('driver_search');
+        const suggestionsDiv = document.getElementById('driver_suggestions');
+        const hiddenId = document.getElementById('driver_id');
         
         if (!searchInput) return;
 
-        const vehicleTypeInput = document.getElementById('vehicle_type');
-        const vehicleModelInput = document.getElementById('vehicle_model');
-        const vehicleBranchInput = document.getElementById('vehicle_branch');
-        const seatingCapacityInput = document.getElementById('seating_capacity');
-
-        const agencyCodeInput = document.getElementById('agency_code');
-        const agencyBranchInput = document.getElementById('agency_branch');
-        const agencyPhoneInput = document.getElementById('agency_phone');
-
         function showSuggestions(query = '') {
-            const filtered = items.filter(item => {
-                const searchable = formatter(item).display.toLowerCase();
-                return searchable.includes(query.toLowerCase());
+            const filtered = drivers.filter(item => {
+                const display = `${item.name} ${item.driver_code ? '(' + item.driver_code + ')' : ''}`;
+                return display.toLowerCase().includes(query.toLowerCase());
             }).slice(0, 10);
 
             if (filtered.length === 0) {
@@ -586,8 +523,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
             let html = '';
             filtered.forEach(item => {
-                const formatted = formatter(item);
-                html += `<div class="suggestion-item" data-id="${formatted.id}" data-data='${JSON.stringify(formatted)}'>${formatted.display}</div>`;
+                const display = `${item.name} ${item.driver_code ? '(' + item.driver_code + ')' : ''}`;
+                html += `<div class="suggestion-item" data-id="${item.id}" data-name="${item.name}" data-code="${item.driver_code || ''}">${display}</div>`;
             });
 
             suggestionsDiv.innerHTML = html;
@@ -607,22 +544,12 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!suggestion) return;
 
             const id = suggestion.dataset.id;
-            const data = JSON.parse(suggestion.dataset.data);
+            const name = suggestion.dataset.name;
+            const code = suggestion.dataset.code;
             
-            searchInput.value = data.display;
+            searchInput.value = `${name} ${code ? '(' + code + ')' : ''}`;
             hiddenId.value = id;
             suggestionsDiv.style.display = 'none';
-
-            if (type === 'vehicle') {
-                if (vehicleTypeInput) vehicleTypeInput.value = data.type || '';
-                if (vehicleModelInput) vehicleModelInput.value = data.model || '';
-                if (vehicleBranchInput) vehicleBranchInput.value = data.branch || '';
-                if (seatingCapacityInput) seatingCapacityInput.value = data.seating || '';
-            } else if (type === 'agency') {
-                if (agencyCodeInput) agencyCodeInput.value = data.agency_code || '';
-                if (agencyBranchInput) agencyBranchInput.value = data.branch_name || '';
-                if (agencyPhoneInput) agencyPhoneInput.value = data.phone || '';
-            }
         });
 
         document.addEventListener('click', function(e) {
@@ -638,129 +565,10 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    setupSearch('vehicle', vehicles, (item) => {
-        return {
-            display: `${item.registration_number} ${item.vehicle_model?.model_name ? '(' + item.vehicle_model.model_name + ')' : ''}`,
-            id: item.id,
-            registration: item.registration_number,
-            type: item.vehicleType?.type_name || '',
-            model: item.vehicleModel?.model_name || '',
-            branch: item.branch?.branch_name || '',
-            seating: item.seating_capacity || ''
-        };
-    });
-
-    setupSearch('guide', guides, (item) => {
-        return {
-            display: `${item.name} ${item.guide_code ? '(' + item.guide_code + ')' : ''}`,
-            id: item.id,
-            code: item.guide_code,
-            phone: item.phone_number,
-            branch: item.branch?.branch_name || '',
-            employment_type: item.employment_type
-        };
-    });
-
-    setupSearch('driver', drivers, (item) => {
-        return {
-            display: `${item.name} ${item.driver_code ? '(' + item.driver_code + ')' : ''}`,
-            id: item.id,
-            code: item.driver_code,
-            phone: item.phone_number
-        };
-    });
-
-    setupSearch('agency', agencies, (item) => {
-        return {
-            display: `${item.agency_name} ${item.branch_name ? '(' + item.branch_name + ')' : ''}`,
-            id: item.id,
-            agency_code: item.agency_code,
-            branch_name: item.branch_name,
-            phone: item.phone_number,
-            manager: item.manager_name,
-            country: item.country,
-            email: item.email
-        };
-    });
-
-    function checkSeatingCapacity() {
-        const adultCount = parseInt(document.getElementById('adult_count')?.value) || 0;
-        const childCount = parseInt(document.querySelector('input[name="child_count"]')?.value) || 0;
-        const guideCount = parseInt(document.querySelector('input[name="guide_count"]')?.value) || 0;
-        const otherCount = parseInt(document.querySelector('input[name="other_count"]')?.value) || 0;
-        const totalPeople = adultCount + childCount + guideCount + otherCount;
-        const seatingCapacity = parseInt(document.getElementById('seating_capacity')?.value) || 0;
-        
-        const existingWarning = document.querySelector('.warning-message');
-        if (existingWarning) existingWarning.remove();
-        
-        if (seatingCapacity > 0 && totalPeople > seatingCapacity) {
-            const warningDiv = document.createElement('div');
-            warningDiv.className = 'warning-message';
-            warningDiv.innerText = `定員(${seatingCapacity}名)を超えています`;
-            
-            const adultCountParent = document.getElementById('adult_count')?.parentNode?.parentNode;
-            if (adultCountParent) {
-                adultCountParent.appendChild(warningDiv);
-            }
-        }
-    }
-
-    const adultCountInput = document.getElementById('adult_count');
-    if (adultCountInput) {
-        adultCountInput.addEventListener('input', checkSeatingCapacity);
-    }
-    
-    const childCountInput = document.querySelector('input[name="child_count"]');
-    if (childCountInput) {
-        childCountInput.addEventListener('input', checkSeatingCapacity);
-    }
-    
-    const guideCountInput = document.querySelector('input[name="guide_count"]');
-    if (guideCountInput) {
-        guideCountInput.addEventListener('input', checkSeatingCapacity);
-    }
-    
-    const otherCountInput = document.querySelector('input[name="other_count"]');
-    if (otherCountInput) {
-        otherCountInput.addEventListener('input', checkSeatingCapacity);
-    }
-
-    function showErrors(errors) {
-        document.querySelectorAll('.error-message').forEach(el => el.remove());
-        document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
-        
-        for (const field in errors) {
-            const input = document.querySelector(`[name="${field}"]`);
-            if (input) {
-                input.classList.add('is-invalid');
-                
-                if (field === 'start_date' || field === 'end_date') {
-                    document.querySelector('[data-tab="basic"]').click();
-                }
-            }
-        }
-    }
+    setupDriverSearch();
 
     document.getElementById('editForm').addEventListener('submit', function(e) {
         e.preventDefault();
-        
-        if (!validateDateRange()) {
-            return;
-        }
-    
-        const adultCount = parseInt(document.getElementById('adult_count')?.value) || 0;
-        const childCount = parseInt(document.querySelector('input[name="child_count"]')?.value) || 0;
-        const guideCount = parseInt(document.querySelector('input[name="guide_count"]')?.value) || 0;
-        const otherCount = parseInt(document.querySelector('input[name="other_count"]')?.value) || 0;
-        const totalPeople = adultCount + childCount + guideCount + otherCount;
-        const seatingCapacity = parseInt(document.getElementById('seating_capacity')?.value) || 0;
-        
-        if (seatingCapacity > 0 && totalPeople > seatingCapacity) {
-            if (!confirm(`定員(${seatingCapacity}名)を超えています。このまま保存しますか？`)) {
-                return;
-            }
-        }
     
         const formData = new FormData(this);
         formData.append('_method', 'PUT');
@@ -786,7 +594,6 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(data => {
             if (data.success) {
-                // 关闭窗口并刷新父页面
                 if (window.parent) {
                     window.parent.postMessage({
                         action: 'close-iframe-and-reload'
@@ -803,7 +610,6 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             if (error.errors) {
-                showErrors(error.errors);
                 const errorMessages = Object.values(error.errors).flat().join('\n');
                 alert('入力内容に誤りがあります:\n' + errorMessages);
             } else {
