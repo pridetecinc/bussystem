@@ -471,25 +471,38 @@
                                         </div>
 
                                         <div id="doc-{{ $vehicleIndex }}" class="tab-content2" style="display: none; border: 1px solid #aaa; border-top: 0; background-color: #fff; padding: 10px; height: 100px;">
-                                            <div class="row">
-                                                <div class="col-md-12">
-                                                    <div class="d-flex align-items-start">
-                                                        <span class="span-label">備考</span>
-                                                        <textarea name="bus_assignments[{{ $vehicleIndex }}][doc_remarks]" rows="3" class="form-control form-control-sm border" style="height: 80px;" placeholder="DOC備考...">{{ $busAssignment->doc_remarks ?? '' }}</textarea>
-                                                    </div>
-                                                </div>
+                                            <div class="dashed-box" style="color: #6b7280; font-size: 11px; padding: 16px; background-color: #f9fafb; border-radius: 4px; text-align: center; border: 1px dashed #d1d5db;">
+                                                ---
                                             </div>
                                         </div>
 
-                                        <div id="history2-{{ $vehicleIndex }}" class="tab-content2" style="display: none; border: 1px solid #aaa; border-top: 0; background-color: #fff; padding: 10px; height: 100px;">
-                                            <div class="row">
-                                                <div class="col-md-12">
-                                                    <div class="d-flex align-items-start">
-                                                        <span class="span-label">備考</span>
-                                                        <textarea name="bus_assignments[{{ $vehicleIndex }}][history_remarks]" rows="3" class="form-control form-control-sm border" style="height: 80px;" placeholder="履歴備考...">{{ $busAssignment->history_remarks ?? '' }}</textarea>
-                                                    </div>
+                                        <div id="history2-{{ $vehicleIndex }}" class="tab-content2" style="display: none; border: 1px solid #aaa; border-top: 0; background-color: #fff; padding: 10px; height: auto; min-height: 100px; max-height: 100px; overflow-y: auto;">
+                                            @if(isset($group['logs']) && $group['logs']->count() > 0)
+                                                <table class="table table-sm table-bordered" style="font-size: 11px; margin-bottom: 0;">
+                                                    <thead style="background-color: #f3f4f6;">
+                                                        <tr>
+                                                            <th style="width: 8%; text-align: center;">#</th>
+                                                            <th>操作内容</th>
+                                                            <th style="width: 15%;">ユーザー</th>
+                                                            <th style="width: 25%;">操作日時</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach($group['logs'] as $logIndex => $log)
+                                                            <tr>
+                                                                <td style="text-align: center;">{{ $logIndex + 1 }}</td>
+                                                                <td>{{ $log->action_description }}</td>
+                                                                <td>{{ $log->username ?? $log->user_id ?? 'system' }}</td>
+                                                                <td style="white-space: nowrap;">{{ $log->created_at ? $log->created_at->format('Y/m/d H:i:s') : '' }}</td>
+                                                            </tr>
+                                                        @endforeach
+                                                    </tbody>
+                                                </table>
+                                            @else
+                                                <div class="dashed-box" style="color: #6b7280; font-size: 11px; padding: 16px; background-color: #f9fafb; border-radius: 4px; text-align: center; border: 1px dashed #d1d5db;">
+                                                    履歴はありません
                                                 </div>
-                                            </div>
+                                            @endif
                                         </div>
                                     </div>
                                 </div>
@@ -794,25 +807,44 @@
                                     </div>
 
                                     <div id="doc-1" class="tab-content2" style="display: none; border: 1px solid #aaa; border-top: 0; background-color: #fff; padding: 10px; height: 100px;">
-                                        <div class="row">
-                                            <div class="col-md-12">
-                                                <div class="d-flex align-items-start">
-                                                    <span class="span-label">備考</span>
-                                                    <textarea name="bus_assignments[1][doc_remarks]" rows="3" class="form-control form-control-sm border" style="height: 80px;" placeholder="DOC備考...">{{ $busAssignment->doc_remarks ?? '' }}</textarea>
-                                                </div>
-                                            </div>
+                                        <div class="dashed-box" style="color: #6b7280; font-size: 11px; padding: 16px; background-color: #f9fafb; border-radius: 4px; text-align: center; border: 1px dashed #d1d5db;">
+                                            ---
                                         </div>
                                     </div>
 
-                                    <div id="history2-1" class="tab-content2" style="display: none; border: 1px solid #aaa; border-top: 0; background-color: #fff; padding: 10px; height: 100px;">
-                                        <div class="row">
-                                            <div class="col-md-12">
-                                                <div class="d-flex align-items-start">
-                                                    <span class="span-label">備考</span>
-                                                    <textarea name="bus_assignments[1][history_remarks]" rows="3" class="form-control form-control-sm border" style="height: 80px;" placeholder="履歴備考...">{{ $busAssignment->history_remarks ?? '' }}</textarea>
-                                                </div>
+                                    <div id="history2-1" class="tab-content2" style="display: none; border: 1px solid #aaa; border-top: 0; background-color: #fff; padding: 10px; height: auto; min-height: 100px; max-height: 100px; overflow-y: auto;">
+                                        @php
+                                            $singleBusId = $busAssignment->id ?? '';
+                                            $singleLogs = \App\Models\Masters\BusAssignmentLog::where('bus_assignment_id', $singleBusId)
+                                                ->orderBy('created_at', 'desc')
+                                                ->get();
+                                        @endphp
+                                        @if($singleLogs->count() > 0)
+                                            <table class="table table-sm table-bordered" style="font-size: 11px; margin-bottom: 0;">
+                                                <thead style="background-color: #f3f4f6;">
+                                                    <tr>
+                                                        <th style="width: 8%; text-align: center;">#</th>
+                                                        <th>操作内容</th>
+                                                        <th style="width: 15%;">ユーザー</th>
+                                                        <th style="width: 25%;">操作日時</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach($singleLogs as $logIndex => $log)
+                                                        <tr>
+                                                            <td style="text-align: center;">{{ $logIndex + 1 }}</td>
+                                                            <td>{{ $log->action_description }}</td>
+                                                            <td>{{ $log->username ?? $log->user_id ?? 'system' }}</td>
+                                                            <td style="white-space: nowrap;">{{ $log->created_at ? $log->created_at->format('Y/m/d H:i:s') : '' }}</td>
+                                                        </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                        @else
+                                            <div class="dashed-box" style="color: #6b7280; font-size: 11px; padding: 16px; background-color: #f9fafb; border-radius: 4px; text-align: center; border: 1px dashed #d1d5db;">
+                                                履歴はありません
                                             </div>
-                                        </div>
+                                        @endif
                                     </div>
                                 </div>
                             </div>
@@ -1107,6 +1139,24 @@ input[type="number"],
 .border{
     border: 1px solid #aaa !important;
 }
+
+
+.locked-field {
+    background-color: #f3f4f6 !important;
+    cursor: not-allowed !important;
+    opacity: 0.7;
+}
+
+input.locked-field, 
+select.locked-field {
+    pointer-events: none;
+}
+
+button.locked-field {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
 
 @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -1485,7 +1535,18 @@ document.addEventListener('DOMContentLoaded', function() {
     async function submitForm(event) {
         event.preventDefault();
         
+        const disabledFields = document.querySelectorAll('[disabled]');
+        disabledFields.forEach(field => {
+            field.removeAttribute('disabled');
+            field.setAttribute('data-temp-disabled', 'true');
+        });
+        
         if (!validateDateRange()) {
+            const tempDisabled = document.querySelectorAll('[data-temp-disabled="true"]');
+            tempDisabled.forEach(field => {
+                field.setAttribute('disabled', 'disabled');
+                field.removeAttribute('data-temp-disabled');
+            });
             return false;
         }
         
@@ -1551,8 +1612,23 @@ document.addEventListener('DOMContentLoaded', function() {
             const submitBtn = document.getElementById('saveBtn');
             submitBtn.innerHTML = '<i class="bi bi-check-circle"></i> 保存';
             submitBtn.disabled = false;
+            const tempDisabled = document.querySelectorAll('[data-temp-disabled="true"]');
+            tempDisabled.forEach(field => {
+                field.setAttribute('disabled', 'disabled');
+                field.removeAttribute('data-temp-disabled');
+            });
             return false;
         }
+        
+        document.querySelectorAll('input[name*="[vehicle_type_spec_check]"]').forEach(cb => {
+            if (!cb.checked) {
+                const hidden = document.createElement('input');
+                hidden.type = 'hidden';
+                hidden.name = cb.name;
+                hidden.value = '0';
+                cb.parentNode.appendChild(hidden);
+            }
+        });
         
         const form = document.getElementById('editForm');
         const formData = new FormData(form);
@@ -1591,6 +1667,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert('サーバーからの応答が不正です: ' + text.substring(0, 100));
                 submitBtn.innerHTML = originalText;
                 submitBtn.disabled = false;
+                const tempDisabled = document.querySelectorAll('[data-temp-disabled="true"]');
+                tempDisabled.forEach(field => {
+                    field.setAttribute('disabled', 'disabled');
+                    field.removeAttribute('data-temp-disabled');
+                });
                 return;
             }
             
@@ -1609,11 +1690,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 submitBtn.innerHTML = originalText;
                 submitBtn.disabled = false;
                 alert(data.message || '保存中にエラーが発生しました。');
+                const tempDisabled = document.querySelectorAll('[data-temp-disabled="true"]');
+                tempDisabled.forEach(field => {
+                    field.setAttribute('disabled', 'disabled');
+                    field.removeAttribute('data-temp-disabled');
+                });
             }
         } catch (error) {
             submitBtn.innerHTML = originalText;
             submitBtn.disabled = false;
             alert('通信エラーが発生しました: ' + error.message);
+            const tempDisabled = document.querySelectorAll('[data-temp-disabled="true"]');
+            tempDisabled.forEach(field => {
+                field.setAttribute('disabled', 'disabled');
+                field.removeAttribute('data-temp-disabled');
+            });
         }
         
         return false;
@@ -1685,157 +1776,132 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    function updateBusDetailClickHandler(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const btn = this;
-        const card = btn.closest('.card');
-        const groupId = {{ $groupInfo->id }};
-        const busId = card.getAttribute('data-bus-id');
-        
-        if (!busId) {
-            alert('運行IDが見つかりません');
-            return;
+function updateBusDetailClickHandler(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const btn = this;
+    const card = btn.closest('.card');
+    const groupId = {{ $groupInfo->id }};
+    const busId = card.getAttribute('data-bus-id');
+    
+    const vehicleSelect = card.querySelector('.vehicle-select');
+    const driverSelect = card.querySelector('.driver-select');
+    const guideSelect = card.querySelector('.guide-select');
+    
+    const vehicleId = vehicleSelect ? vehicleSelect.value : '';
+    const driverId = driverSelect ? driverSelect.value : '';
+    const guideId = guideSelect ? guideSelect.value : '';
+    
+    if (!vehicleId) {
+        alert('車両を選択してください。');
+        return;
+    }
+    
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '更新中...';
+    btn.disabled = true;
+    
+    const itineraries = [];
+    const rows = card.querySelectorAll('tbody tr.itinerary-row');
+    
+    
+    rows.forEach((row, index) => {
+        const dateInput = row.querySelector('input[name*="[date]"]');
+        let dateValue = dateInput ? dateInput.value : '';
+        if (dateValue && dateValue.includes(' ')) {
+            dateValue = dateValue.split(' ')[0];
         }
         
-        const vehicleSelect = card.querySelector('.vehicle-select');
-        const driverSelect = card.querySelector('.driver-select');
-        const guideSelect = card.querySelector('.guide-select');
+        const timeStartInput = row.querySelector('input[name*="[time_start]"]');
+        const timeEndInput = row.querySelector('input[name*="[time_end]"]');
+        const startLocationInput = row.querySelector('input[name*="[start_location]"]');
+        const endLocationInput = row.querySelector('input[name*="[end_location]"]');
+        const itineraryTextarea = row.querySelector('textarea[name*="[itinerary]"]');
         
-        const vehicleId = vehicleSelect ? vehicleSelect.value : '';
-        const driverId = driverSelect ? driverSelect.value : '';
-        const guideId = guideSelect ? guideSelect.value : '';
+        const itineraryId = row.getAttribute('data-itinerary-id') || '';
         
-        if (!vehicleId) {
-            alert('車両を選択してください。');
-            return;
-        }
-        
-        const deletedForThisBus = [];
-        if (typeof deletedItineraryIds !== 'undefined' && deletedItineraryIds.length > 0) {
-            deletedForThisBus.push(...deletedItineraryIds);
-        }
-        
-        const originalText = btn.innerHTML;
-        btn.innerHTML = '更新中...';
-        btn.disabled = true;
-        
-        const itineraries = [];
-        const rows = card.querySelectorAll('tr.itinerary-row:not(.no-data-row)');
-        
-        rows.forEach((row, index) => {
-            const dateInput = row.querySelector('input[name*="[date]"]');
-            let dateValue = dateInput ? dateInput.value : '';
-            if (dateValue.includes(' ')) {
-                dateValue = dateValue.split(' ')[0];
-            }
-            if (dateValue.includes('T')) {
-                dateValue = dateValue.split('T')[0];
-            }
-            
-            const timeStartInput = row.querySelector('input[name*="[time_start]"]');
-            const timeEndInput = row.querySelector('input[name*="[time_end]"]');
-            const startLocationInput = row.querySelector('input[name*="[start_location]"]');
-            const endLocationInput = row.querySelector('input[name*="[end_location]"]');
-            const itineraryTextarea = row.querySelector('textarea[name*="[itinerary]"]');
-            const busAssignmentIdField = row.querySelector('.itinerary-bus-id');
-            
-            const itineraryId = row.getAttribute('data-itinerary-id') || '';
-            const currentBusId = busAssignmentIdField ? busAssignmentIdField.value : busId;
-            
-            if (currentBusId === busId) {
-                itineraries.push({
-                    id: itineraryId,
-                    date: dateValue,
-                    time_start: timeStartInput ? timeStartInput.value : '08:00',
-                    time_end: timeEndInput ? timeEndInput.value : '18:00',
-                    start_location: startLocationInput ? startLocationInput.value : '',
-                    end_location: endLocationInput ? endLocationInput.value : '',
-                    itinerary: itineraryTextarea ? itineraryTextarea.value : '',
-                    vehicle_id: vehicleId,
-                    driver_id: driverId,
-                    guide_id: guideId,
-                    bus_assignment_id: busId
-                });
-            }
-        });
-        
-        const busData = {
-            bus_id: busId,
+        itineraries.push({
+            id: itineraryId,
+            date: dateValue,
+            time_start: timeStartInput ? timeStartInput.value : '08:00',
+            time_end: timeEndInput ? timeEndInput.value : '18:00',
+            start_location: startLocationInput ? startLocationInput.value : '',
+            end_location: endLocationInput ? endLocationInput.value : '',
+            itinerary: itineraryTextarea ? itineraryTextarea.value : '',
             vehicle_id: vehicleId,
             driver_id: driverId,
             guide_id: guideId,
-            vehicle_number: card.querySelector('input[name*="[vehicle_number]"]')?.value || '',
-            step_car: card.querySelector('input[name*="[step_car]"]')?.value || '',
-            adult_count: card.querySelector('input[name*="[adult_count]"]')?.value || 0,
-            child_count: card.querySelector('input[name*="[child_count]"]')?.value || 0,
-            guide_count: card.querySelector('input[name*="[guide_count]"]')?.value || 0,
-            other_count: card.querySelector('input[name*="[other_count]"]')?.value || 0,
-            luggage_count: card.querySelector('input[name*="[luggage_count]"]')?.value || 0,
-            vehicle_type_spec_check: card.querySelector('input[name*="[vehicle_type_spec_check]"]')?.checked ? 1 : 0,
-            temporary_driver: card.querySelector('input[name*="[temporary_driver]"]')?.checked ? 1 : 0,
-            accompanying: card.querySelector('input[name*="[accompanying]"]')?.value || '',
-            representative: card.querySelector('input[name*="[representative]"]')?.value || '',
-            representative_phone: card.querySelector('input[name*="[representative_phone]"]')?.value || '',
-            attention: card.querySelector('input[name*="[attention]"]')?.value || '',
-            operation_remarks: card.querySelector('textarea[name*="[operation_remarks]"]')?.value || '',
-            operation_memo: card.querySelector('textarea[name*="[operation_memo]"]')?.value || '',
-            operation_basic_remarks: card.querySelector('textarea[name*="[operation_basic_remarks]"]')?.value || '',
-            doc_remarks: card.querySelector('textarea[name*="[doc_remarks]"]')?.value || '',
-            history_remarks: card.querySelector('textarea[name*="[history_remarks]"]')?.value || '',
-            lock_arrangement: card.querySelector('input[name*="[lock_arrangement]"]')?.checked ? 1 : 0,
-            status_sent: card.querySelector('input[name*="[status_sent]"]')?.checked ? 1 : 0,
-            status_finalized: card.querySelector('input[name*="[status_finalized]"]')?.checked ? 1 : 0,
-            _token: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}'
-        };
-        
-        if (itineraries.length > 0) {
-            busData.itineraries = itineraries;
-        }
-        
-        if (deletedForThisBus.length > 0) {
-            busData.deleted_itineraries = deletedForThisBus;
-        }
-        
-        fetch(`/masters/group-infos/${groupId}/update-bus-assignment`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': busData._token,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify(busData)
-        })
-        .then(async response => {
-            const text = await response.text();
-            
-            try {
-                const data = JSON.parse(text);
-                if (data.success) {
-                    if (deletedForThisBus.length > 0) {
-                        deletedItineraryIds = deletedItineraryIds.filter(id => !deletedForThisBus.includes(id));
-                    }
-                    location.reload();
-                } else {
-                    alert('エラー: ' + data.message);
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                }
-            } catch (e) {
-                console.error('JSON解析エラー:', e);
-                alert('サーバーからの応答が不正です。コンソールを確認してください。');
+            bus_assignment_id: busId
+        });
+    });
+    
+    
+    const busData = {
+        bus_id: busId,
+        vehicle_id: vehicleId,
+        driver_id: driverId,
+        guide_id: guideId,
+        vehicle_number: card.querySelector('input[name*="[vehicle_number]"]')?.value || '',
+        step_car: card.querySelector('input[name*="[step_car]"]')?.value || '',
+        adult_count: card.querySelector('input[name*="[adult_count]"]')?.value || 0,
+        child_count: card.querySelector('input[name*="[child_count]"]')?.value || 0,
+        guide_count: card.querySelector('input[name*="[guide_count]"]')?.value || 0,
+        other_count: card.querySelector('input[name*="[other_count]"]')?.value || 0,
+        luggage_count: card.querySelector('input[name*="[luggage_count]"]')?.value || 0,
+        vehicle_type_spec_check: card.querySelector('input[name*="[vehicle_type_spec_check]"]')?.checked ? 1 : 0,
+        temporary_driver: card.querySelector('input[name*="[temporary_driver]"]')?.checked ? 1 : 0,
+        accompanying: card.querySelector('input[name*="[accompanying]"]')?.value || '',
+        representative: card.querySelector('input[name*="[representative]"]')?.value || '',
+        representative_phone: card.querySelector('input[name*="[representative_phone]"]')?.value || '',
+        attention: card.querySelector('input[name*="[attention]"]')?.value || '',
+        operation_remarks: card.querySelector('textarea[name*="[operation_remarks]"]')?.value || '',
+        operation_memo: card.querySelector('textarea[name*="[operation_memo]"]')?.value || '',
+        operation_basic_remarks: card.querySelector('textarea[name*="[operation_basic_remarks]"]')?.value || '',
+        doc_remarks: card.querySelector('textarea[name*="[doc_remarks]"]')?.value || '',
+        history_remarks: card.querySelector('textarea[name*="[history_remarks]"]')?.value || '',
+        lock_arrangement: card.querySelector('input[name*="[lock_arrangement]"]')?.checked ? 1 : 0,
+        status_sent: card.querySelector('input[name*="[status_sent]"]')?.checked ? 1 : 0,
+        status_finalized: card.querySelector('input[name*="[status_finalized]"]')?.checked ? 1 : 0,
+        itineraries: itineraries,
+        _token: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}'
+    };
+    
+    fetch(`/masters/group-infos/${groupId}/update-bus-assignment`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': busData._token,
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify(busData)
+    })
+    .then(async response => {
+        const text = await response.text();
+        try {
+            const data = JSON.parse(text);
+            if (data.success) {
+                alert('運行詳細を更新しました。');
+                location.reload();
+            } else {
+                alert('エラー: ' + data.message);
                 btn.innerHTML = originalText;
                 btn.disabled = false;
             }
-        })
-        .catch(error => {
-            console.error('Fetchエラー:', error);
-            alert('更新中にエラーが発生しました: ' + error.message);
+        } catch (e) {
+            console.error('JSON解析エラー:', e);
+            alert('サーバーからの応答が不正です。');
             btn.innerHTML = originalText;
             btn.disabled = false;
-        });
-    }
+        }
+    })
+    .catch(error => {
+        console.error('Fetchエラー:', error);
+        alert('更新中にエラーが発生しました: ' + error.message);
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    });
+}
 
     function addClickHandler(e) {
         e.preventDefault();
@@ -1879,72 +1945,84 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    function copyClickHandler(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const sourceCard = this.closest('.card');
-        const container = document.getElementById('operation-details-container');
-        
-        const existingCards = document.querySelectorAll('#operation-details-container > .card');
-        const newIndex = existingCards.length + 1;
-        const newBusId = 'copy_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        
-        const sourceTable = sourceCard.querySelector('table tbody');
-        const sourceRows = sourceTable.querySelectorAll('tr.itinerary-row:not(.no-data-row)');
-        
-        const cleanedSourceRows = [];
-        sourceRows.forEach(row => {
-            const clonedRow = row.cloneNode(true);
-            const dateInput = clonedRow.querySelector('input[name*="[date]"]');
-            if (dateInput && dateInput.value.includes(' ')) {
-                dateInput.value = dateInput.value.split(' ')[0];
-            }
-            cleanedSourceRows.push(clonedRow);
-        });
-        
-        const newCard = createCopyOperationDetailCard(newIndex, newBusId, cleanedSourceRows, sourceCard);
-        container.appendChild(newCard);
-
-        reindexAllTables();
-        updateOperationDetailNumbers();
-        refreshEventListeners();
-
-        const newDateInputs = newCard.querySelectorAll('.datepicker-3months');
-        newDateInputs.forEach(function(dateInput) {
-            if (!dateInput._flatpickr) {
-                flatpickr(dateInput, {
-                    locale: 'ja',
-                    dateFormat: 'Y-m-d',
-                    showMonths: 3,
-                    allowInput: true,
-                    clickOpens: true,
-                    mode: 'single',
-                    disableMobile: true,
-                    wrap: false,
-                    onOpen: function(selectedDates, dateStr, instance) {
-                        instance.calendarContainer.style.zIndex = '9999';
-                    },
-                    onReady: function(selectedDates, dateStr, instance) {
-                        const daysContainer = instance.daysContainer;
-                        if (daysContainer) {
-                            const dayContainers = daysContainer.querySelectorAll('.dayContainer');
-                            dayContainers.forEach(function(dayContainer) {
-                                const wrapper = document.createElement('div');
-                                wrapper.className = 'month-wrapper';
-                                dayContainer.parentNode.insertBefore(wrapper, dayContainer);
-                                wrapper.appendChild(dayContainer);
-                            });
-                        }
-                    }
-                });
-            }
-        });
-
-        setTimeout(() => {
-            setupSelectChangeHandlers(newIndex);
-        }, 100);
+function copyClickHandler(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const sourceCard = this.closest('.card');
+    const container = document.getElementById('operation-details-container');
+    
+    const existingCards = document.querySelectorAll('#operation-details-container > .card');
+    const newIndex = existingCards.length + 1;
+    const newBusId = 'copy_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    
+    let sourceTable = sourceCard.querySelector('#itinerary-table tbody');
+    if (!sourceTable) {
+        sourceTable = sourceCard.querySelector('.vehicle-itinerary-table tbody');
     }
+    if (!sourceTable) {
+        sourceTable = sourceCard.querySelector('table tbody');
+    }
+    
+    if (!sourceTable) {
+        alert('行程テーブルが見つかりません。');
+        return;
+    }
+    
+    const sourceRows = sourceTable.querySelectorAll('tr.itinerary-row');
+    
+    const cleanedSourceRows = [];
+    sourceRows.forEach(row => {
+        const clonedRow = row.cloneNode(true);
+        const dateInput = clonedRow.querySelector('input[name*="[date]"]');
+        if (dateInput && dateInput.value.includes(' ')) {
+            dateInput.value = dateInput.value.split(' ')[0];
+        }
+        cleanedSourceRows.push(clonedRow);
+    });
+    
+    const newCard = createCopyOperationDetailCard(newIndex, newBusId, cleanedSourceRows, sourceCard);
+    container.appendChild(newCard);
+
+    reindexAllTables();
+    updateOperationDetailNumbers();
+    refreshEventListeners();
+
+    const newDateInputs = newCard.querySelectorAll('.datepicker-3months');
+    newDateInputs.forEach(function(dateInput) {
+        if (!dateInput._flatpickr) {
+            flatpickr(dateInput, {
+                locale: 'ja',
+                dateFormat: 'Y-m-d',
+                showMonths: 3,
+                allowInput: true,
+                clickOpens: true,
+                mode: 'single',
+                disableMobile: true,
+                wrap: false,
+                onOpen: function(selectedDates, dateStr, instance) {
+                    instance.calendarContainer.style.zIndex = '9999';
+                },
+                onReady: function(selectedDates, dateStr, instance) {
+                    const daysContainer = instance.daysContainer;
+                    if (daysContainer) {
+                        const dayContainers = daysContainer.querySelectorAll('.dayContainer');
+                        dayContainers.forEach(function(dayContainer) {
+                            const wrapper = document.createElement('div');
+                            wrapper.className = 'month-wrapper';
+                            dayContainer.parentNode.insertBefore(wrapper, dayContainer);
+                            wrapper.appendChild(dayContainer);
+                        });
+                    }
+                }
+            });
+        }
+    });
+
+    setTimeout(() => {
+        setupSelectChangeHandlers(newIndex);
+    }, 100);
+}
 
     function refreshEventListeners() {
         document.querySelectorAll('.add-row-btn').forEach(btn => {
@@ -2187,7 +2265,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const vehicleGroupValue = vehicleGroup ? vehicleGroup.value : '1';
         
         const card = currentRow.closest('.card');
-        const cardBusId = card ? card.getAttribute('data-bus-id') || '' : '';
+        let cardBusId = card ? card.getAttribute('data-bus-id') : '';
+        
+        if (!cardBusId || cardBusId === '' || (typeof cardBusId === 'string' && (cardBusId.startsWith('copy_') || cardBusId.startsWith('split_')))) {
+            const busIdInput = card ? card.querySelector('input[name*="[id]"]') : null;
+            if (busIdInput && busIdInput.value) {
+                cardBusId = busIdInput.value;
+            }
+        }
         
         const vehicleId = card.querySelector('.vehicle-select') ? card.querySelector('.vehicle-select').value : '';
         const driverId = card.querySelector('.driver-select') ? card.querySelector('.driver-select').value : '';
@@ -2679,13 +2764,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             </div>
     
                             <div id="doc-${newIndex}" class="tab-content2" style="display: none; border: 1px solid #aaa; border-top: 0; background-color: #fff; padding: 10px; height: 100px;">
-                                <div class="row">
-                                    <div class="col-md-12">
-                                        <div class="d-flex align-items-start">
-                                            <span class="span-label">備考</span>
-                                            <textarea name="bus_assignments[${newIndex}][doc_remarks]" rows="3" class="form-control form-control-sm border" style="height: 80px;" placeholder="DOC備考...">${docRemarks || ''}</textarea>
-                                        </div>
-                                    </div>
+                                <div class="dashed-box" style="color: #6b7280; font-size: 11px; padding: 16px; background-color: #f9fafb; border-radius: 4px; text-align: center; border: 1px dashed #d1d5db;">
+                                    ---
                                 </div>
                             </div>
     
@@ -2705,7 +2785,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
                 <div class="row mt-1">
                     <div class="col-md-12">
-                        <table class="table table-bordered table-sm" style="font-size: 0.8rem; background-color: white;">
+                        <table class="table table-bordered table-sm vehicle-itinerary-table" style="font-size: 0.8rem; background-color: white;" data-vehicle-table="${newIndex}">
                             <thead style="background-color: #f3f4f6; text-align: center;">
                                  <tr>
                                     <th style="width: 10%; text-align: center; background-color: #f3f4f6;">運行日</th>
@@ -2775,7 +2855,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const globalIndex = uniqueId;
             
             rowsHtml += `
-                <tr class="itinerary-row" data-vehicle="${newIndex}" data-index="${globalIndex}" data-bus-id="" data-itinerary-id="">
+                <tr class="itinerary-row" data-vehicle="${newIndex}" data-index="${globalIndex}" data-bus-id="${newBusId}" data-itinerary-id="">
                     <td style="vertical-align: middle; text-align: center; background-color: #f9f9f9; position: relative;">
                         <span class="row-number" style="position: absolute; top: 2px; left: 2px; color: #2563eb; font-size: 10px; font-weight: bold;">${idx + 1}</span>
                         <input type="hidden" name="daily_itineraries[${globalIndex}][id]" value="">
@@ -3348,8 +3428,103 @@ document.addEventListener('DOMContentLoaded', function() {
         
         updateMoveButtons(table);
     });
+    
+    
+        
+    function initLockArrangementControl() {
+        const lockCheckboxes = document.querySelectorAll('input[name*="[lock_arrangement]"]');
+        if (lockCheckboxes.length === 0) return;
+        
+        lockCheckboxes.forEach(lockCheckbox => {
+            const card = lockCheckbox.closest('.card');
+            if (!card) return;
+            
+            function toggleLockFields(isLocked) {
+                const lockableFields = [
+                    card.querySelectorAll('.vehicle-select'),
+                    card.querySelectorAll('.driver-select'),
+                    card.querySelectorAll('input[name*="[start_date]"]'),
+                    card.querySelectorAll('input[name*="[end_date]"]'),
+                    card.querySelectorAll('input[name*="[start_time]"]'),
+                    card.querySelectorAll('input[name*="[end_time]"]'),
+                    card.querySelectorAll('input[name*="[start_location]"]'),
+                    card.querySelectorAll('input[name*="[end_location]"]'),
+                    card.querySelectorAll('.datepicker-3months'),
+                    card.querySelectorAll('input[type="time"]'),
+                ];
+                
+                lockableFields.forEach(fieldSet => {
+                    fieldSet.forEach(element => {
+                        if (isLocked) {
+                            element.setAttribute('readonly', 'readonly');
+                            element.classList.add('locked-field');
+                        } else {
+                            element.removeAttribute('readonly');
+                            element.classList.remove('locked-field');
+                        }
+                    });
+                });
+                
+                const buttonFields = [
+                    card.querySelectorAll('.add-row-btn'),
+                    card.querySelectorAll('.delete-row-btn'),
+                    card.querySelectorAll('.move-up-btn'),
+                    card.querySelectorAll('.move-down-btn'),
+                ];
+                
+                buttonFields.forEach(fieldSet => {
+                    fieldSet.forEach(element => {
+                        if (isLocked) {
+                            element.setAttribute('disabled', 'disabled');
+                            element.classList.add('locked-field');
+                        } else {
+                            element.removeAttribute('disabled');
+                            element.classList.remove('locked-field');
+                        }
+                    });
+                });
+                
+                const selectFields = [
+                    card.querySelectorAll('.vehicle-select'),
+                    card.querySelectorAll('.driver-select'),
+                ];
+                
+                selectFields.forEach(fieldSet => {
+                    fieldSet.forEach(element => {
+                        if (isLocked) {
+                            element.setAttribute('disabled', 'disabled');
+                            element.classList.add('locked-field');
+                        } else {
+                            element.removeAttribute('disabled');
+                            element.classList.remove('locked-field');
+                        }
+                    });
+                });
+                
+                card.querySelectorAll('.datepicker-3months').forEach(dateInput => {
+                    if (dateInput._flatpickr) {
+                        if (isLocked) {
+                            dateInput._flatpickr.set('clickOpens', false);
+                        } else {
+                            dateInput._flatpickr.set('clickOpens', true);
+                        }
+                    }
+                });
+            }
+            
+            toggleLockFields(lockCheckbox.checked);
+            
+            lockCheckbox.addEventListener('change', function() {
+                toggleLockFields(this.checked);
+            });
+        });
+    }
+    
+
 
     refreshEventListeners();
+    
+    initLockArrangementControl();
 
     document.getElementById('editForm').addEventListener('submit', submitForm);
 });
